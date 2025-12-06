@@ -12,7 +12,7 @@ We have learned how the rendering pipeline works, step by step. From now on, we 
 
 Here is a basic framework of a ShaderLab script. I will describe each part of it after this paragraph.
 
-![2025-12-06 165816.png](images/2025-12-06 165816.png)
+![2025-12-06-165816.png](images/2025-12-06-165816.png)
 
 
 The first line of the ShaderLab script declares the name of the shader. For example, if we create a ulint shader in the unity and name it "ExampleShaderLab", the first line should be "Shader Ulint/ExampleShaderLab".
