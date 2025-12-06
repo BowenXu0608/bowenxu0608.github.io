@@ -12,14 +12,14 @@ We have learned how the rendering pipeline works, step by step. From now on, we 
 
 Here is a basic framework of a ShaderLab script. I will describe each part of it after this paragraph.
 
-![屏幕截图 2025-12-06 165816.png](images/屏幕截图 2025-12-06 165816.png)
+![2025-12-06 165816.png](images/2025-12-06 165816.png)
 
 
 The first line of the ShaderLab script declares the name of the shader. For example, if we create a ulint shader in the unity and name it "ExampleShaderLab", the first line should be "Shader Ulint/ExampleShaderLab".
 
 In the highest level of declaration, we need to construct two subparts. First one is "Properties". In this part, we should declare all the variables. An example is shown in this picture: "\_MainTex ("Texture", 2D) = "white" {} ". "\_MainTex" at here means the name of the variable, which will be used in the program. Note that all variable names should begin with a "\_", and the first letter of each word should be capitalized, with no spaces between words. "Texture" is the name which will appear in the inspector. "2D" indicates that the variable type is Texture2D. It is important to note that the type name used here may differ from its actual type name. The correspondence between them is as follows:
 
-![屏幕截图 2025-12-06 175321.png](images/屏幕截图 2025-12-06 175321.png)
+![2025-12-06 175321.png](images/2025-12-06 175321.png)
 
 The right side of the equal sign represents the default value of this variable. In this example, the default value is white, so this variable is a 2D texture with white as the default color.
 
@@ -29,33 +29,33 @@ The third part of the subshader is "pass". It begins with "HLSLPROGRAM" and ends
 
 The first struct is a2v (application to vertex). This struct is used to send data from the application to the GPU and to identify the vertex data. An example is shown below:
 
-![屏幕截图 2025-12-06 182950.png](images/屏幕截图 2025-12-06 182950.png)
+![2025-12-06 182950.png](images/2025-12-06 182950.png)
 
 Because the data sent from the application consists of just raw bytes, we need a description to help the GPU recognize the meaning of the data. For example, we name a float4 vertex POSITION, so the GPU understands that this part of the data represents the position of a vertex. The next part of the data is the UV coordinate of this vertex with the name "TEXCOORD0", and the length of this part should be the length of float2. There are many keywords that can be used, including POSITION, TEXCOORD0–15 (note that you cannot set more than 16 TEXCOORDs), NORMAL, COLOR, and so on. Once this structure is complete, the application stage of the pipeline is finished.
 
 Now we can move on to the vertex stage. In the pass you can see the "#pragma vertex vert", which specifies the vertex shader function. Refer to the image below:
 
-![屏幕截图 2025-12-06 184620.png](images/屏幕截图 2025-12-06 184620.png)
+![2025-12-06 184620.png](images/2025-12-06 184620.png)
 
 We can see that the output data structure is v2f (vertex to fragment), and the input is a2v. In this function, a v2f variable named o is defined, and its vertex is set by transforming the vertex from v into clip space. Then, the UV coordinates from v are transformed and assigned to \_MainTex. Finally, the function returns o as the output. This function completes the vertex stage.
 
 Following that, we will use another struct v2f. Here is an example:
 
-![屏幕截图 2025-12-06 185640.png](images/屏幕截图 2025-12-06 185640.png)
+![2025-12-06 185640.png](images/2025-12-06 185640.png)
 
 Obviously, it is very similar to the previous struct. In struct v2f, we define the uv with the keyword TEXCOORD0, and a vertex with the keyword SV\_POSITION (it represent the position in clip space). The fragment shader can recognize the data through this struct. Notably, in the v2f struct, there are no keywords like NORMAL, so all such data should be recorded as TEXCOORD, as shown below:
 
-![屏幕截图 2025-12-06 194002.png](images/屏幕截图 2025-12-06 194002.png)
+![2025-12-06 194002.png](images/2025-12-06 194002.png)
 
 Finally, we can see how the fragment shader works. The function of the fragment shader is as follows:
 
-![屏幕截图 2025-12-06 194707.png](images/屏幕截图 2025-12-06 194707.png)
+![2025-12-06 194707.png](images/2025-12-06 194707.png)
 
 It is clear that the output of the function is a half4, which represents a color. The keyword "SV\_Target" place after the colon represents the destination of this fragment. The color of each fragment is determined by this function and returned as the output. Next, we move on to the frame buffer stage.
 
 In the frame buffer stage, we need to complete many tests. You can find these tests in the subshader and decide which ones to use.
 
-![屏幕截图 2025-12-06 195550.png](屏幕截图 2025-12-06 195550.png)
+![2025-12-06 195550.png](2025-12-06 195550.png)
 
 There are still some rules that need to be followed. First of all, because the run frequency of the vertex shader is much smaller than that of the fragment shader, all calculations that can be performed in the vertex shader should not be done in the fragment shader. Next, avoid using if statements in shaders. The third rule is that the priority of half is higher than the float. Therefore, if a variable can be accurately represented by the half, it should be declared as half. Moreover, the priority of multiplication is higher than that of division. Since the number of textures cannot exceed 16, we should use as few textures as possible. Use the built-in functions as much as possible instead of performing calculations directly. Optimizing shaders is a complex work and we need to learn it for a long time.
 
