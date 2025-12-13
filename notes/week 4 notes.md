@@ -55,7 +55,7 @@ It is clear that the output of the function is a half4, which represents a color
 
 In the frame buffer stage, we need to complete many tests. You can find these tests in the subshader and decide which ones to use.
 
-![2025-12-06-195551.png](2025-12-06-195551.png)
+![2025.12.06.195551.png](2025.12.06.195551.png)
 
 There are still some rules that need to be followed. First of all, because the run frequency of the vertex shader is much smaller than that of the fragment shader, all calculations that can be performed in the vertex shader should not be done in the fragment shader. Next, avoid using if statements in shaders. The third rule is that the priority of half is higher than the float. Therefore, if a variable can be accurately represented by the half, it should be declared as half. Moreover, the priority of multiplication is higher than that of division. Since the number of textures cannot exceed 16, we should use as few textures as possible. Use the built-in functions as much as possible instead of performing calculations directly. Optimizing shaders is a complex work and we need to learn it for a long time.
 
