@@ -19,13 +19,13 @@ In terms of the function, therre are two types: pass by value and pass by refere
 ### What is a class & What is an Instance?
 
 Simply, the class is a abstruct concept of a kind of things, and the instance is a specific example of this kind. We can see an example:
-![image](https://hackmd.io/_uploads/r1fbcMjMZe.png)
+![2025-12-13-165301.png](images/2025-12-13-165301.png)
 
 "iPhone" is not a name of any smart phone, it is a name of series of smartphones produced by Apple. In contrast, "my iPhone 16" is a real object in the world. Therefore, we can say that my iPhone 16 is an instance of class iPhone.
 
 ### Basic header syntax
 
-![image](https://hackmd.io/_uploads/BJ3HnfozZx.png)
+![2025-12-13-170250.png](images/2025-12-13-170250.png)
 
 From the example above, we can see that the header syntax includes three parts: forward declaration, class declaration, and class definition. The purpose of the forward declaration is to inform the compiler that it is not necessary to verify whether these classes exist at that point. The class declaration describes the contents of a class, while the class definition provides the detailed implementation of the functions within the class. Remember, we should generally avoid writing function definitions in the header file unless they are very short.
 
@@ -54,7 +54,7 @@ The heap is used to store pointers. The lifecycle of records in the heap is cont
 
 ### Life cycle
 The example below is used to discribe life cycle:
-![image](https://hackmd.io/_uploads/r1w2yEoGWg.png)
+![2025-12-13-182518.png](images/2025-12-13-182518.png)
 
 For c1, it will be constructed upon entering the {, and destructed upon leaving the }. The c1 lives at the stack.
 
@@ -69,14 +69,14 @@ For pointer p, it will be constructed when new is called and destructed when del
 ### Inheritence
 
 Inheritance is used to describe the relationship between two classes. Basically, a child class (derived class) inherits the data of a parent class (base class). An example is shown below:
-![image](https://hackmd.io/_uploads/H1J9S4if-g.png)
+![2025-12-13-185016.png](images/2025-12-13-185016.png)
 
 
 The sequence of construction is important. The constructor of the base class runs first, and the derived class's constructor runs. However, the destructor of the derived class runs first, then the base class's constructor runs.
 
 ### Virtual functions
 Virtual functions provide a mechanism for derived classes to override functions defined in the base class. An example is shown below:
-![image](https://hackmd.io/_uploads/SJu2uVjM-g.png)
+![2025-12-13-190410.png](images/2025-12-13-190410.png)
 
 In this example, when you create an instance of the Dog class and run the MakeSound() function, the output will be  which belongs to the Dog's MakeSound() function.
 
