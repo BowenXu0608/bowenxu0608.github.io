@@ -10,7 +10,7 @@ This homework primarily addresses the questions remaining from the Week 6 presen
 ### What is #define?
 #define is a preprocessor directive used to define macros. Macros are identifiers defined by #define that are replaced by their corresponding values before compilation.
 Here is an example:
-![image](https://hackmd.io/_uploads/SyAx7i-7Ze.png)
+![2025-12-18-155114](image/2025-12-18-155114.png)
 
 Because a macro is defined, when the compiler performs preprocessing, all the MAX(a,b) are replaced by the ((a)>(b) ? (a) : (B)), and this property is similar to that of inline functions. However, #define works before the program compilation, whereas inline functions are handled during compilation.
 
@@ -33,7 +33,7 @@ In conclusion, there is no difference between the friend keyword in private and 
 
 ## Q4: Details of anonymous namespace
 Here is an example of anonymous namespace:
-![image](https://hackmd.io/_uploads/B1XO9hMmZx.png)
+![2025-12-19-114311](image/2025-12-19-114311.png)
 An anonymous namespace is a namespace without a name. When the compiler works, it gives a unique name to this namespace, which is invisible outside. In the anonymous namespace, scoping of all the contents is the file. As a result, if you set a class in the anonymous namespace, you can not find this class in another file, even if you use the extern keyword. The effect of the anonymous namespace is close to the static keyword, but people always prefer to use an anonymous namespace in C++.
 
 ### What is the difference between static keyword and anonymous namespace?
@@ -45,14 +45,14 @@ There are five factors that will be considered when you are calculating the size
 
 ### Non-static data members and padding
 The size of non-static data members can be simply calculated by the size of the data types that the members are, but padding is a difficult step during the calculation. Here is an example:
-![image](https://hackmd.io/_uploads/SkE-zCGXbx.png)
+![2025-12-19-132408](image/2025-12-19-132408.png)
 
 In this example, the size of all non-static data members is $1+4+8=13$. However, the calculation should follow the rules of padding: members align and overall alignment.
 
 Due to the members aligning, the size before adding the target member should be an integral multiple of the size of the target member. For example, when adding the size char c, there is no offset, and the size becomes 1. When adding the int i, 1 is not an integral multiple of 4, so the size needs to be padded to 4, and add the size of int i; after that, the size becomes 8. Then, adding the double d, the size now is 8, which is an integral multiple of 8, so no more offsets need to be padded; the size of this class should be 16.
 
 If we change the sequence of thewe members, the calculation will be different.
-![image](https://hackmd.io/_uploads/rkBUERfQbx.png)
+![2025-12-19-133400](image/2025-12-19-133400.png)
 
 In this example, the first step is the same as the previous calculation. In step 2, we need to add the double d first, so the size before adding needs to be 8; now the size is 16. Next, because 16 is an integral multiple of 4, int i can be added directly, and the size now is 20. However, we need to follow the overall alignment, which means the size of a class must be an integral multiple of the biggest member. In this example, the biggest one is double d, the size of it is 8, so finally the size of the class needs to be enlarged from 20 to 24.
 
@@ -67,22 +67,22 @@ The size of an empty class is always 1. For a derived class, if the base class i
 ## Q6: The thread safety issue of the singleton pattern
 ### Normal singleton pattern
 In conclution, triditional singleton pattern is not thread safe. Here is an example:
-![image](https://hackmd.io/_uploads/SkIsFRfmZl.png)
+![2025-12-19-135641](image/2025-12-19-135641.png)
 
 In this singleton pattern, there isn't a double check. If thread A confirms the instance is a nullptr, but A is stopped before it creates a new instance, then thread B works and confirms the instance is a nullptr and creates a new instance. After that, A works again and creates a new instance continuously, and there are two instances existing finally, which is not allowed in the singleton pattern. As a result, the normal singleton pattern is not thread safe.
 
 ### Meyers' singleton
 Meyers' singleton can confirm the thread safety. Here is an example:
-![image](https://hackmd.io/_uploads/SJMUsCMm-g.png)
+![2025-12-19-140349](image/2025-12-19-140349.png)
 
 Instead of the if statement, Meyers' singleton uses a static Singleton instance to ensure thread safety. When the compiler reads this line, the inside frame looks like this:
-![image](https://hackmd.io/_uploads/SymLekXmWx.png)
+![2025-12-19-142510](image/2025-12-19-142510.png)
 
 Compiler checks if the initialization is finished first; if it doesn't finish, compiler locks it to make sure other threads can't create an instance at the same time. After that, to ensure that no other threads create the instance before the lock works successfully, the compiler checks the initialization again. If the double check is completed, the compiler can create the instance and change the flag so that other threads will never create an instance again. Through the double check, Mayers' singleton is thread safe.
 
 ## Q7: Functions with = delete
 Here is an example:
-![image](https://hackmd.io/_uploads/HyAa-yQQbg.png)
+![2025-12-19-143129](image/2025-12-19-143129.png)
 
 The function of "= delete" is to ban some operations. In this example, people can't use the copy constructor and copy operator to ensure this function is monopolized. The aim of this is to avoid some misuse of the functions. For example, you set a function overload with input type float, and you don't want people to input an int, to avoid the compiler changing the int to the float and causing an error, you should ban the function overload with input type int. Another situation is that if you don't want people to create a new instance on the heap, you can use "= delete" to reject the "new" sentence.
 
@@ -97,10 +97,10 @@ If you are just an observer of sources, which means you just get the reference o
 
 ## Q9: Operating principle of malloc and free
 Malloc and free are the methods to help programmers control memory management. The frame of data should be this:
-![image](https://hackmd.io/_uploads/S1PgUgmXWx.png)
+![2025-12-19-155710](image/2025-12-19-155710.png)
 
 A programmer can only apply for space in the heap by using malloc. You need to determine the size of memory you want and tell the compiler. The compiler always finds the first enough space in the free List (this operation may cause fragmentation), writes the head, and returns the first address after the head, like this:
-![image](https://hackmd.io/_uploads/BkIxDgXQbl.png)
+![2025-12-19-160144](image/2025-12-19-160144.png)
 
 The space you get is always larger than you want because of rules such as the padding rule.
 
