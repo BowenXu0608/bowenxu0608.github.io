@@ -61,6 +61,18 @@ In terms of base class and derived class, you need to add the size of the base c
 
 If the base class and derived class include the virtual function, the size of vtpr needs to be added first. The size of vtpr should be 4 (32-bit system) or 8 (64-bit system). Moreover, if a derived class inherits many base classes with virtual functions, it will have many vtpr.
 
+We can have an example here:
+![2025.12.19.133400](images/2025.12.20.133400.png)
+
+As we see, class C is a derived class of class A and class B. Both of the base classes have a virtual function, so the calculation frame is: vtpr(A) -> size of class A -> vtpr(B) -> size of class B -> size of class C. Every vtpr needs 8 bits and 8 is an integral multiple of 4 (int), so size of first two step is 12. There is a same situation in next two step. However, between the step 2 and step 3, because 12 is not an integral multiple of 8, 4 bits padding is needed. As a result, after the first four steps, the size is 28. 28 is an integral multiple of 4, therefore class C can be added directly without padding. Finally, the size of class C is 32.
+
+Another special form is diamond inheritance. In last example, if there is a class D the base class of class A and class B, the relationship between class D and class C is a diamond inheritance. It has two main drawback: data redundancy and ambiguity. Data redundancy means that the size of class D will be calculated twice. Ambiguity means when you call a varirable belongs to class D, conpiler can not understand which one you wand to use because both class C and class D hold the varirables of class A.
+
+To solve this problem, programmers use the virtual inheritance. Virtual inheritance tells the compiler that the instance of base class should only be created once, even it is used many times. Return to the example, if class A and class B are virtual inheritance, There is only one instance of class D created when compiler is create a instance of class C. Because of that, the size of class C will be changed.
+![2025.12.19.133400](images/2025.12.20.133401.png)
+
+Here is an example. The calculation frame is vbptr(B) -> size of class B -> vbptr(C) -> size of class C -> size of class D -> size of class A. The first five steps are same to the above example, and we need to add the size of class A now. After that, the size is 36 bits. However, 36 is not an integral multiple of the largest member (8 bits), so there are 4 padding used and the final size is 40 bits.
+
 ### Empty class
 The size of an empty class is always 1. For a derived class, if the base class is an empty class, the size of the empty class can be calculated as 0. However, if the derived class includes a member whose type is the base class, the size of the base class needs to be calculated as 1.
 
