@@ -62,7 +62,7 @@ In terms of base class and derived class, you need to add the size of the base c
 If the base class and derived class include the virtual function, the size of vtpr needs to be added first. The size of vtpr should be 4 (32-bit system) or 8 (64-bit system). Moreover, if a derived class inherits many base classes with virtual functions, it will have many vtpr.
 
 We can have an example here:
-![2025.12.19.133400](images/2025.12.20.133400.png)
+![2025.12.20.160322](images/2025.12.20.160322.png)
 
 As we see, class C is a derived class of class A and class B. Both of the base classes have a virtual function, so the calculation frame is: vtpr(A) -> size of class A -> vtpr(B) -> size of class B -> size of class C. Every vtpr needs 8 bits and 8 is an integral multiple of 4 (int), so size of first two step is 12. There is a same situation in next two step. However, between the step 2 and step 3, because 12 is not an integral multiple of 8, 4 bits padding is needed. As a result, after the first four steps, the size is 28. 28 is an integral multiple of 4, therefore class C can be added directly without padding. Finally, the size of class C is 32.
 
