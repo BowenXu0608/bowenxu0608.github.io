@@ -69,7 +69,7 @@ As we see, class C is a derived class of class A and class B. Both of the base c
 Another special form is diamond inheritance. In last example, if there is a class D the base class of class A and class B, the relationship between class D and class C is a diamond inheritance. It has two main drawback: data redundancy and ambiguity. Data redundancy means that the size of class D will be calculated twice. Ambiguity means when you call a varirable belongs to class D, conpiler can not understand which one you wand to use because both class C and class D hold the varirables of class A.
 
 To solve this problem, programmers use the virtual inheritance. Virtual inheritance tells the compiler that the instance of base class should only be created once, even it is used many times. Return to the example, if class A and class B are virtual inheritance, There is only one instance of class D created when compiler is create a instance of class C. Because of that, the size of class C will be changed.
-![2025.12.19.133400](images/2025.12.20.133401.png)
+![2025.12.20.163827](images/2025.12.20.163827.png)
 
 Here is an example. The calculation frame is vbptr(B) -> size of class B -> vbptr(C) -> size of class C -> size of class D -> size of class A. The first five steps are same to the above example, and we need to add the size of class A now. After that, the size is 36 bits. However, 36 is not an integral multiple of the largest member (8 bits), so there are 4 padding used and the final size is 40 bits.
 
