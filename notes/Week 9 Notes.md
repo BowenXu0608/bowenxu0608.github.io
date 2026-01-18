@@ -1,9 +1,9 @@
 ---
-title: Week 10 Notes
+title: Week 9 Notes
 
 ---
 
-# Week 10 Notes
+# Week 9 Notes
 This week we mainly talk about color and image.
 ## Part one: color
 We have three aspects to understand the color: radiometry, photometry and colorimetry. Radiometry thinks color represents electromagnetic radiation, we can determine a color by the wavelength of light. Photometry thinks that colors are just a feeling of wavelength for people, which can be very subjective and relies on people's sense organs. The last one, colorimetry, thinks that color represents a psychological reaction to a certain physical stimulation. It is not objective, futher more, it is only based on the psychological reaction, but not any physical data.
