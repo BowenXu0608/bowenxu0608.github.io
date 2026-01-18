@@ -102,6 +102,7 @@ In image, we focus on the VkImageCreateFlags. When VK_IMAGE_CREATE_MUTABLE_FORMA
 #### Q2: Research ASTC, ETC and BC
 
 Adaptive Scalable Texture Compression (ASTC) is the most commonly used compression. In ASTC, every block must use 16 bytes but the size of the block can be changed. We can make the block include less pixel to record more clearly or include more pixel to speed up. The form ASTC can use is below:
+
 ![2026-01-18-142025.png](images/2026-01-18-142025.png)
 
 Moreover, it can be used in various format, such as LDR, LDRsRGB, HDR, it can also be used to compress 3D texture.
