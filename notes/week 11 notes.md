@@ -27,7 +27,7 @@ Moreover, there is an optional shader we can use called a geometry shader. The f
 
 After these steps, the vertices are prepared and ready. Next, we need a primitive assembly step to reconnect the vertices into faces. The reason for this step is to confirm all the triangles so that we know how to clip them when displaying on the screen.
 
-![image](https://hackmd.io/_uploads/SkmdJfUwWg.png)
+![2026-02-08-132805.png](images/2026-02-08-132805.png)
 
 From this picture, we can understand the usefulness of the primitive assembly step. The next step is clip and cull. In this step, we clip the scene and determine which triangles need to be rendered. In the left example, we see that the triangle should be rendered and clipped. In the right example, we can confirm that the triangle does not need to be rendered, and the triangle on the screen does not need to be clipped. Notably, the clip and cull step is a fixed function, meaning that programmers cannot control this step as it is predefined by the GPU.
 
@@ -44,11 +44,11 @@ In the final stage, we typically perform three tests: alpha test, depth test, an
 Because the results of fragment shader will not influence these tests, to reduce the waste, we can conduct these tests before pixel stage (early-z) so that the fragment shader do not have to process the fragments that will be discarded. However, because some materials have transparency, which means although the fragments behind it will not be shown in the screen, they will influence the color of the front fragments, the early-z may be unsuitable sometimes. This problem cannot be solved now, programmers should consider the environment they are to determine if early-z is suitable.
 
 Finally, we can get this graph to discribe the whole process:
-![image](https://hackmd.io/_uploads/H1vU3M8Dbl.png)
+![2026-02-08-142306.png](images/2026-02-08-142306.png)
 
 Remember, in the Vulkan, only the vertex shader is necessary, other process can be empty.
 
 ## In Vulkan
 ### Draw Call
-![image](https://hackmd.io/_uploads/BJTBaGIPbe.png)
+![2026-02-08-142640.png](images/2026-02-08-142640.png)
 From the graph, we can see how Vulkan creates a draw call. The VkCommandBuffer is a command buffer used to store information, as what we see at first. Another important thing is firstInstance. When you need to create repetitive objects, using the pipeline every time is expensive. As a result, we can just use the instance to efficiently create multiple copies of the same object.
