@@ -40,7 +40,7 @@ Remember, the input attachments and color attachments are decided by your physic
 
 ### dependency
 
-![2026-02-14-115123.png](images/2026-02-14-115123.png)
+![2026-02-14-131545.png](images/2026-02-14-131545.png)
 
 Dependencies determine the sequence between subpasses. As we know, some subpasses work based on the previous subpasses’ outcome. However, GPUs work parallelly therefore wo need to discribe the order specifically to ensure the subpusses work correctly.
 
