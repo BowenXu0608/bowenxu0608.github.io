@@ -1,19 +1,83 @@
 <!doctype html>
 <html>
-<head><meta charset="utf-8"><title>Articles</title></head>
+<head>
+    <meta charset="utf-8">
+    <title>Articles</title>
+    <style>
+        /* 1. 保持与主页一致的整体风格 */
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f4f4f9;
+            color: #333333;
+            max-width: 800px; /* 限制内容的最大宽度，让阅读视线更集中 */
+            margin: 0 auto; /* 让内容块在屏幕中水平居中 */
+            padding: 50px 20px;
+        }
+
+        /* 2. 标题样式 */
+        h1 {
+            color: #2c3e50;
+            border-bottom: 2px solid #3498db; /* 加一条蓝色的下划线，作为装饰和分割 */
+            padding-bottom: 10px;
+            margin-bottom: 30px;
+        }
+
+        /* 3. 列表整体（去掉默认小黑点和内边距） */
+        ul {
+            list-style-type: none; 
+            padding: 0;
+        }
+
+        /* 4. 每一行（文章条目）的“卡片化”设计 */
+        li {
+            background-color: white; /* 给每个条目白色的背景 */
+            margin-bottom: 15px; /* 条目之间的间距 */
+            padding: 15px 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05); /* 加一层淡淡的阴影 */
+            display: flex; /* 使用 Flexbox 布局魔法... */
+            justify-content: space-between; /* ...把标题推到最左边，日期推到最右边 */
+            align-items: center; /* 让它们在垂直方向对齐 */
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+
+        /* 当鼠标放上去时，条目向右轻轻滑动并加深阴影 */
+        li:hover {
+            transform: translateX(8px); 
+            box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+        }
+
+        /* 5. 文章链接的样式 */
+        a {
+            color: #3498db;
+            text-decoration: none; /* 去掉下划线 */
+            font-size: 1.1em;
+            font-weight: bold;
+        }
+
+        a:hover {
+            color: #2c3e50; /* 悬停时链接颜色变深 */
+        }
+
+        /* 6. 日期的专属样式 */
+        .date {
+            color: #95a5a6; /* 灰色的字体，不喧宾夺主 */
+            font-size: 0.9em;
+        }
+    </style>
+</head>
 <body>
-  <h1>Articles</h1>
-  <ul>
-    <li><a href="week 2 notes">week 2 notes</a> — 2025-11-22</li>
-    <li><a href="week 3 notes">week 3 notes</a> — 2025-11-29</li>
-    <li><a href="week 4 notes">week 4 notes</a> — 2025-12-06</li>
-    <li><a href="week 5 notes">week 5 notes</a> — 2025-12-13</li>
-    <li><a href="Week 9 Notes">week 9 notes</a> — 2025-12-13</li>
-    <li><a href="Week 10 Notes">week 10 notes</a> — 2026-01-31</li>
-    <li><a href="week 11 notes">week 11 notes</a> — 2026-02-07</li>
-    <li><a href="week 12 notes">week 12 notes</a> — 2026-02-14</li>
-    <li><a href="Week 13 Notes">week 13 notes</a> — 2026-02-14</li>
-  </ul>
+    <h1>Articles</h1>
+    <ul>
+        <li><a href="week 2 notes">Week 2 notes</a> <span class="date">2025-11-22</span></li>
+        <li><a href="week 3 notes">Week 3 notes</a> <span class="date">2025-11-29</span></li>
+        <li><a href="week 4 notes">Week 4 notes</a> <span class="date">2025-12-06</span></li>
+        <li><a href="week 5 notes">Week 5 notes</a> <span class="date">2025-12-13</span></li>
+        <li><a href="week 9 notes">Week 9 notes</a> <span class="date">2025-12-13</span></li>
+        <li><a href="week 10 notes">Week 10 notes</a> <span class="date">2026-01-31</span></li>
+        <li><a href="week 11 notes">Week 11 notes</a> <span class="date">2026-02-07</span></li>
+        <li><a href="week 12 notes">Week 12 notes</a> <span class="date">2026-02-14</span></li>
+        <li><a href="week 13 notes">Week 13 notes</a> <span class="date">2026-02-14</span></li>
+    </ul>
 </body>
 </html>
-
