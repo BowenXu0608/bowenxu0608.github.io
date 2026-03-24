@@ -3,12 +3,52 @@
 <head>
     <meta charset="UTF-8">
     <title>My GitHub Page</title>
+    <style>
+        /* CSS 代码都写在这里面 */
+        
+        /* 1. 装饰整个网页的背景和文字 */
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; /* 换一个更现代、更好看的字体 */
+            background-color: #f4f4f9; /* 设定一个温和的浅灰蓝色背景 */
+            color: #333333; /* 设定深灰色文字，这比纯黑色对眼睛更友好 */
+            text-align: center; /* 让网页里的所有内容都居中显示 */
+            padding-top: 10vh; /* 让内容往下稍微挪一点，不要贴着屏幕边缘 */
+        }
+
+        /* 2. 装饰主标题 */
+        h1 {
+            color: #2c3e50; /* 给标题换一个稳重的深蓝色 */
+            font-size: 3em; /* 把字号放大 */
+        }
+
+        /* 3. 将你的普通链接变成好看的“按钮” */
+        a {
+            display: inline-block;
+            margin: 15px; /* 按钮之间留点空隙 */
+            padding: 10px 25px; /* 撑大按钮，让它看起来更饱满 */
+            background-color: #3498db; /* 按钮的底色（蓝色） */
+            color: white; /* 按钮里的文字颜色（白色） */
+            text-decoration: none; /* 去掉链接默认的难看的下划线 */
+            border-radius: 8px; /* 让按钮的四个角变圆润 */
+            font-weight: bold; /* 文字加粗 */
+            transition: all 0.3s ease; /* 这是一个小魔法：让接下来的变化有动画过渡效果 */
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1); /* 给按钮加一点点阴影，看起来更立体 */
+        }
+
+        /* 4. 当鼠标悬停（hover）在按钮上时的效果 */
+        a:hover {
+            background-color: #2980b9; /* 鼠标放上去时，蓝色变深 */
+            transform: translateY(-2px); /* 按钮稍微往上浮动一点点 */
+            box-shadow: 0 6px 8px rgba(0,0,0,0.15); /* 阴影变大 */
+        }
+    </style>
 </head>
 <body>
     <h1>Hello GitHub Pages!</h1>
-    <p>This is my website.</p>
-    <a href="/notes/">notes</a>
-    <a href="/homework/">homework</a>
+    <p>This is my website. Welcome to my digital garden.</p>
+    
+    <a href="/notes/">Notes</a>
+    <a href="/homework/">Homework</a>
 
 </body>
 </html>
