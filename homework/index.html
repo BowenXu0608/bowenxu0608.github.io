@@ -60,9 +60,27 @@
             color: #95a5a6;
             font-size: 0.9em;
         }
+
+        /* 返回按钮的专属样式 */
+        .back-btn {
+            display: inline-block;
+            margin-bottom: 20px; /* 和下面的标题拉开一点距离 */
+            color: #7f8c8d; /* 柔和的灰色，不抢主标题的风头 */
+            text-decoration: none; /* 去掉下划线 */
+            font-size: 0.95em;
+            font-weight: bold;
+            transition: color 0.3s ease, transform 0.3s ease;
+        }
+        
+        /* 鼠标悬停时的效果：颜色变深，稍微向左移动一点点，暗示“返回” */
+        .back-btn:hover {
+            color: #3498db; 
+            transform: translateX(-5px); 
+        }
     </style>
 </head>
 <body>
+    <a href="/" class="back-btn">← 返回主页</a>
     <h1>Homework</h1>
     <ul>
         <li><a href="Homework 3_ Style Analysis of Super Mario Odyssey">Homework 3</a> <span class="date">2025-11-29</span></li>
