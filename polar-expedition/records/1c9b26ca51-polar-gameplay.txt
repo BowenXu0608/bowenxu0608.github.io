@@ -1,4 +1,5 @@
 docs/engineering/systems/polar-gameplay.md
+Selected excerpts for the project portfolio.
 
 # Polar Acts I-II gameplay
 
@@ -257,32 +258,6 @@ The user agreed that explorers' walking should slow to match the pace hard walki
   - 90% of frames are drawn within 40% of the rules' pace over the steps taken;
   - the legs' rate is within .06 of the drawn speed over the playing clip's stride;
   - the hurt walk is slower than 0.8 of the healthy one.
-
-## Hard walking, October 30, 2026 (0.6.87-test)
-
-The land and the weather make walking hard, for the player and every explorer alike. This is the user's decision in `docs/design-decisions.md` (top section), replacing October 17's "steep ground does not slow them". The pure rules are in `PolarWalkEffort` (no Unity; checked by `Tools/PolarGameplayCheck/WalkEffortChecks.cs`, 20 checks).
-- **Speed.** `PolarMvpController.Effort(actor, at, direction)` multiplies three factors, never below `Floor` .3, on top of the cell's travel cost:
-  - `Slope(World.Rise(at, direction))`. `Rise` is the height difference from .25 m behind to .75 m ahead, and is 0 over a gap or water. It replaces the unused `SlopeSpeed`/`PlayerSlopeSpeed`.
-  - `Wind(Strength(wind, gust, terrainShelter, ShelterFactor), dot(direction, Downwind()))`. `Downwind` is (cos h, 0, sin h) of `PolarWeatherTransition.WindHeading`.
-  - `Drift(Streamer.SnowAt(at))`.
-
-  The player's `PolarSurveyPlayer.Move` multiplies its speed by `GameplayEffort` while walking in gameplay and keeps the result as `LastEffort`. Explorers' `Move` and `Walk` multiply by the same `Effort`.
-- **Gust shove.** `PolarSurveyPlayer.Shove` = `Downwind() * PolarWalkEffort.Shove(Gust, Wind(player))` is set each frame and added to a walking player's motion. Explorers are not shoved.
-- **Footing.** `PolarMvpController.Footing` runs once a game second for the player (walking) and after each explorer step. `Blown` (gust ≥ .92, wind strength ≥ .85, 6% a second, a minute apart) calls `PolarActions.KnockDown`. `Slips` (on `PolarSurfaceKind.Ice`, running or rise under -.268, 15% a second, 20 s apart) falls with "Slipped on the ice". Rolls hash the seed, the person and the floored second.
-- **Drops.** `PolarSurveyPlayer` keeps the top of a fall (`fallTop`, reset on leaving water) and raises `Landed(drop)` on Falling to Walking, except while streaming holds the body. `PolarMvpController.Landed` records `LandedAt`/`LandedDrop` from `Grunt` 1.2 m. From `Down` 3.5 m it calls `Actions.Fall(player, FallDamage(drop, PolarSurface.Give(Under)), "Fell N m")`. Explorers' routes skirt drops (`PolarNpcSimulation.Skirt`), so they fall only from gusts and slips.
-- **The fall rule.** `PolarActions.Fall(actor, damage, why)` does nothing to the dead or the already down. Otherwise it:
-  - cancels the action;
-  - sets `fallenAt`/`fallSeconds` (`DownSeconds`: 1 s going, `Lie` 1.5-4 s, 2.75 s rising);
-  - stops moving;
-  - remembers the cause;
-  - and loses health as "Fall".
-
-  `lastDamageAt` is untouched, so a fall ends no talk, alarms nobody and is no attack. `Down(actor)` is true until `fallenAt + fallSeconds`. While the player is down, movement and input stop. The save keeps both fields, which `PolarSaveService` validates (finite, not in the future, 0-10 s).
-- **Explorers.** A down explorer does nothing that step. On its first step down it is told `Fell(actor)`: "A gust knocked you down" / "You slipped on the ice and fell" / "You fell", then its health and "You will be up in a few seconds". `PolarNpcManual` has a "Footing." paragraph, and `WalkHours` divides by `Snow` .85 (open snow's usual effort).
-- **Presentation.** No new clips.
-  - `PolarNpcView` plays "Death" for a drop or a slip (from .3 s) or "DeathShot" for a gust (from 1.2 s, thrown back). It holds the body on the floor at the fall's yaw, then plays "UpFast" for the last 2.75 s. Hits and talk gestures wait.
-  - `PolarPlayerBodyView.Rest` plays the same clips at the player's place and puts the body back when the fall ends.
-  - The view is in `rendering-streaming.md`; the sounds are in `polar-audio.md`.
 
 ## World v20 saves, earlier saves deleted: October 30, 2026 (0.6.86-test)
 

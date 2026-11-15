@@ -96,25 +96,6 @@ A save stalled all three of its threads together for 5.5 ms in 0.6.150-test's ne
   - **No help: `GCMode.Manual` alone.** Any allocating thread still advances a running cycle.
   - **Turning incremental collection off** makes every cycle one full stop.
 
-## Saves: the text shared by two workers and the main thread, November 12, 2026 (0.6.150-test)
-
-With the player by an explorer's hut, a save's main-thread P90 was 2.25 to 3.05 ms, because the main thread waited for the one worker writing the text ([results](../logs/evidence/2026-11-12/save-pieces-shared/results.md)). The save file is byte for byte the same. No rule, save format or drawn pixel changes.
-
-- **Pieces** (`PolarSaveService.Text`).
-  - Each person is a piece: their four kept lists (`KeptList`), and `JsonUtility` over the rest of them (`PolarActorState.Bare`), into `persons`.
-  - Each hut is a piece: its mark, and its text when the mark changed (`Kept`).
-  - The last piece is the state without people or huts: `PolarGameplayState.Bare` now gives `actors` and `sites` both empty.
-- **Who writes them.** `WriteInBackground` starts two workers (`Workers`), which take pieces in turn (`Interlocked.Increment`). The main thread validates, then takes what is left (`Wait`). It waits only for the pieces the workers are still writing: a `ManualResetEventSlim` is set by whoever finishes the last piece.
-  - A worker that starts after the last piece is taken returns without reading the state.
-  - The first failure in any piece is raised on the main thread (`Made`), and the save fails as before.
-  - `Write`, `Payload` and `HutText` take every piece on their own thread.
-- **Threads.** The kept arrays (`huts`, `marks`, `lists`, `listMarks`, `persons`) are sized on the main thread before any piece is taken (`Size`). Each piece writes only its own entries. As before, only the save's text writes them, after `Finish` has waited for the publishing task that reads them. `JsonUtility` runs on up to three threads at once, each call on its own objects.
-- **Putting it together.** `Rest`, on the publishing task, finds `"actors":[]` and `"sites":[]` in the state's own short text. It puts each person there, with their four lists in place, separated by commas. Then it finds the cut for the huts, all in one `string.Create`.
-- **Measured.** In a near walk day on Development builds:
-  - a save's main-thread median went from 1.56 to 1.04 ms (minutes 2 to 6) and from 1.72 to 1.07 ms (minutes 10 to 15), with the P90 from 2.25 to 1.24 and 3.05 to 1.39 ms;
-  - the wait after validating went from a median of 0.79 and 0.93 ms to 0.16 ms;
-  - the two workers do about 0.3 ms more work in all than the one did. Allocation is unchanged.
-
 ## Managed allocation: a save's text beside its validation, November 12, 2026 (0.6.148-test)
 
 This is the 2.3 ms a save still cost the main thread after 0.6.146-test ([results](../logs/evidence/2026-11-12/save-step-peaks/results.md)). The save file is byte for byte the same. No rule, save format or drawn pixel changes.
@@ -142,21 +123,6 @@ This is the last item the user left open: the 4 to 5 ms a save still cost the ma
 - **A new saved field must go into `Mark`.** This now covers `PolarLocationRecord`, `PolarContainerRecord` and `PolarExperience`, as well as the hut classes. The gameplay mode's check (`PolarMvpAcceptance.SaveTextFault`) also adds one member to each of the last person's four lists. It changes each saved field alone, and each part of a route point: 113 changes.
 - **Also.** `Mixed.Add`'s steps are inlined; Mono inlined none of them. `Validate`'s box and item tests are plain loops, with the same tests, order and messages.
 - **Measured.** In a walk day on Development builds, each save's own times were read from the profiler logs. A save's median on the main thread is 2.25 ms; it was 4.29 ms. The validation takes 1.07 ms and the text 0.98 ms. Managed allocation is as it was: 2.466 MB a second, 2.457 before.
-
-## Managed allocation: a save's text in pieces, November 11, 2026 (0.6.138-test)
-
-The user's "Yes, do it here" on the item 0.6.137-test left open, after its live day ([results](../logs/evidence/2026-11-11/save-payload-text/results.md)). The save file is byte for byte the same; no rule, save format or drawn pixel changes.
-
-- **Before.** `JsonUtility.ToJson(state)` wrote the whole state on the main thread at every save: one string of about 2.8 MB, about 11 ms. 84% of that text is the huts, and 69% the items in their boxes.
-- **Each hut's text is kept** (`PolarSaveService.huts`) with a number mixed from every saved field of the hut, its boxes, their items and its notes (`Mark`; 64 bits, floats and doubles by their bits). `Kept` has `JsonUtility` write a hut again only when its number has changed.
-- **A new saved field must go into `Mark`.** A field added to `PolarSiteState`, `PolarContainerState`, `PolarItemInstance` or `PolarNote` and left out of `Mark` would, changed alone, leave the hut's old text in the save. The gameplay mode's check (`PolarMvpAcceptance.SaveTextFault`) changes every field of the four in turn, found by reflection, and fails on one that `Mark` misses.
-- **The rest of the state** is `JsonUtility.ToJson(state.WithoutSites())` (since 0.6.146-test `Bare`, with each person's lists kept too; the section above): a copy of the state's fields with an empty hut list, so the state in play is never without its huts. `Rest` returns that text with `cut`, the place inside `"sites":[]` where the huts' texts belong (no other saved class has a field named `sites`).
-- **The worker** takes the rest, the cut and the kept texts. `Hash` encodes them one after another into its kept buffer, and `PolarSaveFile.WriteEnvelope` escapes them one after another into the file, with commas between the huts. Every piece starts and ends at a JSON mark, so the bytes are the whole text's.
-- **Threads.** Only the main thread writes `huts` and `marks`, and only after `Finish` has waited for the worker that reads them. `Payload` and `HutText`, the suite's two hooks, wait too.
-- **Kept between saves:** the huts' texts, about 2.4 MB of strings for a world. The number is of a hut's content, not of an expedition, so a new or loaded expedition replaces the texts hut by hut.
-- **Measured** (a walking game day on Development builds, `Tools/polar_save_rate.py --walk --profile`, 179 saves; markers `Polar.Save.Validate` and `Polar.Save.Text`): a save takes 5.1 ms of the main thread where it took 12.8 ms (the text 3.2 ms, the validation 1.6 ms); the text's strings at one save are 578 KB where they were 2,994 KB; "GC Allocated In Frame" is 9.5 KB a frame where it was 18.0.
-- **Verified.** An Editor probe over 1,535 kept saves: the whole text from the pieces is `JsonUtility`'s in every one, and the file's bytes are those of `JsonUtility`'s own envelope in the 627 that pass today's validation; a negative control (one field left out of `Mark`) fails. The full suite passes on `pt-01` with gameplay 391 (`Logs/PolarV7/0.6.138-test/pt-01`), and so do front page 173, startup 4 and screen-args 3 (`Logs/PolarFront/0.6.138-test/pt-01`).
-- **In a live day** (November 11, [results](../logs/evidence/2026-11-11/live-day-0138/results.md)) a save takes 4.2 ms of the main thread where it took 11.1 ms on 0.6.137-test (the text 2.4 ms, the validation 1.5 ms), the text's strings at one save are 494 KB with up to 67 KB of huts written again where they were 2,773 KB, and no save is among the frames over 25 ms in the four timed minutes (two of six before).
 
 ## Memory: the front page lets an expedition go, and a save's envelope is written as it goes, November 11, 2026 (0.6.137-test)
 
@@ -828,15 +794,6 @@ The user asked for improvements that could start at once and be confirmed. Three
   - Face evidence: 8 genuine close-up pairs (old face assets in `vp-face-before`, new in `vp-face2`; 0.9-2.3% of pixels changed, on the faces and beards) and 8 portrait pairs (`vp-before`, `vp-final2`).
   - Snow evidence: 6 frame pairs and 2 cropped grid pairs (`vp-before`, `vp-final2`).
   - Package `vp-01`: gameplay 387, weather 80 and ui 463 pass (`Logs/PolarV7/0.6.92-test/vp-01`); gameplay peaked at 6.64 GB.
-
-## The view in hard walking, October 30, 2026 (0.6.87-test)
-
-The player's view shows the hard-walking rules (`docs/engineering/systems/polar-gameplay.md`, top section) in `PolarBodyFeedback`.
-- **Down.** While the player is down (`fallenAt + fallSeconds`), the view turns up toward the sky (`LookUp`, -65 degrees) over the 1 s going down, holds while lying, and comes back down over the 2.75 s getting up, eased at both ends. The eye follows the body's lying head as for rest (`PolarPlayerBodyView.Rest`, which now also plays the fall's clips).
-- **Landing.** A landing from 2 m (`Stumble`) jolts the view 8 degrees down, 3 degrees of roll and 0.15 m lower, fading over 0.35 s. Under 3.5 m (`Down`) the jolt is half that.
-- **Gusts.** A gust's shove leans the view downwind by up to 2.5 degrees of roll at its peak in full wind (`PolarWalkEffort.Shove` / 1.2, by the downwind side), but not while down.
-
-Presentation only; the rules decide when.
 
 ## World v20's distant blocks keep v19's resolution, October 30, 2026 (0.6.86-test)
 
