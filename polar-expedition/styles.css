@@ -342,17 +342,29 @@ dialog{width:min(960px,calc(100% - 36px));max-height:90svh;overflow:auto;padding
   .pair-slide { break-inside: avoid; margin-bottom: 1em; }
 }
 
+html:has(#film-dialog[open]) { overflow: hidden; }
 #film-dialog {
-  width: min(1120px, 94vw, 160svh);
+  position: fixed;
+  inset: 0;
   margin: auto;
-  overflow: hidden;
+  /* Fit the whole 16:9 frame with a gutter even in a short landscape window. */
+  width: min(1120px, calc(100vw - 24px), calc((100vh - 24px) * 16 / 9));
+  width: min(1120px, calc(100dvw - 24px), calc((100dvh - 24px) * 16 / 9));
+  height: min(630px, calc((100vw - 24px) * 9 / 16), calc(100vh - 24px));
+  height: min(630px, calc((100dvw - 24px) * 9 / 16), calc(100dvh - 24px));
+  aspect-ratio: 16 / 9;
+  max-width: none;
+  max-height: none;
+  overflow: clip;
   border: 0;
   background: #000;
 }
 #film-dialog video {
+  position: absolute;
+  inset: 0;
   display: block;
   width: 100%;
-  aspect-ratio: 16 / 9;
+  height: 100%;
   object-fit: contain;
 }
 #film-dialog [data-close] {
