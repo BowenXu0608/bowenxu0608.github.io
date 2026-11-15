@@ -1,4 +1,5 @@
 docs/engineering/systems/rendering-streaming.md
+Selected excerpts for the project portfolio.
 
 # Rendering and streaming
 
@@ -398,23 +399,10 @@ M1c of the graphics core plan's M1 (`docs/engineering/plans/polar-graphics-core.
 - **HDRP asset.** Dynamic resolution is enabled: software, 50-100%, with mip bias, and DLSS then FSR 2 as the advanced upscalers. Nothing changes while TAA or SMAA is chosen, because the camera's `allowDynamicResolution` is off then.
   - DLSS and FSR 2 come from Unity's built-in modules `com.unity.modules.nvidia` and `com.unity.modules.amd`. They ship with the Editor, so nothing was downloaded.
   - The package carries `nvngx_dlss.dll`, `NVUnityPlugin.dll` and `AMDUnityPlugin.dll`.
-- **Route-flag motion vectors.**
-  - `PolarRouteFlag.Shape` keeps last frame's cloth and writes each vertex's object-space motion into uv5. The motion is zero after a frame in which the cloth was not shaped, and cleared once it stops.
-  - The cloth draws `Resources/Polar/HDRP/RouteFlagCloth.mat`: HDRP/Lit, the old red, with `_AddPrecomputedVelocity`. It is an asset because a Player build strips shader variants that no build asset uses, and the rescue flag copies it.
-  - Under motion blur the cloth now blurs along its motion. Under TAA and the upscalers its history follows the cloth instead of the pole. It is still shaped on the CPU.
-- **Hands and handbook under an upscaler.** `PolarHdrpForegroundPass` draws them after post at the output size. HDRP's light lists and screen-space lighting are built at the render size, though, so past it (the bottom-right of the screen at 67%) the hands missed the hut's lamps and stove and went nearly black indoors.
-  - The pass now opens up `CustomPassUtils.RenderFromCamera` and, while an upscaler renders below the output size, pushes HDRP's own off-screen rescale, the low-resolution transparents' path (`_OffScreenRendering`, `_OffScreenDownsampleFactor` = render/output width). HDRP's forward pass then looks up lights and screen-space textures at the render-size pixel.
-  - HDRP keeps these constants internal, so its `UpdateOffscreenRenderingConstants` is bound once as a typed delegate, and nothing is boxed a frame.
-  - The opaque alpha 0 that this path writes is lost in the B10G11R11 colour buffer. TAA and SMAA draw as before.
-  - Found in the Player's first-person frames under DLSS and FSR 2. In the Editor, a small light at the bottom-right sleeve lit it under TAA and not under DLSS, and after the fix it lit both alike.
 - **Results.**
-  - Gameplay 390 under TAA, DLSS, TAA upscale and FSR 1 on `aa-05` (`Logs/PolarV7/0.6.122-test/aa-05`, `aa-05-dlss`, `aa-05-taaupscale`, `aa-05-fsr1`). Under FSR 2, and ui 463 under TAA, they ran on `aa-01`, which lacks only the hands' rescale.
-  - The bottom-right sleeve in `motion-fp-InteractClose-50` reads 20.4 of 255 under TAA, 8.7 under DLSS on `aa-04` and 20.4 on `aa-05` (20.4 under TAA upscale, 20.2 under FSR 1).
-  - In the Editor at 1600x900 every method draws, and the flag's history under TAA follows the cloth with its motion vectors on (`Logs/ProjectUpdateCapture/m1c-live`; same-build shots, not a before and after).
-  - Evidence `docs/engineering/logs/evidence/2026-11-06/anti-aliasing-upscaling`: the flags at TAA before and after the motion vectors, and the hands under DLSS before and after the rescale.
+  - Gameplay 390 under TAA, DLSS, TAA upscale and FSR 1 on `aa-05` (`Logs/PolarV7/0.6.122-test/aa-05`, `aa-05-dlss`, `aa-05-taaupscale`, `aa-05-fsr1`). Under FSR 2, and ui 463 under TAA, they ran on `aa-01`.
 - **Not yet.**
   - The front page's per-method screenshots and GPU times in the Player, which follow the display confirm and need the window in front (DXGI 887a0022 without it, as on a `po-03` control).
-  - The smear sweep fixed nothing. DLSS leaves short smears behind breath clouds, which carry no motion vectors, as HDRP intends for particles.
   - M1d: the benchmark and per-preset performance.
 
 ## Graphics presets, November 6, 2026 (0.6.120-test)

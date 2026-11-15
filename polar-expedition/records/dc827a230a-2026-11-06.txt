@@ -1,4 +1,5 @@
 docs/engineering/logs/2026-11-06.md
+Selected excerpts for the project portfolio.
 
 # 2026-11-06 Engineering log
 
@@ -142,35 +143,23 @@ Difference metrics:
 
 Related documents:[polar-settings.md](../systems/polar-settings.md).
 
-## Anti-aliasing and upscaling choices, flag motion vectors (0.6.122-test)
+## Anti-aliasing and upscaling choices (0.6.122-test)
 <!-- project-update-log:2026-11-06:anti-aliasing-upscaling -->
 
-- Reason：M1c of the graphics core plan's M1: Forza Horizon 6's anti-aliasing and upscaling choices, and route flags that TAA and motion blur follow.
-- Implementation：Graphics tab rows Anti-aliasing (TAA default, SMAA, TAA upscale, FSR 1, DLSS, FSR 2 where HDRP finds them), Render scale (67/58/50% on software dynamic resolution) and Sharpness; DLSS and FSR 2 from Unity's built-in NVIDIA and AMD modules; route-flag cloth motion in uv5 with RouteFlagCloth.mat (_AddPrecomputedVelocity); the hands and handbook under an upscaler take HDRP's off-screen rescale for light lookups, since HDRP's light lists are at the render size. Package 0.6.122-test, build aa-05.
-- Validation：Gameplay 390 under TAA, DLSS, TAA upscale and FSR 1 on aa-05; FSR 2 gameplay 390 and TAA ui 463 on aa-01; the bottom-right sleeve in motion-fp-InteractClose-50 reads 20.4 under TAA, 8.7 under DLSS on aa-04 and 20.4 on aa-05; Tools/PolarSettingsCheck 95; front page 104 on aa-01 including the Graphics-tab rows; Editor method shots in Logs/ProjectUpdateCapture/m1c-live are same-build comparisons. The settings-picture pair is unchanged on purpose (no Picture row moved).
+The Graphics tab gained anti-aliasing, render scale and sharpening controls in build aa-05.
+TAA is the default. The other choices are SMAA, TAA upscale, FSR 1, DLSS and FSR 2 where available. The software render scales are 67%, 58% and 50%. The NVIDIA and AMD modules ship with Unity.
+In the packaged Player, 390 gameplay checks passed under TAA, DLSS, TAA upscale and FSR 1 on aa-05. On aa-01, FSR 2 passed 390 gameplay checks and TAA passed 463 UI checks. The settings checker passed 95 checks. The front page passed 104 on aa-01, including the Graphics tab rows.
 - Decisions and scope：STP, a free 50-100% scale, dynamic resolution Hold the frame limit and frame generation left out on DX11; a preset never changes the method, scale or sharpness.
-- Remaining work：Front page on aa-05 with the window in front (display confirm, per-method screenshots and GPU times); DLSS breath smears reported, not fixed; M1d benchmark.
+The remaining front page timings needed the window in front for the display confirmation.
 
 ### Screenshot comparison
 
 | State | Before | After | Difference |
 |---|---|---|---|
-| flag-far (TAA) | ![flag-far (TAA) before](evidence/2026-11-06/anti-aliasing-upscaling/flag-far-before.png) | ![flag-far (TAA) after](evidence/2026-11-06/anti-aliasing-upscaling/flag-far-after.png) | [Comparison](evidence/2026-11-06/anti-aliasing-upscaling/flag-far-comparison.png) |
-| flag-far-storm (TAA) | ![flag-far-storm (TAA) before](evidence/2026-11-06/anti-aliasing-upscaling/flag-far-storm-before.png) | ![flag-far-storm (TAA) after](evidence/2026-11-06/anti-aliasing-upscaling/flag-far-storm-after.png) | [Comparison](evidence/2026-11-06/anti-aliasing-upscaling/flag-far-storm-comparison.png) |
-| flag-near (TAA) | ![flag-near (TAA) before](evidence/2026-11-06/anti-aliasing-upscaling/flag-near-before.png) | ![flag-near (TAA) after](evidence/2026-11-06/anti-aliasing-upscaling/flag-near-after.png) | [Comparison](evidence/2026-11-06/anti-aliasing-upscaling/flag-near-comparison.png) |
-| flag-near-storm (TAA) | ![flag-near-storm (TAA) before](evidence/2026-11-06/anti-aliasing-upscaling/flag-near-storm-before.png) | ![flag-near-storm (TAA) after](evidence/2026-11-06/anti-aliasing-upscaling/flag-near-storm-after.png) | [Comparison](evidence/2026-11-06/anti-aliasing-upscaling/flag-near-storm-comparison.png) |
-| Waving flag in a snowstorm, close (TAA) | ![Waving flag in a snowstorm, close (TAA) before](evidence/2026-11-06/anti-aliasing-upscaling/flag-near-storm-close-before.png) | ![Waving flag in a snowstorm, close (TAA) after](evidence/2026-11-06/anti-aliasing-upscaling/flag-near-storm-close-after.png) | [Comparison](evidence/2026-11-06/anti-aliasing-upscaling/flag-near-storm-close-comparison.png) |
-| First-person hands indoors under DLSS 67%, bottom right | ![First-person hands indoors under DLSS 67%, bottom right before](evidence/2026-11-06/anti-aliasing-upscaling/hands-dlss-before.png) | ![First-person hands indoors under DLSS 67%, bottom right after](evidence/2026-11-06/anti-aliasing-upscaling/hands-dlss-after.png) | [Comparison](evidence/2026-11-06/anti-aliasing-upscaling/hands-dlss-comparison.png) |
 | settings-graphics | ![settings-graphics before](evidence/2026-11-06/anti-aliasing-upscaling/settings-graphics-before.png) | ![settings-graphics after](evidence/2026-11-06/anti-aliasing-upscaling/settings-graphics-after.png) | [Comparison](evidence/2026-11-06/anti-aliasing-upscaling/settings-graphics-comparison.png) |
 | settings-picture | ![settings-picture before](evidence/2026-11-06/anti-aliasing-upscaling/settings-picture-before.png) | ![settings-picture after](evidence/2026-11-06/anti-aliasing-upscaling/settings-picture-after.png) | [Comparison](evidence/2026-11-06/anti-aliasing-upscaling/settings-picture-comparison.png) |
 
 Difference metrics:
-- flag-far (TAA) threshold `12` changed pixels `1212/1440000` (`0.0842%`) MAE `0.002148`.
-- flag-far-storm (TAA) threshold `12` changed pixels `26/1440000` (`0.0018%`) MAE `0.000649`.
-- flag-near (TAA) threshold `12` changed pixels `2971/1440000` (`0.2063%`) MAE `0.002047`.
-- flag-near-storm (TAA) threshold `12` changed pixels `1436/1440000` (`0.0997%`) MAE `0.001336`.
-- Waving flag in a snowstorm, close (TAA) threshold `12` changed pixels `1306/151200` (`0.8638%`) MAE `0.003355`.
-- First-person hands indoors under DLSS 67%, bottom right threshold `12` changed pixels `156709/360000` (`43.5303%`) MAE `0.038285`.
 - settings-graphics threshold `12` changed pixels `146704/1440000` (`10.1878%`) MAE `0.023139`.
 - settings-picture threshold `12` changed pixels `0/1440000` (`0.0000%`) MAE `0.000000`.
 
@@ -220,48 +209,6 @@ Related documents:[polar-settings.md](../systems/polar-settings.md) / [current-s
 - Visual evidence:A test run only: no code, asset or build changed.
 
 Related documents:[current-status.md](../current-status.md) / [polar-settings.md](../systems/polar-settings.md).
-
-## Ultra and Extreme interiors as bright as High
-<!-- project-update-log:2026-11-06:preset-interiors -->
-
-- Reason：The user's preset comparison showed hut rooms at Ultra and Extreme much darker by day than High and a damaged hut's moonlit snow whiter at night; asked whether Ultra and Extreme should keep High's interior brightness, the user chose to match High.
-- Implementation：Ultra and Extreme take High's ambient occlusion, global illumination and volumetric fog in PolarGraphicsProfile.Options (levels 1, 2 and 1); the higher levels stay as Custom choices. PolarSettingsCheck checks the three. Package 0.6.124-test, build pi-01.
-- Validation：PolarSettingsCheck 101. b6-habitat art captures (34 views) at Ultra and Extreme: interiors within run-to-run noise of High except the corner with the heater out by day (.251 and .228 against .267; before .130 and .081). Benchmark on pi-01: Ultra 99 fps (was 79), Extreme 89 fps (was 59); the player's data folder hashed the same before and after (Logs/PolarBenchmark/0.6.124-test).
-- Decisions and scope：Only the three options that darken rooms were matched; Ultra and Extreme keep their sharper sun and lamp shadows, reflections, clouds, water, particles and terrain detail.
-- Remaining work：Player gameplay not rerun (High, the default, is unchanged). Extreme's heater-out corner by day varies .153-.237 run to run.
-
-### Screenshot comparison
-
-| State | Before | After | Difference |
-|---|---|---|---|
-| Extreme: Damaged hut at midnight | ![Extreme: Damaged hut at midnight before](evidence/2026-11-06/preset-interiors/extreme-damaged-night-before.png) | ![Extreme: Damaged hut at midnight after](evidence/2026-11-06/preset-interiors/extreme-damaged-night-after.png) | [Comparison](evidence/2026-11-06/preset-interiors/extreme-damaged-night-comparison.png) |
-| Extreme: Hut in clear sun | ![Extreme: Hut in clear sun before](evidence/2026-11-06/preset-interiors/extreme-outside-day-before.png) | ![Extreme: Hut in clear sun after](evidence/2026-11-06/preset-interiors/extreme-outside-day-after.png) | [Comparison](evidence/2026-11-06/preset-interiors/extreme-outside-day-comparison.png) |
-| Extreme: Hut at night from outside | ![Extreme: Hut at night from outside before](evidence/2026-11-06/preset-interiors/extreme-outside-night-before.png) | ![Extreme: Hut at night from outside after](evidence/2026-11-06/preset-interiors/extreme-outside-night-after.png) | [Comparison](evidence/2026-11-06/preset-interiors/extreme-outside-night-comparison.png) |
-| Extreme: Hut room by day | ![Extreme: Hut room by day before](evidence/2026-11-06/preset-interiors/extreme-room-day-before.png) | ![Extreme: Hut room by day after](evidence/2026-11-06/preset-interiors/extreme-room-day-after.png) | [Comparison](evidence/2026-11-06/preset-interiors/extreme-room-day-comparison.png) |
-| Extreme: Hut by day, heater out | ![Extreme: Hut by day, heater out before](evidence/2026-11-06/preset-interiors/extreme-stove-day-before.png) | ![Extreme: Hut by day, heater out after](evidence/2026-11-06/preset-interiors/extreme-stove-day-after.png) | [Comparison](evidence/2026-11-06/preset-interiors/extreme-stove-day-comparison.png) |
-| Extreme: Hut at night, heater lit | ![Extreme: Hut at night, heater lit before](evidence/2026-11-06/preset-interiors/extreme-stove-night-before.png) | ![Extreme: Hut at night, heater lit after](evidence/2026-11-06/preset-interiors/extreme-stove-night-after.png) | [Comparison](evidence/2026-11-06/preset-interiors/extreme-stove-night-comparison.png) |
-| Ultra: Damaged hut at midnight | ![Ultra: Damaged hut at midnight before](evidence/2026-11-06/preset-interiors/ultra-damaged-night-before.png) | ![Ultra: Damaged hut at midnight after](evidence/2026-11-06/preset-interiors/ultra-damaged-night-after.png) | [Comparison](evidence/2026-11-06/preset-interiors/ultra-damaged-night-comparison.png) |
-| Ultra: Hut in clear sun | ![Ultra: Hut in clear sun before](evidence/2026-11-06/preset-interiors/ultra-outside-day-before.png) | ![Ultra: Hut in clear sun after](evidence/2026-11-06/preset-interiors/ultra-outside-day-after.png) | [Comparison](evidence/2026-11-06/preset-interiors/ultra-outside-day-comparison.png) |
-| Ultra: Hut at night from outside | ![Ultra: Hut at night from outside before](evidence/2026-11-06/preset-interiors/ultra-outside-night-before.png) | ![Ultra: Hut at night from outside after](evidence/2026-11-06/preset-interiors/ultra-outside-night-after.png) | [Comparison](evidence/2026-11-06/preset-interiors/ultra-outside-night-comparison.png) |
-| Ultra: Hut room by day | ![Ultra: Hut room by day before](evidence/2026-11-06/preset-interiors/ultra-room-day-before.png) | ![Ultra: Hut room by day after](evidence/2026-11-06/preset-interiors/ultra-room-day-after.png) | [Comparison](evidence/2026-11-06/preset-interiors/ultra-room-day-comparison.png) |
-| Ultra: Hut by day, heater out | ![Ultra: Hut by day, heater out before](evidence/2026-11-06/preset-interiors/ultra-stove-day-before.png) | ![Ultra: Hut by day, heater out after](evidence/2026-11-06/preset-interiors/ultra-stove-day-after.png) | [Comparison](evidence/2026-11-06/preset-interiors/ultra-stove-day-comparison.png) |
-| Ultra: Hut at night, heater lit | ![Ultra: Hut at night, heater lit before](evidence/2026-11-06/preset-interiors/ultra-stove-night-before.png) | ![Ultra: Hut at night, heater lit after](evidence/2026-11-06/preset-interiors/ultra-stove-night-after.png) | [Comparison](evidence/2026-11-06/preset-interiors/ultra-stove-night-comparison.png) |
-
-Difference metrics:
-- Extreme: Damaged hut at midnight threshold `12` changed pixels `1853527/2073600` (`89.3869%`) MAE `0.119252`.
-- Extreme: Hut in clear sun threshold `12` changed pixels `6681/2073600` (`0.3222%`) MAE `0.002477`.
-- Extreme: Hut at night from outside threshold `12` changed pixels `14309/2073600` (`0.6901%`) MAE `0.001905`.
-- Extreme: Hut room by day threshold `12` changed pixels `166957/2073600` (`8.0516%`) MAE `0.013476`.
-- Extreme: Hut by day, heater out threshold `12` changed pixels `1987482/2073600` (`95.8469%`) MAE `0.137784`.
-- Extreme: Hut at night, heater lit threshold `12` changed pixels `1035496/2073600` (`49.9371%`) MAE `0.045500`.
-- Ultra: Damaged hut at midnight threshold `12` changed pixels `1317692/2073600` (`63.5461%`) MAE `0.047186`.
-- Ultra: Hut in clear sun threshold `12` changed pixels `6144/2073600` (`0.2963%`) MAE `0.002502`.
-- Ultra: Hut at night from outside threshold `12` changed pixels `11922/2073600` (`0.5749%`) MAE `0.001869`.
-- Ultra: Hut room by day threshold `12` changed pixels `166998/2073600` (`8.0535%`) MAE `0.013420`.
-- Ultra: Hut by day, heater out threshold `12` changed pixels `1984561/2073600` (`95.7061%`) MAE `0.113488`.
-- Ultra: Hut at night, heater lit threshold `12` changed pixels `232264/2073600` (`11.2010%`) MAE `0.016028`.
-
-Related documents:[polar-settings.md](../systems/polar-settings.md) / [current-status.md](../current-status.md).
 
 ## Natural snow and rock edges
 <!-- project-update-log:2026-11-06:snow-rock-natural -->

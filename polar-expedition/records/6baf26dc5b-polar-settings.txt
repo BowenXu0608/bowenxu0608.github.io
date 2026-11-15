@@ -1,4 +1,5 @@
 docs/engineering/systems/polar-settings.md
+Selected excerpts for the project portfolio.
 
 # Player settings
 
@@ -38,19 +39,6 @@ A sixth tab, **Controls** (October 11, 2026, 0.6.10-test), lists every key and w
 Since October 26, 2026 (UI upgrade M3, [UI](polar-ui.md#typography-and-motion-system-screens-october-26-2026-m3-in-0660-test)) a tab's rows fade in and rise 8 px when the tab changes, and the display confirmation is its own layer above the rows (`Confirm`), fading in with its shade, so the rows no longer rebuild when it opens or closes. The Footprints hint reads "Choose whose footprints are visible".
 
 "As launched" means what the vendor `GraphicsOptions` boot code and the controller's borderless window left. Only values the player changes are stored. An `AfterSceneLoad` bootstrap applies stored display values after both, so they hold; command-line `-screen-*` or `-window-mode` arguments leave the display alone.
-
-## Ultra and Extreme interiors as High (November 6, 2026, 0.6.124-test)
-
-The user's preset comparison (`Logs/PresetComparison/sheets`) showed hut rooms at Ultra and Extreme lit differently from High: a room by day with the heater out at 49% (Ultra) and 30% (Extreme) of High's mean brightness, and a damaged hut's moonlit snow at night whiter and brighter. Asked whether Ultra and Extreme should keep High's interior brightness, the user chose to match High.
-- **Change.** Ultra and Extreme take High's levels of three options (`PolarGraphicsProfile.Options`): ambient occlusion (HDRP's Medium SSAO tier), global illumination (Medium SSGI tier, 64 ray steps) and volumetric fog (Medium tier). Their higher levels stay in the Graphics tab as Custom choices. Everything else that sets Ultra and Extreme apart is unchanged: sun shadows at 4096 px with High contact shadows, lamp shadows, reflections, clouds, water, weather particles and terrain detail.
-- **Why these three.** Each darkens rooms that High's lower tiers lit with sky light (rays and voxels that miss the walls). One option at a time, at Ultra with bounce light already at High's level, the room by day with the heater out (mean brightness, High .267) went from .186 to .217 with High's occlusion, .205 with High's fog and .218 with High's shadows. Extreme's custom fog tier took it to .101; with Ultra's fog .180.
-- **Result** (`PolarArtCapture` b6-habitat, 34 views, Editor at 1920x1080; before `pi-before-*`, after `pi-final-ultra` and `pi-final2-extreme`): with all three at High's level, every interior view matches High's mean brightness within the night views' run-to-run noise (about .03, from the heater's flicker) except the corner with the heater out by day: .251 at Ultra and .228 at Extreme against High's .267 (before .130 and .081). That view, taken right after a night view, varies at Extreme from run to run with the same settings: .153, .228 and .237 in three runs. Ultra's sharper sun shadows were kept; High's would add only .001 there. The damaged hut's moonlit snow at night is back to High's (.192 and .194 against .189; before .241 and .319). Exteriors are unchanged.
-- **Benchmark** on `pi-01` (1600x900 windowed, TAA, `Logs/PolarBenchmark/0.6.124-test`):
-  - Ultra: 99 fps (79 on `gb-05`), 1% low 73, P95 12.9 ms, mean GPU 9.80 ms (1.11 times High's), peak video memory 2.30 GB.
-  - Extreme: 89 fps (59 on `gb-04`), 1% low 66, P95 14.4 ms, mean GPU 11.01 ms (1.24 times High's), 2.49 GB.
-  - The GPU held 97% of frames in both. Neither suggests a change: Ultra's P95 lies between 70% of the 60 fps budget and the budget, and Extreme's is under the budget.
-  - The player's data folder hashed the same before and after (19 files).
-- **Checks.** `Tools/PolarSettingsCheck` 101 (one new: Ultra and Extreme take High's three levels). Evidence `docs/engineering/logs/evidence/2026-11-06/preset-interiors`.
 
 ## Benchmark (November 6, 2026, graphics core M1d, 0.6.123-test)
 
