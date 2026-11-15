@@ -1,0 +1,324 @@
+docs/engineering/logs/2026-10-24.md
+
+# 2026-10-24 Engineering log
+
+## RPG-style conversation box
+<!-- project-update-log:2026-10-24:rpg-dialogue -->
+
+- Reason：The user asked for conversations shown like an RPG or a galgame and chose: face the person while the world runs, choices plus typing, a close-up in the world rather than portraits, and a framed box.
+- Implementation：
+  - E on a person opens a dark box across the bottom (PolarMvpUi.Npc): the speaker's name on a tab, their words typing out at 45 characters a second (Space, Enter or a click shows the rest or turns the page), a numbered column of choices and a log on the mouse wheel.
+  - While talking the view turns to the person and narrows to frame head to waist (PolarMvpController.FacePartner, PolarSurveyPlayer.Face); the pointer is free and WASD still walks, while mouse look, weapons, the quick bar and calls wait; Esc, E, Goodbye, the partner's death or sleep, 30 m and an attack end the talk; the partner turns its head to the player (PolarFootPlanting look-at).
+  - The choices keep the earlier controls' names and actions (offer and promise answers, the promise, places, the tent, Goodbye) and add Say something and two ready questions sent like typed words; heard lines skip only the partner's words to the player; the model protocol is unchanged.
+- Validation：
+  - Three assemblies compile. Eight genuine before/after pairs from the new talk group of PolarFiveAreasCapture; the HUD control shot changes one pixel, the talk shots 60-80% (the close-up reframes the view).
+  - Editor rehearsal of the ui checks: every talk check passes (the Editor closed before the last, unrelated return-to-menu steps).
+  - Package 0.6.49-test (dg-01): gameplay 339, ui 388 and live 70 pass; the live segment spent CNY 0.37 on 135 requests, the largest 3,600 of 3,900 bytes.
+- Decisions and scope：No portraits, voices or model-written reply suggestions; the explorer's body and plans are untouched, only its head turns.
+- Remaining work：The close-up narrows only between about 1.2 m and 2.6 m at the default 60 degree setting; the log shows what fits, without scrolling.
+
+### Screenshot comparison
+
+| State | Before | After | Difference |
+|---|---|---|---|
+| conversation-log | ![conversation-log before](evidence/2026-10-24/rpg-dialogue/conversation-log-before.png) | ![conversation-log after](evidence/2026-10-24/rpg-dialogue/conversation-log-after.png) | [Comparison](evidence/2026-10-24/rpg-dialogue/conversation-log-comparison.png) |
+| conversation-long | ![conversation-long before](evidence/2026-10-24/rpg-dialogue/conversation-long-before.png) | ![conversation-long after](evidence/2026-10-24/rpg-dialogue/conversation-long-after.png) | [Comparison](evidence/2026-10-24/rpg-dialogue/conversation-long-comparison.png) |
+| conversation-open | ![conversation-open before](evidence/2026-10-24/rpg-dialogue/conversation-open-before.png) | ![conversation-open after](evidence/2026-10-24/rpg-dialogue/conversation-open-after.png) | [Comparison](evidence/2026-10-24/rpg-dialogue/conversation-open-comparison.png) |
+| conversation-pending | ![conversation-pending before](evidence/2026-10-24/rpg-dialogue/conversation-pending-before.png) | ![conversation-pending after](evidence/2026-10-24/rpg-dialogue/conversation-pending-after.png) | [Comparison](evidence/2026-10-24/rpg-dialogue/conversation-pending-comparison.png) |
+| conversation-reply | ![conversation-reply before](evidence/2026-10-24/rpg-dialogue/conversation-reply-before.png) | ![conversation-reply after](evidence/2026-10-24/rpg-dialogue/conversation-reply-after.png) | [Comparison](evidence/2026-10-24/rpg-dialogue/conversation-reply-comparison.png) |
+| conversation-typing | ![conversation-typing before](evidence/2026-10-24/rpg-dialogue/conversation-typing-before.png) | ![conversation-typing after](evidence/2026-10-24/rpg-dialogue/conversation-typing-after.png) | [Comparison](evidence/2026-10-24/rpg-dialogue/conversation-typing-comparison.png) |
+| conversation-waiting | ![conversation-waiting before](evidence/2026-10-24/rpg-dialogue/conversation-waiting-before.png) | ![conversation-waiting after](evidence/2026-10-24/rpg-dialogue/conversation-waiting-after.png) | [Comparison](evidence/2026-10-24/rpg-dialogue/conversation-waiting-comparison.png) |
+| hud-play | ![hud-play before](evidence/2026-10-24/rpg-dialogue/hud-play-before.png) | ![hud-play after](evidence/2026-10-24/rpg-dialogue/hud-play-after.png) | [Comparison](evidence/2026-10-24/rpg-dialogue/hud-play-comparison.png) |
+
+Difference metrics:
+- conversation-log threshold `12` changed pixels `1157418/1440000` (`80.3762%`) MAE `0.278421`.
+- conversation-long threshold `12` changed pixels `964923/1440000` (`67.0085%`) MAE `0.202201`.
+- conversation-open threshold `12` changed pixels `906772/1440000` (`62.9703%`) MAE `0.191847`.
+- conversation-pending threshold `12` changed pixels `989084/1440000` (`68.6864%`) MAE `0.209077`.
+- conversation-reply threshold `12` changed pixels `927665/1440000` (`64.4212%`) MAE `0.197195`.
+- conversation-typing threshold `12` changed pixels `954018/1440000` (`66.2512%`) MAE `0.208580`.
+- conversation-waiting threshold `12` changed pixels `912131/1440000` (`63.3424%`) MAE `0.193016`.
+- hud-play threshold `12` changed pixels `1/1440000` (`0.0001%`) MAE `0.000096`.
+
+Related documents:[polar-ui.md](../systems/polar-ui.md) / [design-decisions.md](../../design-decisions.md) / [current-status.md](../current-status.md).
+
+## Sun shadows to 500 m at 2048 px, cloud shadows while the sun is out, HDRP's cloud map in the sky, and a day colour grade
+<!-- project-update-log:2026-10-24:light-grade-0650 -->
+
+- Reason：A graphics review found the game's frames flat and milky against the 31 concepts (darkest 5% of pixels 119 against 54, ground contrast 18 against 42, mid-tones neutral, saturation 5.2 against 15.6); the user chose its four quick wins.
+- Implementation：
+  - Sun shadows reach 500 m at 2048 px a cascade (HDShadowSettings in the owned profile and the sun's resolution; HDRP had taken 150 m from its default profile and the light's default 512 px, and QualitySettings.shadowDistance never applied).
+  - Volumetric cloud shadows while the sun is out (opacity 1 x ClearVisibility, none from medium snow on); clouds with 8 light steps, micro erosion and clear-weather erosion .7 (was .4).
+  - A day grade outdoors (contrast +12, saturation +8, cool shade and slightly warm light by split toning) and a light vignette; nights and interiors keep their grade.
+- Validation：
+  - Three assemblies compile; 15 genuine pairs from PolarArtCapture lg-before and lg-after (80 frames each, new seed-777 expedition); night frames change only by the vignette; the brightest snow stays neutral white.
+  - Package lg-01 (0.6.50-test): gameplay 339 and weather 80 pass; weather-mode GPU against dg-01, alternating from one save: outdoors 4.71/4.56 ms against 5.30/5.12 ms, indoors 7.13/7.15 ms against 6.99/5.92 ms.
+- Remaining work：
+  - The sun gives only about a fifth of the snow's light on a clear day (the sky's probe, with its sunlit cloud deck, is as bright as the snow), so shadows and cloud shadows stay soft; a different sun and sky balance is an art decision.
+  - Clear weather, where the cloud shadows run, is not covered by the weather mode's GPU timing.
+
+### Screenshot comparison
+
+| State | Before | After | Difference |
+|---|---|---|---|
+| Cliff face from near (b3-distance) | ![Cliff face from near (b3-distance) before](evidence/2026-10-24/light-grade-0650/b3s-01-face-near-before.png) | ![Cliff face from near (b3-distance) after](evidence/2026-10-24/light-grade-0650/b3s-01-face-near-after.png) | [Comparison](evidence/2026-10-24/light-grade-0650/b3s-01-face-near-comparison.png) |
+| Open land by day, blizzard (b5-land): the white-out stays white | ![Open land by day, blizzard (b5-land): the white-out stays white before](evidence/2026-10-24/light-grade-0650/b5-land-day-blizzard-before.png) | ![Open land by day, blizzard (b5-land): the white-out stays white after](evidence/2026-10-24/light-grade-0650/b5-land-day-blizzard-after.png) | [Comparison](evidence/2026-10-24/light-grade-0650/b5-land-day-blizzard-comparison.png) |
+| Open land by day, clear weather (b5-land): cloud shadows, defined clouds, day grade | ![Open land by day, clear weather (b5-land): cloud shadows, defined clouds, day grade before](evidence/2026-10-24/light-grade-0650/b5-land-day-clear-before.png) | ![Open land by day, clear weather (b5-land): cloud shadows, defined clouds, day grade after](evidence/2026-10-24/light-grade-0650/b5-land-day-clear-after.png) | [Comparison](evidence/2026-10-24/light-grade-0650/b5-land-day-clear-comparison.png) |
+| Open land by day, medium snow (b5-land): day grade, no cloud shadows from medium snow on | ![Open land by day, medium snow (b5-land): day grade, no cloud shadows from medium snow on before](evidence/2026-10-24/light-grade-0650/b5-land-day-medium-before.png) | ![Open land by day, medium snow (b5-land): day grade, no cloud shadows from medium snow on after](evidence/2026-10-24/light-grade-0650/b5-land-day-medium-after.png) | [Comparison](evidence/2026-10-24/light-grade-0650/b5-land-day-medium-comparison.png) |
+| Open land at night, clear (b5-land): no grade at night, light vignette only | ![Open land at night, clear (b5-land): no grade at night, light vignette only before](evidence/2026-10-24/light-grade-0650/b5-land-night-clear-before.png) | ![Open land at night, clear (b5-land): no grade at night, light vignette only after](evidence/2026-10-24/light-grade-0650/b5-land-night-clear-after.png) | [Comparison](evidence/2026-10-24/light-grade-0650/b5-land-night-clear-comparison.png) |
+| Hut front by day, clear (b6-habitat): 2048 px shadows | ![Hut front by day, clear (b6-habitat): 2048 px shadows before](evidence/2026-10-24/light-grade-0650/b6-ext-day-front-before.png) | ![Hut front by day, clear (b6-habitat): 2048 px shadows after](evidence/2026-10-24/light-grade-0650/b6-ext-day-front-after.png) | [Comparison](evidence/2026-10-24/light-grade-0650/b6-ext-day-front-comparison.png) |
+| Hut at dusk in heavy snow, window lit (b6-habitat): partial day grade | ![Hut at dusk in heavy snow, window lit (b6-habitat): partial day grade before](evidence/2026-10-24/light-grade-0650/b6-ext-dusk-heavy-lit-before.png) | ![Hut at dusk in heavy snow, window lit (b6-habitat): partial day grade after](evidence/2026-10-24/light-grade-0650/b6-ext-dusk-heavy-lit-after.png) | [Comparison](evidence/2026-10-24/light-grade-0650/b6-ext-dusk-heavy-lit-comparison.png) |
+| Hut interior by day (b6-habitat): no grade indoors, light vignette | ![Hut interior by day (b6-habitat): no grade indoors, light vignette before](evidence/2026-10-24/light-grade-0650/b6-int-room-day-before.png) | ![Hut interior by day (b6-habitat): no grade indoors, light vignette after](evidence/2026-10-24/light-grade-0650/b6-int-room-day-after.png) | [Comparison](evidence/2026-10-24/light-grade-0650/b6-int-room-day-comparison.png) |
+| Hut interior at night, stove lit (b6-habitat) | ![Hut interior at night, stove lit (b6-habitat) before](evidence/2026-10-24/light-grade-0650/b6-int-room-night-lit-before.png) | ![Hut interior at night, stove lit (b6-habitat) after](evidence/2026-10-24/light-grade-0650/b6-int-room-night-lit-after.png) | [Comparison](evidence/2026-10-24/light-grade-0650/b6-int-room-night-lit-comparison.png) |
+| Hut from 90 m by day (b6-habitat) | ![Hut from 90 m by day (b6-habitat) before](evidence/2026-10-24/light-grade-0650/b6-lod-090m-before.png) | ![Hut from 90 m by day (b6-habitat) after](evidence/2026-10-24/light-grade-0650/b6-lod-090m-after.png) | [Comparison](evidence/2026-10-24/light-grade-0650/b6-lod-090m-comparison.png) |
+| Pole Station from 60 m by day (b6-habitat) | ![Pole Station from 60 m by day (b6-habitat) before](evidence/2026-10-24/light-grade-0650/b6-station-ext-day-060m-before.png) | ![Pole Station from 60 m by day (b6-habitat) after](evidence/2026-10-24/light-grade-0650/b6-station-ext-day-060m-after.png) | [Comparison](evidence/2026-10-24/light-grade-0650/b6-station-ext-day-060m-comparison.png) |
+| Pole Station from 200 m by day (b6-habitat): shadows past the old 150 m | ![Pole Station from 200 m by day (b6-habitat): shadows past the old 150 m before](evidence/2026-10-24/light-grade-0650/b6-station-ext-day-200m-before.png) | ![Pole Station from 200 m by day (b6-habitat): shadows past the old 150 m after](evidence/2026-10-24/light-grade-0650/b6-station-ext-day-200m-after.png) | [Comparison](evidence/2026-10-24/light-grade-0650/b6-station-ext-day-200m-comparison.png) |
+| Home hut at 07:00, clear, low sun (sky-time) | ![Home hut at 07:00, clear, low sun (sky-time) before](evidence/2026-10-24/light-grade-0650/sky-hour-07-horizon-before.png) | ![Home hut at 07:00, clear, low sun (sky-time) after](evidence/2026-10-24/light-grade-0650/sky-hour-07-horizon-after.png) | [Comparison](evidence/2026-10-24/light-grade-0650/sky-hour-07-horizon-comparison.png) |
+| Home hut at 14:00, clear, the sky (sky-time): 8 light steps, erosion .7 | ![Home hut at 14:00, clear, the sky (sky-time): 8 light steps, erosion .7 before](evidence/2026-10-24/light-grade-0650/sky-hour-14-upper-before.png) | ![Home hut at 14:00, clear, the sky (sky-time): 8 light steps, erosion .7 after](evidence/2026-10-24/light-grade-0650/sky-hour-14-upper-after.png) | [Comparison](evidence/2026-10-24/light-grade-0650/sky-hour-14-upper-comparison.png) |
+| Home hut at 20:00, clear, low sun (sky-time) | ![Home hut at 20:00, clear, low sun (sky-time) before](evidence/2026-10-24/light-grade-0650/sky-hour-20-horizon-before.png) | ![Home hut at 20:00, clear, low sun (sky-time) after](evidence/2026-10-24/light-grade-0650/sky-hour-20-horizon-after.png) | [Comparison](evidence/2026-10-24/light-grade-0650/sky-hour-20-horizon-comparison.png) |
+
+Difference metrics:
+- Cliff face from near (b3-distance) threshold `12` changed pixels `739213/2073600` (`35.6488%`) MAE `0.026463`.
+- Open land by day, blizzard (b5-land): the white-out stays white threshold `12` changed pixels `9489/2073600` (`0.4576%`) MAE `0.017284`.
+- Open land by day, clear weather (b5-land): cloud shadows, defined clouds, day grade threshold `12` changed pixels `409296/2073600` (`19.7384%`) MAE `0.025259`.
+- Open land by day, medium snow (b5-land): day grade, no cloud shadows from medium snow on threshold `12` changed pixels `92992/2073600` (`4.4846%`) MAE `0.017826`.
+- Open land at night, clear (b5-land): no grade at night, light vignette only threshold `12` changed pixels `350503/2073600` (`16.9031%`) MAE `0.028074`.
+- Hut front by day, clear (b6-habitat): 2048 px shadows threshold `12` changed pixels `490675/2073600` (`23.6630%`) MAE `0.026551`.
+- Hut at dusk in heavy snow, window lit (b6-habitat): partial day grade threshold `12` changed pixels `1629987/2073600` (`78.6066%`) MAE `0.032704`.
+- Hut interior by day (b6-habitat): no grade indoors, light vignette threshold `12` changed pixels `117493/2073600` (`5.6661%`) MAE `0.017978`.
+- Hut interior at night, stove lit (b6-habitat) threshold `12` changed pixels `272615/2073600` (`13.1469%`) MAE `0.019709`.
+- Hut from 90 m by day (b6-habitat) threshold `12` changed pixels `317760/2073600` (`15.3241%`) MAE `0.021201`.
+- Pole Station from 60 m by day (b6-habitat) threshold `12` changed pixels `1049226/2073600` (`50.5992%`) MAE `0.038168`.
+- Pole Station from 200 m by day (b6-habitat): shadows past the old 150 m threshold `12` changed pixels `840771/2073600` (`40.5464%`) MAE `0.035012`.
+- Home hut at 07:00, clear, low sun (sky-time) threshold `12` changed pixels `371662/2073600` (`17.9235%`) MAE `0.026747`.
+- Home hut at 14:00, clear, the sky (sky-time): 8 light steps, erosion .7 threshold `12` changed pixels `247386/2073600` (`11.9303%`) MAE `0.018518`.
+- Home hut at 20:00, clear, low sun (sky-time) threshold `12` changed pixels `208371/2073600` (`10.0488%`) MAE `0.022676`.
+
+Related documents:[rendering-streaming.md](../systems/rendering-streaming.md) / [current-status.md](../current-status.md) / [design-decisions.md](../../design-decisions.md).
+
+## Keepsakes and personal pasts in conversation
+<!-- project-update-log:2026-10-24:keepsake-stories -->
+
+- Reason：
+  - The user wrote two drafts, twenty keepsakes with a past for each explorer and how that past enters talk and memory, to give conversation an emotional environment.
+  - Before the change explorers spoke 163-415 lines a day to nobody in four recorded live days, kept a rolling 48 lines of talk, saw a keepsake as 'Keepsake x1', and the heaviest request was 3,872 of 3,900 bytes.
+- Implementation：
+  - Package A of docs/engineering/plans/polar-keepsake-stories.md. In new expeditions (PolarGameplayState.pasts) each explorer carries an authored keepsake and has a past (PolarPersonalRecords), carried by its own requests only while someone is within 30 m; a last instruction clause leaves whether and how much to tell to the model, and 'about' tags whose past a reply speaks of.
+  - Words about a past are kept as said (PolarTold, 60 a person, saved) by the speaker and every awake hearer within 30 m, given back as toldBefore when that person is present, and shown in the roster as 'In their words, ...'.
+  - Explorers alone stay silent; speech drops the reasoning order and the disclosure habit; solitary events are forgotten first; the say clause allows telling what happened before; requests may reach 5,200 bytes (Fit aims at 4,900).
+  - A third ready question, 'What did you bring from home?', in new expeditions only; key 0 for a tenth choice; roster rows 160 px with the words line. Older saves keep seeded keepsakes, no pasts and no question.
+- Validation：
+  - Three assemblies compile. Tools/CloudNpcCheck 191 core (47 new) and 43 prompt-bound (heaviest 4,915 of 5,200 bytes) pass, with its physical-event, call, deadline and information-boundary modes; Tools/PolarGameplayCheck keepsake 50 (44), shared 2686, weather/rest/resource 20607.
+  - Live provider, --live-pasts (the twenty as strangers and as familiar company, asked about home and one other ready question, CNY 0.29 a run): the final wording of 'about' gave 80 of 80 valid decisions, all 34 replies naming the keepsake tagged as the explorer's own past, none as the player's, and 6 of 40 replies to the other questions tagged, two of them pasts told unasked; the wording ks-01 carried tagged 23 of 40 (Logs/NpcAgency/live-pasts-03-old-wording.json, -05.json).
+  - Editor rehearsal of the ui checks: 395 pass (7 new).
+  - Seven pairs inspected: npc-offer and talk-home show the fourth choice, 'What did you bring from home?', with the rest renumbered to 8; the roster shows 160 px rows and Adler's 'In their words, day 1, 14:00: ...'; the diary and the end screen name Bell's silver ring where the seeded photograph was; backpack and body are controls.
+  - Package ks-02 (0.6.51-test): gameplay 339 and live 86 pass (Logs/PolarV7/0.6.51-test/ks-02; live CNY 0.43, 136 requests, the largest 4,899 of 5,200 bytes); continue 34 and ui 395 pass on ks-01, which differs only in the wording of about. ks-01's live mode (86 pass) had kept ordinary lines, such as a hut's description, as words about a past, which led to that wording.
+  - Live NPC day of seed 777 from the source (Logs/NpcDayDiagnostic/ks-live-01, CNY 1.59): 20 alive, 643 requests, the largest 3,962 bytes; no explorer spoke with nobody in hearing (recorded days had 163-415 such lines); its 40 lines with nobody within 30 m were all calls, now counted apart.
+- Decisions and scope：User decisions: request bound 5,200 bytes; pasts for new expeditions only; quiet when alone, calmer speech habits and a third ready question in; head turns out; two packages.
+- Remaining work：
+  - Capture variance, not the change: the four early shots (backpack, npc-offer, talk-home, roster) come while the atmosphere still blends toward medium snow in unscaled time (PolarAtmosphere.Update, 20 s), so the hut wall's snow, the falling snow and the fog differ between runs (backpack 16.5% with an identical panel); the later body shot differs by 0.99%. The diary and end screen stand on Bell's body, which fell for 2.5 s of real time and pushes the player's controller out differently, so the hut's corner shows only in the before.
+  - Not captured: the Controls tab's new '1-9, 0, T' row. The offline cloud-scene Editor rehearsal was not repeated after its retry fix (a retry reopens the text line before looking for it); the live Player mode covers the new home step.
+  - Package B follows: explorers talking among themselves when settled by a fire, speech that takes its time, heard lines readable in full.
+
+### Screenshot comparison
+
+| State | Before | After | Difference |
+|---|---|---|---|
+| Backpack with the player's own keepsake (control) | ![Backpack with the player's own keepsake (control) before](evidence/2026-10-24/keepsake-stories/backpack-before.png) | ![Backpack with the player's own keepsake (control) after](evidence/2026-10-24/keepsake-stories/backpack-after.png) | [Comparison](evidence/2026-10-24/keepsake-stories/backpack-comparison.png) |
+| Bell's body and what they carried (control) | ![Bell's body and what they carried (control) before](evidence/2026-10-24/keepsake-stories/body-before.png) | ![Bell's body and what they carried (control) after](evidence/2026-10-24/keepsake-stories/body-after.png) | [Comparison](evidence/2026-10-24/keepsake-stories/body-comparison.png) |
+| Diary after picking up Bell's keepsake | ![Diary after picking up Bell's keepsake before](evidence/2026-10-24/keepsake-stories/diary-before.png) | ![Diary after picking up Bell's keepsake after](evidence/2026-10-24/keepsake-stories/diary-after.png) | [Comparison](evidence/2026-10-24/keepsake-stories/diary-comparison.png) |
+| End screen keepsakes and fates | ![End screen keepsakes and fates before](evidence/2026-10-24/keepsake-stories/ending-before.png) | ![End screen keepsakes and fates after](evidence/2026-10-24/keepsake-stories/ending-after.png) | [Comparison](evidence/2026-10-24/keepsake-stories/ending-comparison.png) |
+| Talk box opened beside Adler | ![Talk box opened beside Adler before](evidence/2026-10-24/keepsake-stories/npc-offer-before.png) | ![Talk box opened beside Adler after](evidence/2026-10-24/keepsake-stories/npc-offer-after.png) | [Comparison](evidence/2026-10-24/keepsake-stories/npc-offer-comparison.png) |
+| Expedition roster after Adler's answer | ![Expedition roster after Adler's answer before](evidence/2026-10-24/keepsake-stories/roster-before.png) | ![Expedition roster after Adler's answer after](evidence/2026-10-24/keepsake-stories/roster-after.png) | [Comparison](evidence/2026-10-24/keepsake-stories/roster-comparison.png) |
+| Talk box after asking Adler about home | ![Talk box after asking Adler about home before](evidence/2026-10-24/keepsake-stories/talk-home-before.png) | ![Talk box after asking Adler about home after](evidence/2026-10-24/keepsake-stories/talk-home-after.png) | [Comparison](evidence/2026-10-24/keepsake-stories/talk-home-comparison.png) |
+
+Difference metrics:
+- Backpack with the player's own keepsake (control) threshold `12` changed pixels `237970/1440000` (`16.5257%`) MAE `0.022010`.
+- Bell's body and what they carried (control) threshold `12` changed pixels `14214/1440000` (`0.9871%`) MAE `0.006573`.
+- Diary after picking up Bell's keepsake threshold `12` changed pixels `33842/1440000` (`2.3501%`) MAE `0.008876`.
+- End screen keepsakes and fates threshold `12` changed pixels `27259/1440000` (`1.8930%`) MAE `0.006261`.
+- Talk box opened beside Adler threshold `12` changed pixels `263228/1440000` (`18.2797%`) MAE `0.026359`.
+- Expedition roster after Adler's answer threshold `12` changed pixels `172180/1440000` (`11.9569%`) MAE `0.021157`.
+- Talk box after asking Adler about home threshold `12` changed pixels `179946/1440000` (`12.4962%`) MAE `0.019555`.
+
+Related documents:[polar-keepsake-stories.md](../plans/polar-keepsake-stories.md) / [polar-cloud-npcs.md](../systems/polar-cloud-npcs.md) / [polar-gameplay.md](../systems/polar-gameplay.md) / [polar-ui.md](../systems/polar-ui.md) / [design-decisions.md](../../design-decisions.md) / [GDD.md](../../GDD.md) / [keepsakes-and-backstories.md](../../narrative/keepsakes-and-backstories.md) / [keepsake-dialogue-and-memory.md](../../narrative/keepsake-dialogue-and-memory.md).
+
+## Period expedition clothing
+<!-- project-update-log:2026-10-24:period-clothing -->
+
+- Reason：The talk close-up put people head to waist on screen and the user found their clothing poor: flat saturated dyes with near-black painted cracks, no fabric relief, modern cuts; the user chose the 1920s-1930s expedition look on today's models.
+- Implementation：
+  - Owned period fabric maps for every coat, cap, trouser and boot texture (Tools/polar_garment_maps.py with Tools/polar_fbx_uv.py): albedo with a dye mask in alpha, normal and mask maps in each source's uv layout; painted stains, stripes, labels, the cap badge and camouflage removed.
+  - HabitatSurface kind 4 dyes through the albedo's alpha (natural sheepskin collars keep their colour); PolarPeriodClothingAuthor binds the maps (136 recipes, eyes non-metal); period clothing is the default (PolarArtSettings.periodClothing true).
+  - Survivors' beards alpha-clipped and double-sided; the 21 portraits (also the keepsake photos) re-rendered under HDRP in the new clothing (PolarArtCapture portraits, Tools/polar_portraits.py).
+- Validation：
+  - Three assemblies compile; the period author passes (palette minimum dE 11.5, original catalog hash unchanged).
+  - Package cl-01: gameplay 339, performance 59 and ui 395 pass (Logs/PolarV7/0.6.52-test/cl-01); hut-to-hut walk P95 16.69 ms (16.68 before); gameplay peak 6.52 GB.
+  - Editor frame medians with seven people in view: 10.65 and 11.66 ms old clothing, 12.14 and 9.80 ms new, within noise.
+- Decisions and scope：Supersedes the October 15 choice to keep the original clothing (design-decisions, October 24).
+- Remaining work：Packs, scarves, straps, hoods and goggles keep primitive shapes in flat colour; Winter-bodied beards stay painted on the faces; gloves are plain leather; no skin scattering.
+
+### Screenshot comparison
+
+| State | Before | After | Difference |
+|---|---|---|---|
+| Adler (overcoat), front, 2.7 m | ![Adler (overcoat), front, 2.7 m before](evidence/2026-10-24/period-clothing/adler-front-before.png) | ![Adler (overcoat), front, 2.7 m after](evidence/2026-10-24/period-clothing/adler-front-after.png) | [Comparison](evidence/2026-10-24/period-clothing/adler-front-comparison.png) |
+| Adler head and shoulders, 1.3 m | ![Adler head and shoulders, 1.3 m before](evidence/2026-10-24/period-clothing/adler-head-before.png) | ![Adler head and shoulders, 1.3 m after](evidence/2026-10-24/period-clothing/adler-head-after.png) | [Comparison](evidence/2026-10-24/period-clothing/adler-head-comparison.png) |
+| Talking to Adler: the close-up | ![Talking to Adler: the close-up before](evidence/2026-10-24/period-clothing/adler-talk-before.png) | ![Talking to Adler: the close-up after](evidence/2026-10-24/period-clothing/adler-talk-after.png) | [Comparison](evidence/2026-10-24/period-clothing/adler-talk-comparison.png) |
+| Frost (survivor shirt), front, 2.7 m | ![Frost (survivor shirt), front, 2.7 m before](evidence/2026-10-24/period-clothing/frost-front-before.png) | ![Frost (survivor shirt), front, 2.7 m after](evidence/2026-10-24/period-clothing/frost-front-after.png) | [Comparison](evidence/2026-10-24/period-clothing/frost-front-comparison.png) |
+| All 21 at 30 m | ![All 21 at 30 m before](evidence/2026-10-24/period-clothing/lineup-30m-before.png) | ![All 21 at 30 m after](evidence/2026-10-24/period-clothing/lineup-30m-after.png) | [Comparison](evidence/2026-10-24/period-clothing/lineup-30m-comparison.png) |
+| All 21 people, back, 2.7 m (sheet) | ![All 21 people, back, 2.7 m (sheet) before](evidence/2026-10-24/period-clothing/people-back-before.png) | ![All 21 people, back, 2.7 m (sheet) after](evidence/2026-10-24/period-clothing/people-back-after.png) | [Comparison](evidence/2026-10-24/period-clothing/people-back-comparison.png) |
+| All 21 people, front, 2.7 m (sheet) | ![All 21 people, front, 2.7 m (sheet) before](evidence/2026-10-24/period-clothing/people-front-before.png) | ![All 21 people, front, 2.7 m (sheet) after](evidence/2026-10-24/period-clothing/people-front-after.png) | [Comparison](evidence/2026-10-24/period-clothing/people-front-comparison.png) |
+| The 21 roster portraits (also the keepsake photos) | ![The 21 roster portraits (also the keepsake photos) before](evidence/2026-10-24/period-clothing/portraits-before.png) | ![The 21 roster portraits (also the keepsake photos) after](evidence/2026-10-24/period-clothing/portraits-after.png) | [Comparison](evidence/2026-10-24/period-clothing/portraits-comparison.png) |
+| Shaw head and shoulders, 1.3 m | ![Shaw head and shoulders, 1.3 m before](evidence/2026-10-24/period-clothing/shaw-head-before.png) | ![Shaw head and shoulders, 1.3 m after](evidence/2026-10-24/period-clothing/shaw-head-after.png) | [Comparison](evidence/2026-10-24/period-clothing/shaw-head-comparison.png) |
+
+Difference metrics:
+- Adler (overcoat), front, 2.7 m threshold `12` changed pixels `44491/2073600` (`2.1456%`) MAE `0.002899`.
+- Adler head and shoulders, 1.3 m threshold `12` changed pixels `165344/2073600` (`7.9738%`) MAE `0.006078`.
+- Talking to Adler: the close-up threshold `12` changed pixels `112563/1440000` (`7.8169%`) MAE `0.010072`.
+- Frost (survivor shirt), front, 2.7 m threshold `12` changed pixels `10508/2073600` (`0.5068%`) MAE `0.002748`.
+- All 21 at 30 m threshold `12` changed pixels `10040/2073600` (`0.4842%`) MAE `0.002023`.
+- All 21 people, back, 2.7 m (sheet) threshold `12` changed pixels `308179/4762800` (`6.4705%`) MAE `0.008800`.
+- All 21 people, front, 2.7 m (sheet) threshold `12` changed pixels `327430/4762800` (`6.8747%`) MAE `0.010226`.
+- The 21 roster portraits (also the keepsake photos) threshold `12` changed pixels `3758477/3870720` (`97.1002%`) MAE `0.348795`.
+- Shaw head and shoulders, 1.3 m threshold `12` changed pixels `118052/2073600` (`5.6931%`) MAE `0.005334`.
+
+Related documents:[rendering-streaming.md](../systems/rendering-streaming.md) / [design-decisions.md](../../design-decisions.md) / [third-party-assets.md](../../art/third-party-assets.md).
+
+## Explorers talk by the fire, speech takes its time, heard lines readable in full
+<!-- project-update-log:2026-10-24:heard-lines -->
+
+- Reason：
+  - Package B of the user's keepsake drafts: explorers should talk among themselves when settled together, at a pace the player can follow, and what the player overhears should be readable.
+  - Before the change nothing asked explorers sitting together to talk (Package A's live day had no meeting within 30 m), a hearer decided the moment words were spoken, and heard lines were one line cut with an ellipsis at 760 px, gone after 8 s, a fourth pushing the oldest out.
+- Implementation：
+  - Settled company (PolarNpcDirector.Settle): an explorer awake at a lit hut stove or tent burner with someone else awake there is asked once a stay, 40 game seconds in and when its own last words are 150 game seconds old, whether to talk, rest or keep busy, about the companion it spoke with least recently; the model decides and silence is an answer.
+  - Speech takes its time: heard words ask the hearer after 1 s for every 15 characters (Notice.notBefore); an urgent reason never waits behind earlier words; the player's own words are answered at once as before.
+  - Heard lines (PolarMvpUi.Hud): wrap to three lines in a plate as tall as its text, the oldest at the top and the newest at the foot, nothing above y 470; each stays 8 s, or 3 s and 1 s for every 15 characters, from when it shows; later lines wait instead of pushing earlier ones out.
+  - PolarNpcDayDiagnostic -npcDiagnosticDays <n>, with lines to other explorers, nudges and the player's added food and oil in the summary; a fire scene in the live mode; acceptance scenes clear earlier heard lines before reading a new one (ClearHeard), and the quick-bar name check carries two tins.
+- Validation：
+  - Three assemblies compile; Tools/CloudNpcCheck 204 core (13 new), 7 physical-event, 3 call, 43 prompt-bound (largest 4,915 of 5,200 bytes), 2 deadline and 3 information-boundary checks pass.
+  - Editor rehearsal of the ui checks: 413 pass, among them the 314-character overheard line wrapping to three lines, still shown nine seconds later with world time running, and the heard layouts at four resolutions.
+  - Capture pair heard (identical fixtures): before, the 298-character line is one line ending in an ellipsis under the short line; after, it reads in full on three lines with the short line above it.
+  - Package bf-01: ui 413 pass; gameplay failed one check (an explorer's call waited behind three heard lines held by the acceptance's frozen clock) and live never reached the provider (the hourly ledger was read while the three-day Editor run rewrote it). bf-02 adds only test code: gameplay 339 and live 90 pass; by the fire Frost and Grant talked terms for the stove's warmth and both lines showed whole (live 136 requests, largest 4,900 bytes, 0.39 yuan).
+  - Three live days (Logs/NpcDayDiagnostic/bf-live-01, 3.46 yuan, 1,274 requests, largest 4,389 bytes): no two explorers ever shared a lit fire, so no nudge was sent and nobody spoke to anyone; all twenty died, mostly on the second day, hungry and cold outdoors (23 eat commands in three days; ten never ate), with satiety as low at the end of the first day as in Package A's one-day run.
+- Decisions and scope：From the approved plan: head turns between explorers out; no caps, scores or lines added by the engine; gathering more often decided only if the three-day run shows the need.
+- Remaining work：
+  - How explorers feed themselves under model agency, and whether they should gather more often, is for the user to decide.
+  - NpcApiBudget counts a ledger it cannot read as a spent hour, so two game processes can lock each other out for an hour; not changed.
+
+### Screenshot comparison
+
+| State | Before | After | Difference |
+|---|---|---|---|
+| Heard lines: a short line and a 298-character line overheard | ![Heard lines: a short line and a 298-character line overheard before](evidence/2026-10-24/heard-lines/heard-before.png) | ![Heard lines: a short line and a 298-character line overheard after](evidence/2026-10-24/heard-lines/heard-after.png) | [Comparison](evidence/2026-10-24/heard-lines/heard-comparison.png) |
+
+Difference metrics:
+- Heard lines: a short line and a 298-character line overheard threshold `12` changed pixels `39042/1440000` (`2.7113%`) MAE `0.007994`.
+
+Related documents:[polar-keepsake-stories.md](../plans/polar-keepsake-stories.md) / [polar-cloud-npcs.md](../systems/polar-cloud-npcs.md) / [polar-ui.md](../systems/polar-ui.md) / [design-decisions.md](../../design-decisions.md) / [GDD.md](../../GDD.md).
+
+## Open items: explorers starving and never meeting under model agency
+<!-- project-update-log:2026-10-24:npc-survival-open-items -->
+
+- Reason：The user asked for the causes found in the three-day live run (no fire meetings, all twenty explorers dead of hunger and cold) to be recorded now and fixed later.
+- Implementation：Recorded as open items in the NPC system document, the current status and the keepsake plan: the explorers' instructions lack the handbook's body rules (satiety under 40 or a core temperature under 35 C drains HP, and HP 0 is death), with the evidence from ten agency days and bf-live-01; the proposed least change (one 148-byte sentence from the save's rule values after the commands) and how to verify it; the contributing causes (no starting food or oil, a failed command ending the whole plan, two misleading failure texts); why nobody meets (homes 1.6-4.4 km apart, central huts 10-13 km away, Pole Station missing from explorers' charts); and the NpcApiBudget ledger lockout.
+- Validation：Figures re-read from Logs/NpcDayDiagnostic: the ten agency days ended day one with 7-13 explorers under satiety 40 and 4-13 under 35 C; camp-0621, rivers-v17 and tents-777 with none, at a median satiety of 60 and 37 C; bf-live-01 with 15 and 15.
+- Remaining work：The fix itself, the starting kit and failure texts, Pole Station on explorers' charts and the ledger read wait for the user.
+- Visual evidence:Only engineering documents change; no code, asset or displayed text is touched, so no pixels can change.
+
+Related documents:[polar-cloud-npcs.md](../systems/polar-cloud-npcs.md) / [current-status.md](../current-status.md) / [polar-keepsake-stories.md](../plans/polar-keepsake-stories.md).
+
+## Clear-day light rebalance: a thinner clear-day cloud deck for a darker blue sky, with the clear-day exposure recalibrated so snow stays white
+<!-- project-update-log:2026-10-24:sun-sky-balance -->
+
+- Reason：The light and grade package (0.6.50-test) found the sun giving only about a fifth of sunlit snow's light on a clear day, so shadows and cloud shadows stayed soft; the user asked for clear days where the sun dominates, with a darker blue sky and white snow.
+- Implementation：
+  - Clear-day cloud deck density .12 instead of the weather's .45 (PolarArtCelestialSettings.clearDayCloudDensity, weighted by ClearVisibility in PolarArtCelestialPresentation.Apply); clear nights keep their deck.
+  - The day side's exposure opens by 0.8 EV in clear weather (PolarArtSettings.clearSkyExposureLift x ClearVisibility, on dayEV only in PolarHdrpPresentation), so sunlit snow keeps its brightness; nights, the 06:00/22:00 handover and every snow grade keep theirs.
+- Validation：
+  - Sun share of sunlit snow's light at 14:00 (held b2-hold fixture, linear) 22% to 45%; the sky bluer (blue minus red +6 to +33) and about a tenth darker; snow brightness kept (mean linear .529 to .532).
+  - Frames meant to be unchanged (medium snow to blizzard, clear nights, 06:00 and 22:00) differ by at most 0.7/255 on average.
+  - Three assemblies compile; package sb-01 (0.6.54-test): gameplay 339 and weather 80 pass (Logs/PolarV7/0.6.54-test/sb-01).
+- Decisions and scope：The user chose density .12 with +0.8 EV as it is and accepted the side effect on interiors by day (dark rooms 0.3-1.1 EV lighter, all cooler); the darker-sky step (the sky's exposure -1 EV) was previewed and not taken.
+- Remaining work：The darker-sky step, if wanted: it needs care with PolarHdrpSkyArt's stepped sky radiance, which also lights the clouds, interiors and the moon.
+
+### Screenshot comparison
+
+| State | Before | After | Difference |
+|---|---|---|---|
+| Open land by day, blizzard (b5-land): unchanged | ![Open land by day, blizzard (b5-land): unchanged before](evidence/2026-10-24/sun-sky-balance/b5-land-day-blizzard-before.png) | ![Open land by day, blizzard (b5-land): unchanged after](evidence/2026-10-24/sun-sky-balance/b5-land-day-blizzard-after.png) | [Comparison](evidence/2026-10-24/sun-sky-balance/b5-land-day-blizzard-comparison.png) |
+| Open land by day, clear (b5-land): thinner deck, bluer sky, snow brightness kept by the +0.8 EV lift | ![Open land by day, clear (b5-land): thinner deck, bluer sky, snow brightness kept by the +0.8 EV lift before](evidence/2026-10-24/sun-sky-balance/b5-land-day-clear-before.png) | ![Open land by day, clear (b5-land): thinner deck, bluer sky, snow brightness kept by the +0.8 EV lift after](evidence/2026-10-24/sun-sky-balance/b5-land-day-clear-after.png) | [Comparison](evidence/2026-10-24/sun-sky-balance/b5-land-day-clear-comparison.png) |
+| Open land by day, medium snow (b5-land): unchanged, every snow grade keeps its deck and exposure | ![Open land by day, medium snow (b5-land): unchanged, every snow grade keeps its deck and exposure before](evidence/2026-10-24/sun-sky-balance/b5-land-day-medium-before.png) | ![Open land by day, medium snow (b5-land): unchanged, every snow grade keeps its deck and exposure after](evidence/2026-10-24/sun-sky-balance/b5-land-day-medium-after.png) | [Comparison](evidence/2026-10-24/sun-sky-balance/b5-land-day-medium-comparison.png) |
+| Open land at night, clear (b5-land): unchanged | ![Open land at night, clear (b5-land): unchanged before](evidence/2026-10-24/sun-sky-balance/b5-land-night-clear-before.png) | ![Open land at night, clear (b5-land): unchanged after](evidence/2026-10-24/sun-sky-balance/b5-land-night-clear-after.png) | [Comparison](evidence/2026-10-24/sun-sky-balance/b5-land-night-clear-comparison.png) |
+| Hut entrance drift by day, clear (b6-habitat): blue shadow beside the drift | ![Hut entrance drift by day, clear (b6-habitat): blue shadow beside the drift before](evidence/2026-10-24/sun-sky-balance/b6-entrance-snow-00-before.png) | ![Hut entrance drift by day, clear (b6-habitat): blue shadow beside the drift after](evidence/2026-10-24/sun-sky-balance/b6-entrance-snow-00-after.png) | [Comparison](evidence/2026-10-24/sun-sky-balance/b6-entrance-snow-00-comparison.png) |
+| Hut front by day, clear (b6-habitat): the hut's shadow reads | ![Hut front by day, clear (b6-habitat): the hut's shadow reads before](evidence/2026-10-24/sun-sky-balance/b6-ext-day-front-before.png) | ![Hut front by day, clear (b6-habitat): the hut's shadow reads after](evidence/2026-10-24/sun-sky-balance/b6-ext-day-front-after.png) | [Comparison](evidence/2026-10-24/sun-sky-balance/b6-ext-day-front-comparison.png) |
+| Hut interior by day (b6-habitat): about 0.5 EV brighter and cooler, a side effect of the lift | ![Hut interior by day (b6-habitat): about 0.5 EV brighter and cooler, a side effect of the lift before](evidence/2026-10-24/sun-sky-balance/b6-int-room-day-before.png) | ![Hut interior by day (b6-habitat): about 0.5 EV brighter and cooler, a side effect of the lift after](evidence/2026-10-24/sun-sky-balance/b6-int-room-day-after.png) | [Comparison](evidence/2026-10-24/sun-sky-balance/b6-int-room-day-comparison.png) |
+| Hut interior by day at the stove (b6-habitat): cooler ambient from the blue sky | ![Hut interior by day at the stove (b6-habitat): cooler ambient from the blue sky before](evidence/2026-10-24/sun-sky-balance/b6-int-stove-day-unlit-before.png) | ![Hut interior by day at the stove (b6-habitat): cooler ambient from the blue sky after](evidence/2026-10-24/sun-sky-balance/b6-int-stove-day-unlit-after.png) | [Comparison](evidence/2026-10-24/sun-sky-balance/b6-int-stove-day-unlit-comparison.png) |
+| Pole Station from 200 m by day, clear (b6-habitat) | ![Pole Station from 200 m by day, clear (b6-habitat) before](evidence/2026-10-24/sun-sky-balance/b6-station-ext-day-200m-before.png) | ![Pole Station from 200 m by day, clear (b6-habitat) after](evidence/2026-10-24/sun-sky-balance/b6-station-ext-day-200m-after.png) | [Comparison](evidence/2026-10-24/sun-sky-balance/b6-station-ext-day-200m-comparison.png) |
+| Home hut at 06:00, clear, the handover (sky-time): unchanged, clear nights keep their deck | ![Home hut at 06:00, clear, the handover (sky-time): unchanged, clear nights keep their deck before](evidence/2026-10-24/sun-sky-balance/sky-hour-06-horizon-before.png) | ![Home hut at 06:00, clear, the handover (sky-time): unchanged, clear nights keep their deck after](evidence/2026-10-24/sun-sky-balance/sky-hour-06-horizon-after.png) | [Comparison](evidence/2026-10-24/sun-sky-balance/sky-hour-06-horizon-comparison.png) |
+| Home hut at 07:00, clear, low sun (sky-time): snow kept, blue shade | ![Home hut at 07:00, clear, low sun (sky-time): snow kept, blue shade before](evidence/2026-10-24/sun-sky-balance/sky-hour-07-horizon-before.png) | ![Home hut at 07:00, clear, low sun (sky-time): snow kept, blue shade after](evidence/2026-10-24/sun-sky-balance/sky-hour-07-horizon-after.png) | [Comparison](evidence/2026-10-24/sun-sky-balance/sky-hour-07-horizon-comparison.png) |
+| Home hut at 14:00, clear, the horizon (sky-time) | ![Home hut at 14:00, clear, the horizon (sky-time) before](evidence/2026-10-24/sun-sky-balance/sky-hour-14-horizon-before.png) | ![Home hut at 14:00, clear, the horizon (sky-time) after](evidence/2026-10-24/sun-sky-balance/sky-hour-14-horizon-after.png) | [Comparison](evidence/2026-10-24/sun-sky-balance/sky-hour-14-horizon-comparison.png) |
+| Home hut at 14:00, clear, the sky (sky-time): clear-day deck density .45 to .12 | ![Home hut at 14:00, clear, the sky (sky-time): clear-day deck density .45 to .12 before](evidence/2026-10-24/sun-sky-balance/sky-hour-14-upper-before.png) | ![Home hut at 14:00, clear, the sky (sky-time): clear-day deck density .45 to .12 after](evidence/2026-10-24/sun-sky-balance/sky-hour-14-upper-after.png) | [Comparison](evidence/2026-10-24/sun-sky-balance/sky-hour-14-upper-comparison.png) |
+| Home hut at 20:00, clear, low sun (sky-time) | ![Home hut at 20:00, clear, low sun (sky-time) before](evidence/2026-10-24/sun-sky-balance/sky-hour-20-horizon-before.png) | ![Home hut at 20:00, clear, low sun (sky-time) after](evidence/2026-10-24/sun-sky-balance/sky-hour-20-horizon-after.png) | [Comparison](evidence/2026-10-24/sun-sky-balance/sky-hour-20-horizon-comparison.png) |
+
+Difference metrics:
+- Open land by day, blizzard (b5-land): unchanged threshold `12` changed pixels `4/2073600` (`0.0002%`) MAE `0.000628`.
+- Open land by day, clear (b5-land): thinner deck, bluer sky, snow brightness kept by the +0.8 EV lift threshold `12` changed pixels `756084/2073600` (`36.4624%`) MAE `0.035668`.
+- Open land by day, medium snow (b5-land): unchanged, every snow grade keeps its deck and exposure threshold `12` changed pixels `54/2073600` (`0.0026%`) MAE `0.002705`.
+- Open land at night, clear (b5-land): unchanged threshold `12` changed pixels `1003/2073600` (`0.0484%`) MAE `0.001114`.
+- Hut entrance drift by day, clear (b6-habitat): blue shadow beside the drift threshold `12` changed pixels `1462352/2073600` (`70.5224%`) MAE `0.061300`.
+- Hut front by day, clear (b6-habitat): the hut's shadow reads threshold `12` changed pixels `1261067/2073600` (`60.8153%`) MAE `0.049057`.
+- Hut interior by day (b6-habitat): about 0.5 EV brighter and cooler, a side effect of the lift threshold `12` changed pixels `930011/2073600` (`44.8501%`) MAE `0.040535`.
+- Hut interior by day at the stove (b6-habitat): cooler ambient from the blue sky threshold `12` changed pixels `929544/2073600` (`44.8275%`) MAE `0.052232`.
+- Pole Station from 200 m by day, clear (b6-habitat) threshold `12` changed pixels `2072669/2073600` (`99.9551%`) MAE `0.083009`.
+- Home hut at 06:00, clear, the handover (sky-time): unchanged, clear nights keep their deck threshold `12` changed pixels `721/2073600` (`0.0348%`) MAE `0.001381`.
+- Home hut at 07:00, clear, low sun (sky-time): snow kept, blue shade threshold `12` changed pixels `2062034/2073600` (`99.4422%`) MAE `0.055577`.
+- Home hut at 14:00, clear, the horizon (sky-time) threshold `12` changed pixels `775883/2073600` (`37.4172%`) MAE `0.036031`.
+- Home hut at 14:00, clear, the sky (sky-time): clear-day deck density .45 to .12 threshold `12` changed pixels `1281760/2073600` (`61.8133%`) MAE `0.049483`.
+- Home hut at 20:00, clear, low sun (sky-time) threshold `12` changed pixels `1844077/2073600` (`88.9312%`) MAE `0.043964`.
+
+Related documents:[rendering-streaming.md](../systems/rendering-streaming.md) / [current-status.md](../current-status.md) / [design-decisions.md](../../design-decisions.md).
+
+## People's kit: scarves, packs, straps, fur and beards
+<!-- project-update-log:2026-10-24:people-kit -->
+
+- Reason：The user asked for Package B of the clothing upgrade: the kit was Unity boxes and cylinders in flat colour, straps chains of stretched boxes, and the Winter-bodied people's beards painted on their 512 px faces.
+- Implementation：
+  - PolarPeopleKitAuthor re-makes the 21 people's kit in place: soft canvas packs, pockets, satchels and rolls with world-scaled uvs, two folded wraps for each scarf, one continuous stitched leather band for each strap and sash, fur cards on the parka hoods and hair-card beards for the nine bearded Winter-bodied people.
+  - Tools/polar_kit_maps.py writes owned canvas, knit, wool, leather, glove and fur maps; PolarPeriodClothingAuthor binds them (138 recipes) and paints dark wool underclothes below the survivors' necks; the portraits are re-rendered.
+- Validation：
+  - Nine genuine pairs: PolarArtCapture phases kit-before and kit-after-h, PolarFiveAreasCapture talk.
+  - Package kt-01: gameplay 339, performance 59 and ui 413 pass (Logs/PolarV7/0.6.55-test/kt-01); hut-to-hut walk P95 16.71 ms at the 60 Hz cap; gameplay peak 6.58 GB.
+  - Editor, seven people filling the view: frame medians 10.73 and 10.72 ms with the kit, 11.09 ms without.
+- Decisions and scope：
+  - A strap chain's last point lies at most 3 cm in front of the one before it: a rule for every point below the shoulder flattened all strap fronts into the coat.
+  - The survivors' undershirt is painted into the body texture; their own T-shirt mesh clipped through the shirt.
+- Remaining work：Goggles stay primitives and fur caps have no fur cards; new character models later.
+
+### Screenshot comparison
+
+| State | Before | After | Difference |
+|---|---|---|---|
+| Adler from behind: frame pack and straps | ![Adler from behind: frame pack and straps before](evidence/2026-10-24/people-kit/adler-back-before.png) | ![Adler from behind: frame pack and straps after](evidence/2026-10-24/people-kit/adler-back-after.png) | [Comparison](evidence/2026-10-24/people-kit/adler-back-comparison.png) |
+| Talking to Adler: the close-up | ![Talking to Adler: the close-up before](evidence/2026-10-24/people-kit/adler-talk-before.png) | ![Talking to Adler: the close-up after](evidence/2026-10-24/people-kit/adler-talk-after.png) | [Comparison](evidence/2026-10-24/people-kit/adler-talk-comparison.png) |
+| Bell from the side: hood ruff, duffel and sash | ![Bell from the side: hood ruff, duffel and sash before](evidence/2026-10-24/people-kit/bell-side-before.png) | ![Bell from the side: hood ruff, duffel and sash after](evidence/2026-10-24/people-kit/bell-side-after.png) | [Comparison](evidence/2026-10-24/people-kit/bell-side-comparison.png) |
+| Dale head and shoulders, 1.3 m | ![Dale head and shoulders, 1.3 m before](evidence/2026-10-24/people-kit/dale-head-before.png) | ![Dale head and shoulders, 1.3 m after](evidence/2026-10-24/people-kit/dale-head-after.png) | [Comparison](evidence/2026-10-24/people-kit/dale-head-comparison.png) |
+| Ellis from the side: satchel and sash | ![Ellis from the side: satchel and sash before](evidence/2026-10-24/people-kit/ellis-side-before.png) | ![Ellis from the side: satchel and sash after](evidence/2026-10-24/people-kit/ellis-side-after.png) | [Comparison](evidence/2026-10-24/people-kit/ellis-side-comparison.png) |
+| Frost from behind: rucksack and blanket roll | ![Frost from behind: rucksack and blanket roll before](evidence/2026-10-24/people-kit/frost-back-before.png) | ![Frost from behind: rucksack and blanket roll after](evidence/2026-10-24/people-kit/frost-back-after.png) | [Comparison](evidence/2026-10-24/people-kit/frost-back-comparison.png) |
+| All 21 people, back, 2.7 m (sheet) | ![All 21 people, back, 2.7 m (sheet) before](evidence/2026-10-24/people-kit/people-back-before.png) | ![All 21 people, back, 2.7 m (sheet) after](evidence/2026-10-24/people-kit/people-back-after.png) | [Comparison](evidence/2026-10-24/people-kit/people-back-comparison.png) |
+| All 21 people, front, 2.7 m (sheet) | ![All 21 people, front, 2.7 m (sheet) before](evidence/2026-10-24/people-kit/people-front-before.png) | ![All 21 people, front, 2.7 m (sheet) after](evidence/2026-10-24/people-kit/people-front-after.png) | [Comparison](evidence/2026-10-24/people-kit/people-front-comparison.png) |
+| The 21 roster portraits (also the keepsake photos) | ![The 21 roster portraits (also the keepsake photos) before](evidence/2026-10-24/people-kit/portraits-before.png) | ![The 21 roster portraits (also the keepsake photos) after](evidence/2026-10-24/people-kit/portraits-after.png) | [Comparison](evidence/2026-10-24/people-kit/portraits-comparison.png) |
+
+Difference metrics:
+- Adler from behind: frame pack and straps threshold `12` changed pixels `37229/2073600` (`1.7954%`) MAE `0.004126`.
+- Talking to Adler: the close-up threshold `12` changed pixels `78420/1440000` (`5.4458%`) MAE `0.011371`.
+- Bell from the side: hood ruff, duffel and sash threshold `12` changed pixels `10817/2073600` (`0.5217%`) MAE `0.002064`.
+- Dale head and shoulders, 1.3 m threshold `12` changed pixels `49323/2073600` (`2.3786%`) MAE `0.006312`.
+- Ellis from the side: satchel and sash threshold `12` changed pixels `19381/2073600` (`0.9347%`) MAE `0.002083`.
+- Frost from behind: rucksack and blanket roll threshold `12` changed pixels `25423/2073600` (`1.2260%`) MAE `0.003088`.
+- All 21 people, back, 2.7 m (sheet) threshold `12` changed pixels `187896/4762800` (`3.9451%`) MAE `0.005832`.
+- All 21 people, front, 2.7 m (sheet) threshold `12` changed pixels `90187/4762800` (`1.8936%`) MAE `0.004012`.
+- The 21 roster portraits (also the keepsake photos) threshold `12` changed pixels `394801/3870720` (`10.1997%`) MAE `0.016787`.
+
+Related documents:[rendering-streaming.md](../systems/rendering-streaming.md) / [design-decisions.md](../../design-decisions.md) / [current-status.md](../current-status.md).

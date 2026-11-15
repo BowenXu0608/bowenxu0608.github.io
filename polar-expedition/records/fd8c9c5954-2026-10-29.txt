@@ -1,0 +1,273 @@
+docs/engineering/logs/2026-10-29.md
+
+# 2026-10-29 Engineering log
+
+## Breath from the player's mouth
+<!-- project-update-log:2026-10-29:breath-from-mouth -->
+
+- Reason：The user's playtest of 0.6.76-test: the player's own breath started somewhere in the space in front of them instead of from their mouth; in first person it should look like their own breath.
+- Implementation：The player's breath leaves the mouth, 11 cm below and 9 cm before the eye (was 25 cm before it), under the view's lower edge, and rises into the view. Breath leaves at 0.6-1.2 m/s (was 0.35-0.8) with the mouth's own motion, for everyone; the breath materials' near fade is 0.15 m (was 0.3). Package 0.6.78-test, build bm-01.
+- Validation：Seven before/after cases: in fp-open-clear the cloud now rises from the bottom edge and drifts off with the crosswind, where before it hung mid-view; the blizzard headwind case rises from the bottom toward the hut; explorers still breathe from their own mouths. gameplay 382 and weather 80 pass on bm-01 with no exception; weather P95 16.68-16.77 ms.
+- Remaining work：The user judges it in play, walking as well as standing (the captures stand still). Against bright snow the cloud is faint, as breath is; the player's share of opacity stays .5.
+
+### Screenshot comparison
+
+| State | Before | After | Difference |
+|---|---|---|---|
+| adler-crosswind, frames 0-8 every 0.5 s | ![adler-crosswind, frames 0-8 every 0.5 s before](evidence/2026-10-29/breath-from-mouth/adler-crosswind-before.png) | ![adler-crosswind, frames 0-8 every 0.5 s after](evidence/2026-10-29/breath-from-mouth/adler-crosswind-after.png) | [Comparison](evidence/2026-10-29/breath-from-mouth/adler-crosswind-comparison.png) |
+| adler-hut-cold, frames 0-8 every 0.5 s | ![adler-hut-cold, frames 0-8 every 0.5 s before](evidence/2026-10-29/breath-from-mouth/adler-hut-cold-before.png) | ![adler-hut-cold, frames 0-8 every 0.5 s after](evidence/2026-10-29/breath-from-mouth/adler-hut-cold-after.png) | [Comparison](evidence/2026-10-29/breath-from-mouth/adler-hut-cold-comparison.png) |
+| adler-hut-warm, frames 0-8 every 0.5 s | ![adler-hut-warm, frames 0-8 every 0.5 s before](evidence/2026-10-29/breath-from-mouth/adler-hut-warm-before.png) | ![adler-hut-warm, frames 0-8 every 0.5 s after](evidence/2026-10-29/breath-from-mouth/adler-hut-warm-after.png) | [Comparison](evidence/2026-10-29/breath-from-mouth/adler-hut-warm-comparison.png) |
+| fp-blizzard-headwind, frames 0-8 every 0.5 s | ![fp-blizzard-headwind, frames 0-8 every 0.5 s before](evidence/2026-10-29/breath-from-mouth/fp-blizzard-headwind-before.png) | ![fp-blizzard-headwind, frames 0-8 every 0.5 s after](evidence/2026-10-29/breath-from-mouth/fp-blizzard-headwind-after.png) | [Comparison](evidence/2026-10-29/breath-from-mouth/fp-blizzard-headwind-comparison.png) |
+| fp-open-clear, frames 0-8 every 0.5 s | ![fp-open-clear, frames 0-8 every 0.5 s before](evidence/2026-10-29/breath-from-mouth/fp-open-clear-before.png) | ![fp-open-clear, frames 0-8 every 0.5 s after](evidence/2026-10-29/breath-from-mouth/fp-open-clear-after.png) | [Comparison](evidence/2026-10-29/breath-from-mouth/fp-open-clear-comparison.png) |
+| other-night, frames 0-8 every 0.5 s | ![other-night, frames 0-8 every 0.5 s before](evidence/2026-10-29/breath-from-mouth/other-night-before.png) | ![other-night, frames 0-8 every 0.5 s after](evidence/2026-10-29/breath-from-mouth/other-night-after.png) | [Comparison](evidence/2026-10-29/breath-from-mouth/other-night-comparison.png) |
+| other-tent-lit, frames 0-8 every 0.5 s | ![other-tent-lit, frames 0-8 every 0.5 s before](evidence/2026-10-29/breath-from-mouth/other-tent-lit-before.png) | ![other-tent-lit, frames 0-8 every 0.5 s after](evidence/2026-10-29/breath-from-mouth/other-tent-lit-after.png) | [Comparison](evidence/2026-10-29/breath-from-mouth/other-tent-lit-comparison.png) |
+
+Difference metrics:
+- adler-crosswind, frames 0-8 every 0.5 s threshold `12` changed pixels `24552/1439100` (`1.7061%`) MAE `0.002669`.
+- adler-hut-cold, frames 0-8 every 0.5 s threshold `12` changed pixels `770/1439100` (`0.0535%`) MAE `0.000139`.
+- adler-hut-warm, frames 0-8 every 0.5 s threshold `12` changed pixels `4/1439100` (`0.0003%`) MAE `0.000048`.
+- fp-blizzard-headwind, frames 0-8 every 0.5 s threshold `12` changed pixels `6169/1439100` (`0.4287%`) MAE `0.000638`.
+- fp-open-clear, frames 0-8 every 0.5 s threshold `12` changed pixels `16728/1439100` (`1.1624%`) MAE `0.001742`.
+- other-night, frames 0-8 every 0.5 s threshold `12` changed pixels `17432/1439100` (`1.2113%`) MAE `0.001995`.
+- other-tent-lit, frames 0-8 every 0.5 s threshold `12` changed pixels `27762/1439100` (`1.9291%`) MAE `0.004692`.
+
+Related documents:[rendering-streaming.md](../systems/rendering-streaming.md).
+
+## Disk cleanup size accounting
+<!-- project-update-log:2026-10-29:disk-cleanup-size -->
+
+- Reason：The cleanup script stopped while measuring paths because its robocopy summary parser indexed an empty array.
+- Implementation：Sum Int64 file lengths directly, include hidden files, exclude junction/symlink targets and stop with the offending path on a read failure. Cleanup selection and deletion logic are unchanged.
+- Validation：Reproduced the old empty-array failure using a summary without the expected English label. Nine focused checks pass in each of PowerShell 7.6.5 and Windows PowerShell 5.1.26100.9756. The full default preview succeeds: 519.6 GB estimated; no cleanup executed. Outputs and original backup: Logs/CleanDiskCheck/2026-10-29-size/.
+- Remaining work：The exact original robocopy output was unavailable; no deletion run or game validation is claimed.
+- Visual evidence:Only a maintenance PowerShell script and engineering records change; no runtime code, assets or player-visible pixels change.
+
+Related documents:[change-logging.md](../systems/change-logging.md) / [current-status.md](../current-status.md).
+
+## Talk camera
+<!-- project-update-log:2026-10-29:talk-camera -->
+
+- Reason：The user asked for better storyboard and cinematography in conversations, staying in the player's eyes with every camera move motivated by the body.
+- Implementation：
+  - FacePartner frames the person's eye on the left third, a third of the way down, and sizes the shot by the beat: 0.8 m for a past or a promise waiting on an answer, 1.7 m while typing, 2 m while they hold a rifle, else 1.4 m.
+  - PolarSurveyPlayer.Face takes an aside angle and a rate that ramps from rest over 0.4 s at each change of shot; the field of view's return after a talk ramps the same way.
+  - A Low-tier far depth of field fades in over 0.5 s while talking (PolarHdrpPresentation.TalkFocus); the view sways 0.15 degrees with the player's breath; another voice within 8 m draws a 2.5 s glance without a zoom; heard lines stack above the choices.
+- Validation：
+  - gameplay 382 and ui 436 pass on ts-01 with no exception, including ten new talk-camera checks (Logs/PolarV7/0.6.79-test/ts-01).
+  - Paired PolarUiPerfValidation runs against bm-01 (three each, alternating) show the talk scene's GPU at 7.05 and 7.08 ms (Logs/PolarUiPerf/2026-10-29/summary.txt).
+  - Twelve before/after talk captures inspected; hud-play, outside the talk, changed 0.13% as intended.
+- Decisions and scope：The glance keeps the partner's field of view: at 4 m a 20-degree zoom read as a telephoto jump rather than a turn of the head.
+- Remaining work：
+  - In the glance capture Bell lies where the camp save left her; frozen world time holds her pose.
+  - At 1 m the eye sits at 0.38 across, because the view turns about the body rather than the eye.
+
+### Screenshot comparison
+
+| State | Before | After | Difference |
+|---|---|---|---|
+| Another voice nearby, 1.2 s | ![Another voice nearby, 1.2 s before](evidence/2026-10-29/talk-camera/conversation-glance-before.png) | ![Another voice nearby, 1.2 s after](evidence/2026-10-29/talk-camera/conversation-glance-after.png) | [Comparison](evidence/2026-10-29/talk-camera/conversation-glance-comparison.png) |
+| Another voice nearby, 5.2 s | ![Another voice nearby, 5.2 s before](evidence/2026-10-29/talk-camera/conversation-glance-back-before.png) | ![Another voice nearby, 5.2 s after](evidence/2026-10-29/talk-camera/conversation-glance-back-after.png) | [Comparison](evidence/2026-10-29/talk-camera/conversation-glance-back-comparison.png) |
+| Talk log open | ![Talk log open before](evidence/2026-10-29/talk-camera/conversation-log-before.png) | ![Talk log open after](evidence/2026-10-29/talk-camera/conversation-log-after.png) | [Comparison](evidence/2026-10-29/talk-camera/conversation-log-comparison.png) |
+| Long reply | ![Long reply before](evidence/2026-10-29/talk-camera/conversation-long-before.png) | ![Long reply after](evidence/2026-10-29/talk-camera/conversation-long-after.png) | [Comparison](evidence/2026-10-29/talk-camera/conversation-long-comparison.png) |
+| Talk opened | ![Talk opened before](evidence/2026-10-29/talk-camera/conversation-open-before.png) | ![Talk opened after](evidence/2026-10-29/talk-camera/conversation-open-after.png) | [Comparison](evidence/2026-10-29/talk-camera/conversation-open-comparison.png) |
+| Partner tells of a past | ![Partner tells of a past before](evidence/2026-10-29/talk-camera/conversation-past-before.png) | ![Partner tells of a past after](evidence/2026-10-29/talk-camera/conversation-past-after.png) | [Comparison](evidence/2026-10-29/talk-camera/conversation-past-comparison.png) |
+| Promise proposed | ![Promise proposed before](evidence/2026-10-29/talk-camera/conversation-pending-before.png) | ![Promise proposed after](evidence/2026-10-29/talk-camera/conversation-pending-after.png) | [Comparison](evidence/2026-10-29/talk-camera/conversation-pending-comparison.png) |
+| Partner's reply | ![Partner's reply before](evidence/2026-10-29/talk-camera/conversation-reply-before.png) | ![Partner's reply after](evidence/2026-10-29/talk-camera/conversation-reply-after.png) | [Comparison](evidence/2026-10-29/talk-camera/conversation-reply-comparison.png) |
+| Partner holding a rifle | ![Partner holding a rifle before](evidence/2026-10-29/talk-camera/conversation-rifle-before.png) | ![Partner holding a rifle after](evidence/2026-10-29/talk-camera/conversation-rifle-after.png) | [Comparison](evidence/2026-10-29/talk-camera/conversation-rifle-comparison.png) |
+| Player typing | ![Player typing before](evidence/2026-10-29/talk-camera/conversation-typing-before.png) | ![Player typing after](evidence/2026-10-29/talk-camera/conversation-typing-after.png) | [Comparison](evidence/2026-10-29/talk-camera/conversation-typing-comparison.png) |
+| Waiting for an answer | ![Waiting for an answer before](evidence/2026-10-29/talk-camera/conversation-waiting-before.png) | ![Waiting for an answer after](evidence/2026-10-29/talk-camera/conversation-waiting-after.png) | [Comparison](evidence/2026-10-29/talk-camera/conversation-waiting-comparison.png) |
+| Play view before talking | ![Play view before talking before](evidence/2026-10-29/talk-camera/hud-play-before.png) | ![Play view before talking after](evidence/2026-10-29/talk-camera/hud-play-after.png) | [Comparison](evidence/2026-10-29/talk-camera/hud-play-comparison.png) |
+
+Difference metrics:
+- Another voice nearby, 1.2 s threshold `12` changed pixels `972840/1440000` (`67.5583%`) MAE `0.168599`.
+- Another voice nearby, 5.2 s threshold `12` changed pixels `863223/1440000` (`59.9460%`) MAE `0.168300`.
+- Talk log open threshold `12` changed pixels `670652/1440000` (`46.5731%`) MAE `0.084784`.
+- Long reply threshold `12` changed pixels `847469/1440000` (`58.8520%`) MAE `0.167732`.
+- Talk opened threshold `12` changed pixels `862978/1440000` (`59.9290%`) MAE `0.168888`.
+- Partner tells of a past threshold `12` changed pixels `947738/1440000` (`65.8151%`) MAE `0.199795`.
+- Promise proposed threshold `12` changed pixels `918565/1440000` (`63.7892%`) MAE `0.195095`.
+- Partner's reply threshold `12` changed pixels `859908/1440000` (`59.7158%`) MAE `0.168608`.
+- Partner holding a rifle threshold `12` changed pixels `892258/1440000` (`61.9624%`) MAE `0.171997`.
+- Player typing threshold `12` changed pixels `875639/1440000` (`60.8083%`) MAE `0.167050`.
+- Waiting for an answer threshold `12` changed pixels `863866/1440000` (`59.9907%`) MAE `0.168876`.
+- Play view before talking threshold `12` changed pixels `1909/1440000` (`0.1326%`) MAE `0.000119`.
+
+Related documents:[polar-ui.md](../systems/polar-ui.md) / [polar-talk-scenes-names.md](../plans/polar-talk-scenes-names.md).
+
+## Breath paced by its sounds
+<!-- project-update-log:2026-10-29:breath-sound-pace -->
+
+- Reason：The user asked for the visible breath to match the pace of the breathing sounds; each person's clouds kept their own cycle.
+- Implementation：
+  - Mark the breaths out in the panting, weak-breath, cold-breathing and sleeping-breath takes (PolarBreath.Outs).
+  - While a person's breathing is heard, start each cloud as the take passes a mark and hold the cycle for the next (PolarBreath.Follow from PolarActionSounds; PolarAudio.PlayAt returns its source).
+  - Add a breath-with-its-sounds chapter to the breath reel and a breath-sound tour (PolarFiveAreasCapture.Breath.cs, Tools/polar_reel.py).
+- Validation：
+  - The reel's log puts each player cloud 0.03-0.07 s after a mark in ColdBreath1, Pant1 and Pant2; before, they fell anywhere in the take.
+  - Package bs-01 (0.6.80-test): gameplay 382 and weather 80 pass with no exception; weather P95 16.67-16.75 ms.
+- Remaining work：The sleeper case is shot in a cold hut at night and shows almost nothing, so it has no evidence pair; its timing follows the same code as the cold breathing.
+
+### Screenshot comparison
+
+| State | Before | After | Difference |
+|---|---|---|---|
+| Chilled player: cold breathing heard, clouds over 3.5 s | ![Chilled player: cold breathing heard, clouds over 3.5 s before](evidence/2026-10-29/breath-sound-pace/fp-chilled-before.png) | ![Chilled player: cold breathing heard, clouds over 3.5 s after](evidence/2026-10-29/breath-sound-pace/fp-chilled-after.png) | [Comparison](evidence/2026-10-29/breath-sound-pace/fp-chilled-comparison.png) |
+| After a run: panting heard, clouds over 3.5 s | ![After a run: panting heard, clouds over 3.5 s before](evidence/2026-10-29/breath-sound-pace/fp-pant-before.png) | ![After a run: panting heard, clouds over 3.5 s after](evidence/2026-10-29/breath-sound-pace/fp-pant-after.png) | [Comparison](evidence/2026-10-29/breath-sound-pace/fp-pant-comparison.png) |
+| Explorer near death: weak breaths heard, clouds over 3.5 s | ![Explorer near death: weak breaths heard, clouds over 3.5 s before](evidence/2026-10-29/breath-sound-pace/npc-dying-before.png) | ![Explorer near death: weak breaths heard, clouds over 3.5 s after](evidence/2026-10-29/breath-sound-pace/npc-dying-after.png) | [Comparison](evidence/2026-10-29/breath-sound-pace/npc-dying-comparison.png) |
+
+Difference metrics:
+- Chilled player: cold breathing heard, clouds over 3.5 s threshold `12` changed pixels `35957/1036800` (`3.4681%`) MAE `0.008929`.
+- After a run: panting heard, clouds over 3.5 s threshold `12` changed pixels `16584/1036800` (`1.5995%`) MAE `0.003578`.
+- Explorer near death: weak breaths heard, clouds over 3.5 s threshold `12` changed pixels `3818/1036800` (`0.3682%`) MAE `0.001907`.
+
+Related documents:[rendering-streaming.md](../systems/rendering-streaming.md) / [polar-audio.md](../systems/polar-audio.md).
+
+## Historical engineering log recovery
+<!-- project-update-log:2026-10-29:english-log-backfill -->
+
+- Reason：The English dated history began in October and omitted surviving early project records and October 1 delivery/loading checkpoints.
+- Implementation：
+  - Add 25 concise historical English logs from June 27 through September 30, including September 16's partial fullscreen record, and append the omitted October 1 release/loading history.
+  - Index all 53 surviving dated logs and replace obsolete latest-log/current-package pointers in the engineering handoff; document recovery boundaries in the logging system and current status.
+- Validation：Verify 27 source-content fingerprints and 25 delivered log hashes; check every dated log is indexed once, date headers and English text, original October entry preservation, local links and retained failed/blocked outcomes. Detailed results: verification.json.
+- Decisions and scope：Historical dates and test results remain attributed to the surviving records. This is concise recovery, not a verbatim transcription or fresh runtime/visual acceptance.
+- Remaining work：No sourced October 19 entry was located. September 16 final publication remains unproven; historical screenshots were not imported or revalidated, and existing unfinished evidence records remain unfinished.
+- Visual evidence:Documentation recovery and navigation only; no runtime code, assets, scenes or player-visible behavior changes. Historical test results remain attributed to their original records and are not rerun acceptance.
+
+Related documents:[README.md](README.md) / [change-logging.md](../systems/change-logging.md) / [current-status.md](../current-status.md) / [recovery.json](evidence/2026-10-29/english-log-backfill/recovery.json) / [verification.json](evidence/2026-10-29/english-log-backfill/verification.json).
+
+## Claude explorers, body reflexes and truer failure messages
+<!-- project-update-log:2026-10-29:npc-failure-texts -->
+
+- Reason：
+  - Explorers decided on DeepSeek from one short paragraph of bare numbers: in the three-day baseline (bf-live-01) all twenty died of hunger and cold, 39% of their commands were waits, and failures named the wrong cause for them and for the player.
+  - The user chose Claude (claude-opus-5-5) in place of DeepSeek and asked for explorers who understand the game as the player does, decide from what they know, and talk well with the player and with each other.
+- Implementation：
+  - ClaudeNpcClient streams every request to Claude with one cached system block (policy, a manual of the rules from PolarNpcManual, command help with what each needs), one fixed schema and low effort; ArkNpcClient stays for a one-line switch back.
+  - Explorers read their body, the clock, compass bearings, Pole Station, open ground and items in the player's words, keep a goal and a memo for each person, and remember 16 events and 8 beliefs.
+  - Body reflexes eat below 40 satiety and find warmth once a cold spell; executor steps take a unit in reach, reach into open boxes in huts away from the player, step out to strike, walk to keep watch and end on an unreachable tent.
+  - Talk goes one turn at a time and is heard by everyone awake within 30 m; the topic gate and the answer run at once and the answer streams into the talk box.
+  - Failure texts name their cause for everyone: too cold to keep watch or sleep, step out of the tent to strike it, open the container first, move closer, take the items in front first, the container cannot be reached, the tent is no longer pitched.
+- Validation：
+  - CloudNpcCheck core 204 and --live-agency 20/20 (gate 41/41) pass; the decision bench is 98% correct or acceptable (on the old prompt DeepSeek 48%, Claude 93%) and judged scenes score 4 or more on every criterion; PolarGameplayCheck 2704/2704.
+  - Live days on seed 777: three days (nk-live-01) left 19 of 20 alive (DeepSeek none) with 6% waits; one day on the final code (nk-live-03) left 20 alive, 3 of 557 commands failed and 9% of decisions judged wrong.
+  - Player modes on nk-02: gameplay 382, physical 2706, ui 436 and live 90 pass (Logs/PolarV7/0.6.81-test/nk-02); the player's requests streamed their first text after a median 1.7 s.
+- Decisions and scope：Two body reflexes now rescue explorers from the worst lapses, replacing October 18's rule that nothing rescues them from poor choices; the failure texts change for the player too.
+- Remaining work：Explorers never met in the live days (homes 1.6-4.4 km apart), so their talk with each other is shown by the scenes only; shivering explorers still set out for huts 0.5-1 km away instead of making warmth where they are.
+
+### Screenshot comparison
+
+| State | Before | After | Difference |
+|---|---|---|---|
+| sleep-cold | ![sleep-cold before](evidence/2026-10-29/npc-failure-texts/sleep-cold-before.png) | ![sleep-cold after](evidence/2026-10-29/npc-failure-texts/sleep-cold-after.png) | [Comparison](evidence/2026-10-29/npc-failure-texts/sleep-cold-comparison.png) |
+| strike-inside | ![strike-inside before](evidence/2026-10-29/npc-failure-texts/strike-inside-before.png) | ![strike-inside after](evidence/2026-10-29/npc-failure-texts/strike-inside-after.png) | [Comparison](evidence/2026-10-29/npc-failure-texts/strike-inside-comparison.png) |
+| take-shut | ![take-shut before](evidence/2026-10-29/npc-failure-texts/take-shut-before.png) | ![take-shut after](evidence/2026-10-29/npc-failure-texts/take-shut-after.png) | [Comparison](evidence/2026-10-29/npc-failure-texts/take-shut-comparison.png) |
+| watch-cold | ![watch-cold before](evidence/2026-10-29/npc-failure-texts/watch-cold-before.png) | ![watch-cold after](evidence/2026-10-29/npc-failure-texts/watch-cold-after.png) | [Comparison](evidence/2026-10-29/npc-failure-texts/watch-cold-comparison.png) |
+
+Difference metrics:
+- sleep-cold threshold `12` changed pixels `4845/1440000` (`0.3365%`) MAE `0.004677`.
+- strike-inside threshold `12` changed pixels `3123/1440000` (`0.2169%`) MAE `0.002849`.
+- take-shut threshold `12` changed pixels `2484/1440000` (`0.1725%`) MAE `0.001021`.
+- watch-cold threshold `12` changed pixels `8726/1440000` (`0.6060%`) MAE `0.005578`.
+
+Related documents:[polar-cloud-npcs.md](../systems/polar-cloud-npcs.md) / [polar-gameplay.md](../systems/polar-gameplay.md) / [design-decisions.md](../../design-decisions.md) / [current-status.md](../current-status.md).
+
+## Names learned by talking
+<!-- project-update-log:2026-10-29:names-by-talking -->
+
+- Reason：The user asked that no name float over anyone's head, that the player learn names only by talking, and that there be no list of everyone; the ending reveals every name because some people may never be met.
+- Implementation：
+  - In new expeditions the HUD's people tags are gone; someone unnamed is called by their looks in heard lines, the talk box, the journal and the diary.
+  - A name is learned only from heard words that say it: the speaker's own name, or a name said to someone close by; words that are also names count opening a sentence only with punctuation after them.
+  - What's your name? is a ready question until the name is heard, and the question about home needs a name; explorers are told the player does not know their name and give it as they choose.
+  - The roster is People you've met, listing only those talked with; the ending gives every name and marks those never named to the player; older saves keep knowing a name on meeting.
+- Validation：
+  - Tools/PolarGameplayCheck 2710 pass; Tools/CloudNpcCheck core 204 and prompt bounds 43 pass (largest request 15,905 of 16,000 bytes).
+  - gameplay 381 passes on nm-02; ui 443, continue 34 and handbook-revision 619 pass on nm-01, which differs only in a dropped check of the removed aiming tag (Logs/PolarV7/0.6.82-test); no Player log has an exception.
+  - Ten before/after UI captures inspected: the tag is gone, the talk box names the fair-bearded man in the claret coat and offers What's your name?, People you've met lists him alone, and the ending marks Adler and Bell never named.
+- Decisions and scope：The name line is added before the past policy, which stays last; the aiming check keeps its alert and record without the warning tag.
+- Remaining work：
+  - The live check (three explorers asked their names) needs ANTHROPIC_API_KEY in the terminal that runs it. Done later the same day: live 108 passes on nm-02 (Logs/PolarV7/0.6.82-test/nm-02-live).
+  - M2 (talk acting) is next; M4 (sitting by the fire) waits on the user's three Mixamo takes.
+
+### Screenshot comparison
+
+| State | Before | After | Difference |
+|---|---|---|---|
+| Diary after a talk | ![Diary after a talk before](evidence/2026-10-29/names-by-talking/diary-met-before.png) | ![Diary after a talk after](evidence/2026-10-29/names-by-talking/diary-met-after.png) | [Comparison](evidence/2026-10-29/names-by-talking/diary-met-comparison.png) |
+| Ending | ![Ending before](evidence/2026-10-29/names-by-talking/ending-before.png) | ![Ending after](evidence/2026-10-29/names-by-talking/ending-after.png) | [Comparison](evidence/2026-10-29/names-by-talking/ending-comparison.png) |
+| Heard lines | ![Heard lines before](evidence/2026-10-29/names-by-talking/hud-heard-before.png) | ![Heard lines after](evidence/2026-10-29/names-by-talking/hud-heard-after.png) | [Comparison](evidence/2026-10-29/names-by-talking/hud-heard-comparison.png) |
+| Someone close by | ![Someone close by before](evidence/2026-10-29/names-by-talking/hud-person-before.png) | ![Someone close by after](evidence/2026-10-29/names-by-talking/hud-person-after.png) | [Comparison](evidence/2026-10-29/names-by-talking/hud-person-comparison.png) |
+| Field journal after a talk | ![Field journal after a talk before](evidence/2026-10-29/names-by-talking/journal-met-before.png) | ![Field journal after a talk after](evidence/2026-10-29/names-by-talking/journal-met-after.png) | [Comparison](evidence/2026-10-29/names-by-talking/journal-met-comparison.png) |
+| People page before anyone is met | ![People page before anyone is met before](evidence/2026-10-29/names-by-talking/roster-before.png) | ![People page before anyone is met after](evidence/2026-10-29/names-by-talking/roster-after.png) | [Comparison](evidence/2026-10-29/names-by-talking/roster-comparison.png) |
+| People page after a talk | ![People page after a talk before](evidence/2026-10-29/names-by-talking/roster-met-before.png) | ![People page after a talk after](evidence/2026-10-29/names-by-talking/roster-met-after.png) | [Comparison](evidence/2026-10-29/names-by-talking/roster-met-comparison.png) |
+| Talk log | ![Talk log before](evidence/2026-10-29/names-by-talking/talk-log-before.png) | ![Talk log after](evidence/2026-10-29/names-by-talking/talk-log-after.png) | [Comparison](evidence/2026-10-29/names-by-talking/talk-log-comparison.png) |
+| Talk opened | ![Talk opened before](evidence/2026-10-29/names-by-talking/talk-open-before.png) | ![Talk opened after](evidence/2026-10-29/names-by-talking/talk-open-after.png) | [Comparison](evidence/2026-10-29/names-by-talking/talk-open-comparison.png) |
+| Their answer typed out | ![Their answer typed out before](evidence/2026-10-29/names-by-talking/talk-words-before.png) | ![Their answer typed out after](evidence/2026-10-29/names-by-talking/talk-words-after.png) | [Comparison](evidence/2026-10-29/names-by-talking/talk-words-comparison.png) |
+
+Difference metrics:
+- Diary after a talk threshold `12` changed pixels `31850/1440000` (`2.2118%`) MAE `0.007736`.
+- Ending threshold `12` changed pixels `31055/1440000` (`2.1566%`) MAE `0.010921`.
+- Heard lines threshold `12` changed pixels `153696/1440000` (`10.6733%`) MAE `0.024036`.
+- Someone close by threshold `12` changed pixels `130815/1440000` (`9.0844%`) MAE `0.019231`.
+- Field journal after a talk threshold `12` changed pixels `39194/1440000` (`2.7218%`) MAE `0.010645`.
+- People page before anyone is met threshold `12` changed pixels `47828/1440000` (`3.3214%`) MAE `0.008453`.
+- People page after a talk threshold `12` changed pixels `70791/1440000` (`4.9160%`) MAE `0.020172`.
+- Talk log threshold `12` changed pixels `107595/1440000` (`7.4719%`) MAE `0.014535`.
+- Talk opened threshold `12` changed pixels `132430/1440000` (`9.1965%`) MAE `0.018714`.
+- Their answer typed out threshold `12` changed pixels `125098/1440000` (`8.6874%`) MAE `0.016112`.
+
+Related documents:[polar-gameplay.md](../systems/polar-gameplay.md) / [polar-ui.md](../systems/polar-ui.md) / [polar-cloud-npcs.md](../systems/polar-cloud-npcs.md) / [polar-talk-scenes-names.md](../plans/polar-talk-scenes-names.md).
+
+## Talk acting
+<!-- project-update-log:2026-10-29:talk-acting -->
+
+- Reason：M2 of the talk scenes and names plan: the user asked for talks staged like scenes, with the people acting them while the view stays in the player's eyes.
+- Implementation：The talk box types like a voice: 45 letters a second, a breath after a sentence, a pause after a comma, longer after a dash or ellipsis, and slower from someone shivering or limping. While the player's words wait on an answer the person looks down and aside and lets out a breath; the eyes come back as the answer types. Their hands beat while their words type, and a line about their own past starts with a hand to the chest pocket (new Talk-layer clip Pocket). Sending words raises the player's right hand, palm up (new first-person clip Beat; Weapons.controller 39 states). Goodbye, E or Esc draws a nod. Presentation only; talk timing is unchanged.
+- Validation：Gameplay 382 passes on ta-01 and ui 446 on ta-02, which differs only in the voice-pace check (it now waits for the box to take the staged line); no exceptions in the Player logs (Logs/PolarV7/0.6.83-test). Seven before/after cases: the waiting look-away, the reply, a past told, the talk opened, two first-person talk frames and the explorers' talk.
+- Remaining work：M4 (sitting by the fire) waits on the user's three Mixamo takes.
+
+### Screenshot comparison
+
+| State | Before | After | Difference |
+|---|---|---|---|
+| Talk opened | ![Talk opened before](evidence/2026-10-29/talk-acting/conversation-open-before.png) | ![Talk opened after](evidence/2026-10-29/talk-acting/conversation-open-after.png) | [Comparison](evidence/2026-10-29/talk-acting/conversation-open-comparison.png) |
+| A line telling of their past | ![A line telling of their past before](evidence/2026-10-29/talk-acting/conversation-past-before.png) | ![A line telling of their past after](evidence/2026-10-29/talk-acting/conversation-past-after.png) | [Comparison](evidence/2026-10-29/talk-acting/conversation-past-comparison.png) |
+| Their reply | ![Their reply before](evidence/2026-10-29/talk-acting/conversation-reply-before.png) | ![Their reply after](evidence/2026-10-29/talk-acting/conversation-reply-after.png) | [Comparison](evidence/2026-10-29/talk-acting/conversation-reply-comparison.png) |
+| Waiting for an answer | ![Waiting for an answer before](evidence/2026-10-29/talk-acting/conversation-waiting-before.png) | ![Waiting for an answer after](evidence/2026-10-29/talk-acting/conversation-waiting-after.png) | [Comparison](evidence/2026-10-29/talk-acting/conversation-waiting-comparison.png) |
+| A reply typing, early | ![A reply typing, early before](evidence/2026-10-29/talk-acting/fp-talk-early-before.png) | ![A reply typing, early after](evidence/2026-10-29/talk-acting/fp-talk-early-after.png) | [Comparison](evidence/2026-10-29/talk-acting/fp-talk-early-comparison.png) |
+| A reply typing, later | ![A reply typing, later before](evidence/2026-10-29/talk-acting/fp-talk-late-before.png) | ![A reply typing, later after](evidence/2026-10-29/talk-acting/fp-talk-late-after.png) | [Comparison](evidence/2026-10-29/talk-acting/fp-talk-late-comparison.png) |
+| Two explorers talking | ![Two explorers talking before](evidence/2026-10-29/talk-acting/npc-talk-before.png) | ![Two explorers talking after](evidence/2026-10-29/talk-acting/npc-talk-after.png) | [Comparison](evidence/2026-10-29/talk-acting/npc-talk-comparison.png) |
+
+Difference metrics:
+- Talk opened threshold `12` changed pixels `2704/1440000` (`0.1878%`) MAE `0.001457`.
+- A line telling of their past threshold `12` changed pixels `45318/1440000` (`3.1471%`) MAE `0.007662`.
+- Their reply threshold `12` changed pixels `67158/1440000` (`4.6638%`) MAE `0.009662`.
+- Waiting for an answer threshold `12` changed pixels `495732/1440000` (`34.4258%`) MAE `0.068577`.
+- A reply typing, early threshold `12` changed pixels `119665/1440000` (`8.3101%`) MAE `0.020910`.
+- A reply typing, later threshold `12` changed pixels `159040/1440000` (`11.0444%`) MAE `0.024931`.
+- Two explorers talking threshold `12` changed pixels `7/1440000` (`0.0005%`) MAE `0.000056`.
+
+Related documents:[polar-ui.md](../systems/polar-ui.md) / [polar-gameplay.md](../systems/polar-gameplay.md) / [polar-talk-scenes-names.md](../plans/polar-talk-scenes-names.md).
+
+## Explorers' cold walks and meetings
+<!-- project-update-log:2026-10-29:npc-cold-walks-meetings -->
+
+- Reason：
+  - 0.6.81-test left two faults on Claude's explorers: shivering explorers walked 0.5-1 km to huts instead of making warmth where they were (most of the 9% of decisions judged wrong in nk-live-03), and explorers never met in live days. The user asked for both to be fixed and tested.
+  - Testing found two traps that killed explorers: a 5 m drop inside one of the route grid's cells kept Moss above it with the tent pitched below, and Shaw's warmth reflex pitched the tent over the pond hole Shaw had just climbed out of.
+- Implementation：
+  - Explorers read each known place's, Pole Station's and each person last seen's hours on foot, and the warmth line gives the cooling or warming rate now and the hours left until 35 C from the survival step's own rule (PolarSurvivalSimulation.Change); the manual tells them to make fire where they are when a walk would end below 35 C.
+  - Pole Station reads as the expedition base and assembly point at the map's centre, whose huts are not on the chart.
+  - On the way to a hut an explorer skirts a refused step by the smallest open turn (PolarNpcSimulation.Skirt); explorers pitch only where they can walk to, never on a pond's ice or within 2 m of it (ByIce), and a pitch with their tent already up counts as done.
+  - The day diagnostic logs positions, the closest two explorers ever came and each first meeting.
+- Validation：
+  - Offline: Assembly-CSharp and the Editor assembly compile; PolarGameplayCheck 2710/2710; CloudNpcCheck core 204 and prompt bounds 43; the decision bench 128 of 129 correct or acceptable; judged scenes within 0.6.81-test's run-to-run spread.
+  - Live on seed 777: judged wrong decisions fell from 9% to 4% in one day (cw-live-01) and 2% over three days (cw-live-02), where 19 of 20 lived and only Shaw, in the pond trap, ever fell below 35 C; both traps were checked in the Editor on those runs' saves.
+  - Player modes on cw-01: gameplay 382, physical 2706, ui 446 and live 108 pass (Logs/PolarV7/0.6.84-test/cw-01); the player's replies started after a median 2.1 s.
+- Remaining work：
+  - Explorers still never meet: each knows only its own district's huts, neighbours' nearest huts are 450-650 m apart and Pole Station is 50-70 h away; in three days the closest two came was 1.55 km. Contact needs the user's design choice.
+  - One judged decision in three days was still a cold walk, and five eats named something that is not food; 64 requests failed in two spells when Claude's replies slowed past the 15 s timeout.
+- Visual evidence:Changes only what explorers read (cooling rate, hours on foot, Pole Station's wording) and a diagnostic log; nothing drawn or shown to the player changes deterministically, so screenshots do not apply.
+
+Related documents:[polar-cloud-npcs.md](../systems/polar-cloud-npcs.md) / [polar-gameplay.md](../systems/polar-gameplay.md) / [current-status.md](../current-status.md).

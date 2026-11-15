@@ -1,0 +1,169 @@
+docs/engineering/logs/2026-11-05.md
+
+# 2026-11-05 Engineering log
+
+## Snow you walk in: rims, powder, pond-bank lip, fresh snow (graphics core M2)
+<!-- project-update-log:2026-11-05:snow-walk-in -->
+
+- Reason：Graphics core plan M2 (user's November 4 specifications PE-GFX-INV/IMP-1.1, narrowed by the user to M2, M3, M5 and M6): prints sank but never pushed snow up, nothing puffed, fresh and old snow looked the same, and things put down or people lying near a pond's shore sank into the drawn snow lip.
+- Implementation：Render only, package 0.6.115-test (build sw-01): a rim field beside the footprint field raises a ridge round each print and settles as the print fills; boots in snow 12 cm deep or more kick powder; a fresh-snow value (snowfall freshens it, six to twelve hours without snow age it) shifts powder, packed snow, crust, brightness, gloss and glints; items and people lying on pond ice rest on the shore lip's drawn snow (LipAt), cleared under tents.
+- Validation：Gameplay 390, continue 36, performance 79 and weather 80 pass on sw-01 (Logs/PolarV7/0.6.115-test/sw-01); capped P95s equal rb-01's and the uncapped pond and sea views are no slower (not paired). Offline compile of both assemblies. Rims show only round prints in the trail comparisons; fresh, neutral and old near shots (after only) in Logs/ProjectUpdateCapture/five-areas/snow-m2-after3/snow-m2/*-near.png.
+- Decisions and scope：Rim height .2 of the open depth (to .3 m); the clear-weather steady value is the old look (.5), so no existing clear-day view changes until twelve hours without snow; back-lit crests left out.
+- Remaining work：The low-sun trail shots show no trail in either phase (SetHour jumps the clock, which fills the prints); the staged pond's lip was only 0.4-1.7 cm deep at the tin and body (beside an explorer's tent), so the lip shots show no visible change; no paired GPU cost run for the four rim taps.
+
+### Screenshot comparison
+
+| State | Before | After | Difference |
+|---|---|---|---|
+| aged-day | ![aged-day before](evidence/2026-11-05/snow-walk-in/aged-day-before.png) | ![aged-day after](evidence/2026-11-05/snow-walk-in/aged-day-after.png) | [Comparison](evidence/2026-11-05/snow-walk-in/aged-day-comparison.png) |
+| fresh-day | ![fresh-day before](evidence/2026-11-05/snow-walk-in/fresh-day-before.png) | ![fresh-day after](evidence/2026-11-05/snow-walk-in/fresh-day-after.png) | [Comparison](evidence/2026-11-05/snow-walk-in/fresh-day-comparison.png) |
+| fresh-neutral | ![fresh-neutral before](evidence/2026-11-05/snow-walk-in/fresh-neutral-before.png) | ![fresh-neutral after](evidence/2026-11-05/snow-walk-in/fresh-neutral-after.png) | [Comparison](evidence/2026-11-05/snow-walk-in/fresh-neutral-comparison.png) |
+| lip-bank | ![lip-bank before](evidence/2026-11-05/snow-walk-in/lip-bank-before.png) | ![lip-bank after](evidence/2026-11-05/snow-walk-in/lip-bank-after.png) | [Comparison](evidence/2026-11-05/snow-walk-in/lip-bank-comparison.png) |
+| lip-body | ![lip-body before](evidence/2026-11-05/snow-walk-in/lip-body-before.png) | ![lip-body after](evidence/2026-11-05/snow-walk-in/lip-body-after.png) | [Comparison](evidence/2026-11-05/snow-walk-in/lip-body-comparison.png) |
+| lip-near | ![lip-near before](evidence/2026-11-05/snow-walk-in/lip-near-before.png) | ![lip-near after](evidence/2026-11-05/snow-walk-in/lip-near-after.png) | [Comparison](evidence/2026-11-05/snow-walk-in/lip-near-comparison.png) |
+| rim-along-day | ![rim-along-day before](evidence/2026-11-05/snow-walk-in/rim-along-day-before.png) | ![rim-along-day after](evidence/2026-11-05/snow-walk-in/rim-along-day-after.png) | [Comparison](evidence/2026-11-05/snow-walk-in/rim-along-day-comparison.png) |
+| rim-along-low | ![rim-along-low before](evidence/2026-11-05/snow-walk-in/rim-along-low-before.png) | ![rim-along-low after](evidence/2026-11-05/snow-walk-in/rim-along-low-after.png) | [Comparison](evidence/2026-11-05/snow-walk-in/rim-along-low-comparison.png) |
+| rim-close-day | ![rim-close-day before](evidence/2026-11-05/snow-walk-in/rim-close-day-before.png) | ![rim-close-day after](evidence/2026-11-05/snow-walk-in/rim-close-day-after.png) | [Comparison](evidence/2026-11-05/snow-walk-in/rim-close-day-comparison.png) |
+| rim-close-low | ![rim-close-low before](evidence/2026-11-05/snow-walk-in/rim-close-low-before.png) | ![rim-close-low after](evidence/2026-11-05/snow-walk-in/rim-close-low-after.png) | [Comparison](evidence/2026-11-05/snow-walk-in/rim-close-low-comparison.png) |
+| tracks-body-item-near | ![tracks-body-item-near before](evidence/2026-11-05/snow-walk-in/tracks-body-item-near-before.png) | ![tracks-body-item-near after](evidence/2026-11-05/snow-walk-in/tracks-body-item-near-after.png) | [Comparison](evidence/2026-11-05/snow-walk-in/tracks-body-item-near-comparison.png) |
+| tracks-snow-feet | ![tracks-snow-feet before](evidence/2026-11-05/snow-walk-in/tracks-snow-feet-before.png) | ![tracks-snow-feet after](evidence/2026-11-05/snow-walk-in/tracks-snow-feet-after.png) | [Comparison](evidence/2026-11-05/snow-walk-in/tracks-snow-feet-comparison.png) |
+| tracks-trail-far | ![tracks-trail-far before](evidence/2026-11-05/snow-walk-in/tracks-trail-far-before.png) | ![tracks-trail-far after](evidence/2026-11-05/snow-walk-in/tracks-trail-far-after.png) | [Comparison](evidence/2026-11-05/snow-walk-in/tracks-trail-far-comparison.png) |
+| tracks-trail-near | ![tracks-trail-near before](evidence/2026-11-05/snow-walk-in/tracks-trail-near-before.png) | ![tracks-trail-near after](evidence/2026-11-05/snow-walk-in/tracks-trail-near-after.png) | [Comparison](evidence/2026-11-05/snow-walk-in/tracks-trail-near-comparison.png) |
+| tracks-trail-side | ![tracks-trail-side before](evidence/2026-11-05/snow-walk-in/tracks-trail-side-before.png) | ![tracks-trail-side after](evidence/2026-11-05/snow-walk-in/tracks-trail-side-after.png) | [Comparison](evidence/2026-11-05/snow-walk-in/tracks-trail-side-comparison.png) |
+
+Difference metrics:
+- aged-day threshold `12` changed pixels `1121/1440000` (`0.0778%`) MAE `0.008364`.
+- fresh-day threshold `12` changed pixels `30037/1440000` (`2.0859%`) MAE `0.012325`.
+- fresh-neutral threshold `12` changed pixels `309/1440000` (`0.0215%`) MAE `0.000853`.
+- lip-bank threshold `12` changed pixels `4459/1440000` (`0.3097%`) MAE `0.002198`.
+- lip-body threshold `12` changed pixels `5285/1440000` (`0.3670%`) MAE `0.002377`.
+- lip-near threshold `12` changed pixels `4151/1440000` (`0.2883%`) MAE `0.002353`.
+- rim-along-day threshold `12` changed pixels `20677/1440000` (`1.4359%`) MAE `0.002884`.
+- rim-along-low threshold `12` changed pixels `261/1440000` (`0.0181%`) MAE `0.001822`.
+- rim-close-day threshold `12` changed pixels `45059/1440000` (`3.1291%`) MAE `0.004933`.
+- rim-close-low threshold `12` changed pixels `196/1440000` (`0.0136%`) MAE `0.001721`.
+- tracks-body-item-near threshold `12` changed pixels `41648/1440000` (`2.8922%`) MAE `0.006604`.
+- tracks-snow-feet threshold `12` changed pixels `5/1440000` (`0.0003%`) MAE `0.001555`.
+- tracks-trail-far threshold `12` changed pixels `685/1440000` (`0.0476%`) MAE `0.001287`.
+- tracks-trail-near threshold `12` changed pixels `12613/1440000` (`0.8759%`) MAE `0.002815`.
+- tracks-trail-side threshold `12` changed pixels `7052/1440000` (`0.4897%`) MAE `0.002034`.
+
+Related documents:[polar-graphics-core.md](../plans/polar-graphics-core.md) / [rendering-streaming.md](../systems/rendering-streaming.md).
+
+## Feet on the bent ice and softer bubbles at low eyes
+<!-- project-update-log:2026-11-05:ice-footing -->
+
+- Reason：M3 of the graphics core plan: a boot on a loaded pond plate stood on the plate's collider while the drawn sheet bent round the weight, so feet stood up to about 1 cm over the bowl, and up to 3 cm into or over it for a second walker or one on the plate beside it.
+- Implementation：PolarThinIceRuntime.DrawnBelow gives the drawn sheet's depth under a pond collider at a point from the vertex stage's own bowls and shore hold (PolarArtIceCaps.Bend), plus the collider's sag; PolarFootPlanting lowers a planted foot by it. Render only; colliders, rules, saves, world hashes and the eye unchanged. The capture's deep-water section adds a feet view at the halfway load and logs the drawn depth.
+- Validation：Package 0.6.116-test, build if-01: gameplay 390, physical 3959 and continue 36 pass on if-01; performance 79 passes on if-01-pc4 (the first run hung at startup; if-01-pc3, slower in every view, failed the pond check at +1.09 ms GPU and +0.94 ms main, against +0.50 and +0.22 on the rerun). At pond 33's halfway frame the feet note reads 0.77 cm drawn under the collider, and the feet pair shows the boots lower; the hole-waterline (19%) and under-ice (7.6%) pairs differ by the water's waves, the floating pieces' rocking and the swimmer's pose between runs (no feet are planted there), and the other eight by under 1.5% of pixels.
+- Decisions and scope：No motion vectors for the bend: a walking bowl moves about 2.3 cm a frame over a 2.9% slope, about .7 mm of surface a frame, under .4 px from 2 m. The bright ovals on tall floating pieces at a swimmer's eye are the intact ice's large bubble layer on the piece tops seen at about 20 degrees; a view-angle (Schlick) dimming took only about 10% off them and was reverted.
+- Remaining work：Whether to dim or drop the large bubble layer on floating piece tops is a look choice for the user. M5 (weather) and M6 (light) of the graphics core plan are next.
+
+### Screenshot comparison
+
+| State | Before | After | Difference |
+|---|---|---|---|
+| dw-hole-waterline | ![dw-hole-waterline before](evidence/2026-11-05/ice-footing/dw-hole-waterline-before.png) | ![dw-hole-waterline after](evidence/2026-11-05/ice-footing/dw-hole-waterline-after.png) | [Comparison](evidence/2026-11-05/ice-footing/dw-hole-waterline-comparison.png) |
+| dw-intact-bank | ![dw-intact-bank before](evidence/2026-11-05/ice-footing/dw-intact-bank-before.png) | ![dw-intact-bank after](evidence/2026-11-05/ice-footing/dw-intact-bank-after.png) | [Comparison](evidence/2026-11-05/ice-footing/dw-intact-bank-comparison.png) |
+| dw-merged-waterline | ![dw-merged-waterline before](evidence/2026-11-05/ice-footing/dw-merged-waterline-before.png) | ![dw-merged-waterline after](evidence/2026-11-05/ice-footing/dw-merged-waterline-after.png) | [Comparison](evidence/2026-11-05/ice-footing/dw-merged-waterline-comparison.png) |
+| dw-rim-stand | ![dw-rim-stand before](evidence/2026-11-05/ice-footing/dw-rim-stand-before.png) | ![dw-rim-stand after](evidence/2026-11-05/ice-footing/dw-rim-stand-after.png) | [Comparison](evidence/2026-11-05/ice-footing/dw-rim-stand-comparison.png) |
+| dw-run-swim-edge | ![dw-run-swim-edge before](evidence/2026-11-05/ice-footing/dw-run-swim-edge-before.png) | ![dw-run-swim-edge after](evidence/2026-11-05/ice-footing/dw-run-swim-edge-after.png) | [Comparison](evidence/2026-11-05/ice-footing/dw-run-swim-edge-comparison.png) |
+| dw-under-up | ![dw-under-up before](evidence/2026-11-05/ice-footing/dw-under-up-before.png) | ![dw-under-up after](evidence/2026-11-05/ice-footing/dw-under-up-after.png) | [Comparison](evidence/2026-11-05/ice-footing/dw-under-up-comparison.png) |
+| dw-walk-load-half | ![dw-walk-load-half before](evidence/2026-11-05/ice-footing/dw-walk-load-half-before.png) | ![dw-walk-load-half after](evidence/2026-11-05/ice-footing/dw-walk-load-half-after.png) | [Comparison](evidence/2026-11-05/ice-footing/dw-walk-load-half-comparison.png) |
+| dw-walk-load-half-close | ![dw-walk-load-half-close before](evidence/2026-11-05/ice-footing/dw-walk-load-half-close-before.png) | ![dw-walk-load-half-close after](evidence/2026-11-05/ice-footing/dw-walk-load-half-close-after.png) | [Comparison](evidence/2026-11-05/ice-footing/dw-walk-load-half-close-comparison.png) |
+| dw-walk-load-half-feet | ![dw-walk-load-half-feet before](evidence/2026-11-05/ice-footing/dw-walk-load-half-feet-before.png) | ![dw-walk-load-half-feet after](evidence/2026-11-05/ice-footing/dw-walk-load-half-feet-after.png) | [Comparison](evidence/2026-11-05/ice-footing/dw-walk-load-half-feet-comparison.png) |
+| dw-walk-swim-1s | ![dw-walk-swim-1s before](evidence/2026-11-05/ice-footing/dw-walk-swim-1s-before.png) | ![dw-walk-swim-1s after](evidence/2026-11-05/ice-footing/dw-walk-swim-1s-after.png) | [Comparison](evidence/2026-11-05/ice-footing/dw-walk-swim-1s-comparison.png) |
+| dw-walk-swim-edge | ![dw-walk-swim-edge before](evidence/2026-11-05/ice-footing/dw-walk-swim-edge-before.png) | ![dw-walk-swim-edge after](evidence/2026-11-05/ice-footing/dw-walk-swim-edge-after.png) | [Comparison](evidence/2026-11-05/ice-footing/dw-walk-swim-edge-comparison.png) |
+
+Difference metrics:
+- dw-hole-waterline threshold `12` changed pixels `403797/2073600` (`19.4732%`) MAE `0.021820`.
+- dw-intact-bank threshold `12` changed pixels `7326/2073600` (`0.3533%`) MAE `0.004894`.
+- dw-merged-waterline threshold `12` changed pixels `22604/2073600` (`1.0901%`) MAE `0.002116`.
+- dw-rim-stand threshold `12` changed pixels `27127/2073600` (`1.3082%`) MAE `0.003517`.
+- dw-run-swim-edge threshold `12` changed pixels `3099/2073600` (`0.1494%`) MAE `0.002109`.
+- dw-under-up threshold `12` changed pixels `157487/2073600` (`7.5949%`) MAE `0.018455`.
+- dw-walk-load-half threshold `12` changed pixels `3539/2073600` (`0.1707%`) MAE `0.002030`.
+- dw-walk-load-half-close threshold `12` changed pixels `2127/2073600` (`0.1026%`) MAE `0.002322`.
+- dw-walk-load-half-feet threshold `12` changed pixels `26922/2073600` (`1.2983%`) MAE `0.003909`.
+- dw-walk-swim-1s threshold `12` changed pixels `9028/2073600` (`0.4354%`) MAE `0.002854`.
+- dw-walk-swim-edge threshold `12` changed pixels `9808/2073600` (`0.4730%`) MAE `0.003022`.
+
+Related documents:[polar-graphics-core.md](../plans/polar-graphics-core.md) / [rendering-streaming.md](../systems/rendering-streaming.md).
+
+## Weather that has places in it
+<!-- project-update-log:2026-11-05:weather-places -->
+
+- Reason：M5 of the graphics core plan: weather looked the same everywhere. Drift blew as hard behind a hut as in the open, roofs never shed snow, the storm fog was one even wall, and open water on a still clear day showed no frost smoke.
+- Implementation：PolarSnowLayers: a lee wedge downwind of huts (24 m) and pitched tents (9 m) within 60 m thins and slows ground drift and thins blowing streaks; a roof powder layer sheds from the nearest hut ridge in gusts over .45. New PolarStormFog: storm curtains from heavy snow up, as a Multiply local volumetric fog of mean 1 on world-anchored noise tiles moving downwind; frost smoke, as up to eight Additive volumes over open water and broken pond plates in clear to medium weather. Render only. The capture adds section b5-weather-places (hut lee, roof gust, window at night, frost smoke) and notes the fog volumes in use.
+- Validation：Package 0.6.117-test, build wp-01: gameplay 390, performance 79 and weather 84 pass (blizzard P95 16.71 ms against if-01's 16.68). Roof powder shows plainly in the gust shot; drift by the hut thins in its lee; the hut 14 m away clears where a thin curtain passes; frost smoke hazes the lake's far bank. A test at ten times the curtain density and twenty times the smoke density confirmed both volumes draw.
+- Decisions and scope：Curtains change nothing visible over open snow (fog over snow looks the same at any density) and show against near dark things, which come and go as they pass. The first frost smoke stood 1.9 m up, over a swimmer's eye, and at mean free path 18 m was invisible; it now stands from 1 m under the water level at 4 m. The window lamp draws no beam in the air in medium snow at night; left unchanged, as the plan allows.
+- Remaining work：M6 (light, reflections and hut shadows) of the graphics core plan is next. The curtains are best judged in motion; no reel was made.
+
+### Screenshot comparison
+
+| State | Before | After | Difference |
+|---|---|---|---|
+| blizzard-gust-a | ![blizzard-gust-a before](evidence/2026-11-05/weather-places/blizzard-gust-a-before.png) | ![blizzard-gust-a after](evidence/2026-11-05/weather-places/blizzard-gust-a-after.png) | [Comparison](evidence/2026-11-05/weather-places/blizzard-gust-a-comparison.png) |
+| day-3 | ![day-3 before](evidence/2026-11-05/weather-places/day-3-before.png) | ![day-3 after](evidence/2026-11-05/weather-places/day-3-after.png) | [Comparison](evidence/2026-11-05/weather-places/day-3-comparison.png) |
+| day-4 | ![day-4 before](evidence/2026-11-05/weather-places/day-4-before.png) | ![day-4 after](evidence/2026-11-05/weather-places/day-4-after.png) | [Comparison](evidence/2026-11-05/weather-places/day-4-comparison.png) |
+| night-3 | ![night-3 before](evidence/2026-11-05/weather-places/night-3-before.png) | ![night-3 after](evidence/2026-11-05/weather-places/night-3-after.png) | [Comparison](evidence/2026-11-05/weather-places/night-3-comparison.png) |
+| night-4 | ![night-4 before](evidence/2026-11-05/weather-places/night-4-before.png) | ![night-4 after](evidence/2026-11-05/weather-places/night-4-after.png) | [Comparison](evidence/2026-11-05/weather-places/night-4-comparison.png) |
+| wp-frost-smoke | ![wp-frost-smoke before](evidence/2026-11-05/weather-places/wp-frost-smoke-before.png) | ![wp-frost-smoke after](evidence/2026-11-05/weather-places/wp-frost-smoke-after.png) | [Comparison](evidence/2026-11-05/weather-places/wp-frost-smoke-comparison.png) |
+| wp-lee-across | ![wp-lee-across before](evidence/2026-11-05/weather-places/wp-lee-across-before.png) | ![wp-lee-across after](evidence/2026-11-05/weather-places/wp-lee-across-after.png) | [Comparison](evidence/2026-11-05/weather-places/wp-lee-across-comparison.png) |
+| wp-lee-along | ![wp-lee-along before](evidence/2026-11-05/weather-places/wp-lee-along-before.png) | ![wp-lee-along after](evidence/2026-11-05/weather-places/wp-lee-along-after.png) | [Comparison](evidence/2026-11-05/weather-places/wp-lee-along-comparison.png) |
+| wp-lee-downwind | ![wp-lee-downwind before](evidence/2026-11-05/weather-places/wp-lee-downwind-before.png) | ![wp-lee-downwind after](evidence/2026-11-05/weather-places/wp-lee-downwind-after.png) | [Comparison](evidence/2026-11-05/weather-places/wp-lee-downwind-comparison.png) |
+| wp-roof-gust | ![wp-roof-gust before](evidence/2026-11-05/weather-places/wp-roof-gust-before.png) | ![wp-roof-gust after](evidence/2026-11-05/weather-places/wp-roof-gust-after.png) | [Comparison](evidence/2026-11-05/weather-places/wp-roof-gust-comparison.png) |
+| wp-window-night | ![wp-window-night before](evidence/2026-11-05/weather-places/wp-window-night-before.png) | ![wp-window-night after](evidence/2026-11-05/weather-places/wp-window-night-after.png) | [Comparison](evidence/2026-11-05/weather-places/wp-window-night-comparison.png) |
+
+Difference metrics:
+- blizzard-gust-a threshold `12` changed pixels `86/2073600` (`0.0041%`) MAE `0.001967`.
+- day-3 threshold `12` changed pixels `25/2073600` (`0.0012%`) MAE `0.001132`.
+- day-4 threshold `12` changed pixels `147/2073600` (`0.0071%`) MAE `0.001670`.
+- night-3 threshold `12` changed pixels `370/2073600` (`0.0178%`) MAE `0.000949`.
+- night-4 threshold `12` changed pixels `1274/2073600` (`0.0614%`) MAE `0.003176`.
+- wp-frost-smoke threshold `12` changed pixels `167706/2073600` (`8.0877%`) MAE `0.010403`.
+- wp-lee-across threshold `12` changed pixels `2717/2073600` (`0.1310%`) MAE `0.003964`.
+- wp-lee-along threshold `12` changed pixels `1649/2073600` (`0.0795%`) MAE `0.002707`.
+- wp-lee-downwind threshold `12` changed pixels `106254/2073600` (`5.1241%`) MAE `0.005785`.
+- wp-roof-gust threshold `12` changed pixels `82195/2073600` (`3.9639%`) MAE `0.008295`.
+- wp-window-night threshold `12` changed pixels `5627/2073600` (`0.2714%`) MAE `0.001777`.
+
+Related documents:[polar-graphics-core.md](../plans/polar-graphics-core.md) / [rendering-streaming.md](../systems/rendering-streaming.md).
+
+## Light, reflections and hut shadows (graphics core M6)
+<!-- project-update-log:2026-11-05:hut-light -->
+
+- Reason：Graphics core M6 (docs/engineering/plans/polar-graphics-core.md): inside huts reflections and SSGI's missed rays took the open sky, so day interiors had a cold wash and the heater no metal; the stove and the sun cast no shadows from the furniture or fallen boards.
+- Implementation：One on-demand, box-projected reflection probe over the inside of the hut the eye is in, rendered once the eye has adapted (HDRP stores it unexposed while the stove lamps follow the exposure), re-rendered on stove, door, hour and quarter-stop changes; SSGI's missed rays on the sky alone while it is in use; the furniture's boxes and the fallen boards' meshes added to each hut's and Pole Station's shadow-only LOD0 mesh (PolarHabitatAuthor.Hut; six *-shadow0 meshes, prefabs unchanged). New capture section b6-hut-light and the capture-only switch -polarArtSsr.
+- Validation：Package 0.6.118-test, build hl-01: gameplay 390, performance 79, buildings 395 and weather 84 pass (Logs/PolarV7/0.6.118-test/hl-01); PolarHutAssetValidation 3067. Before m6-before, after m6-after4, both PolarArtCapture sections b4-intact-ice and b6-habitat in the same order: day interiors 16-45% darker and warmer, nights within 4%, exteriors and ice unchanged.
+- Decisions and scope：SSGI thickness .05, a lower stove fill, the stove light's shape radius (Medium filtering ignores it) and SSR's PBR accumulation (ice nearly identical, slightly darker) were tried or checked and left out.
+- Remaining work：Hut timber (G04.01) follows as its own package: a seam-free grain from Poly Haven's CC0 plank_flooring_03, approved by the user on November 6.
+
+### Screenshot comparison
+
+| State | Before | After | Difference |
+|---|---|---|---|
+| b6-ext-day-front | ![b6-ext-day-front before](evidence/2026-11-05/hut-light/b6-ext-day-front-before.png) | ![b6-ext-day-front after](evidence/2026-11-05/hut-light/b6-ext-day-front-after.png) | [Comparison](evidence/2026-11-05/hut-light/b6-ext-day-front-comparison.png) |
+| b6-int-room-day | ![b6-int-room-day before](evidence/2026-11-05/hut-light/b6-int-room-day-before.png) | ![b6-int-room-day after](evidence/2026-11-05/hut-light/b6-int-room-day-after.png) | [Comparison](evidence/2026-11-05/hut-light/b6-int-room-day-comparison.png) |
+| b6-int-room-night-lit | ![b6-int-room-night-lit before](evidence/2026-11-05/hut-light/b6-int-room-night-lit-before.png) | ![b6-int-room-night-lit after](evidence/2026-11-05/hut-light/b6-int-room-night-lit-after.png) | [Comparison](evidence/2026-11-05/hut-light/b6-int-room-night-lit-comparison.png) |
+| b6-int-stove-day-unlit | ![b6-int-stove-day-unlit before](evidence/2026-11-05/hut-light/b6-int-stove-day-unlit-before.png) | ![b6-int-stove-day-unlit after](evidence/2026-11-05/hut-light/b6-int-stove-day-unlit-after.png) | [Comparison](evidence/2026-11-05/hut-light/b6-int-stove-day-unlit-comparison.png) |
+| b6-int-stove-night-lit | ![b6-int-stove-night-lit before](evidence/2026-11-05/hut-light/b6-int-stove-night-lit-before.png) | ![b6-int-stove-night-lit after](evidence/2026-11-05/hut-light/b6-int-stove-night-lit-after.png) | [Comparison](evidence/2026-11-05/hut-light/b6-int-stove-night-lit-comparison.png) |
+| b6-int-window-day | ![b6-int-window-day before](evidence/2026-11-05/hut-light/b6-int-window-day-before.png) | ![b6-int-window-day after](evidence/2026-11-05/hut-light/b6-int-window-day-after.png) | [Comparison](evidence/2026-11-05/hut-light/b6-int-window-day-comparison.png) |
+| b6-station-int-up-day | ![b6-station-int-up-day before](evidence/2026-11-05/hut-light/b6-station-int-up-day-before.png) | ![b6-station-int-up-day after](evidence/2026-11-05/hut-light/b6-station-int-up-day-after.png) | [Comparison](evidence/2026-11-05/hut-light/b6-station-int-up-day-comparison.png) |
+| b6-store-stocked-day | ![b6-store-stocked-day before](evidence/2026-11-05/hut-light/b6-store-stocked-day-before.png) | ![b6-store-stocked-day after](evidence/2026-11-05/hut-light/b6-store-stocked-day-after.png) | [Comparison](evidence/2026-11-05/hut-light/b6-store-stocked-day-comparison.png) |
+| b6-v1-int-night-lit | ![b6-v1-int-night-lit before](evidence/2026-11-05/hut-light/b6-v1-int-night-lit-before.png) | ![b6-v1-int-night-lit after](evidence/2026-11-05/hut-light/b6-v1-int-night-lit-after.png) | [Comparison](evidence/2026-11-05/hut-light/b6-v1-int-night-lit-comparison.png) |
+| ii-close | ![ii-close before](evidence/2026-11-05/hut-light/ii-close-before.png) | ![ii-close after](evidence/2026-11-05/hut-light/ii-close-after.png) | [Comparison](evidence/2026-11-05/hut-light/ii-close-comparison.png) |
+
+Difference metrics:
+- b6-ext-day-front threshold `12` changed pixels `4266/2073600` (`0.2057%`) MAE `0.001520`.
+- b6-int-room-day threshold `12` changed pixels `1641019/2073600` (`79.1386%`) MAE `0.048263`.
+- b6-int-room-night-lit threshold `12` changed pixels `50593/2073600` (`2.4399%`) MAE `0.005680`.
+- b6-int-stove-day-unlit threshold `12` changed pixels `2073587/2073600` (`99.9994%`) MAE `0.208339`.
+- b6-int-stove-night-lit threshold `12` changed pixels `7902/2073600` (`0.3811%`) MAE `0.003291`.
+- b6-int-window-day threshold `12` changed pixels `1696224/2073600` (`81.8009%`) MAE `0.049046`.
+- b6-station-int-up-day threshold `12` changed pixels `1404323/2073600` (`67.7239%`) MAE `0.044734`.
+- b6-store-stocked-day threshold `12` changed pixels `1419565/2073600` (`68.4590%`) MAE `0.039641`.
+- b6-v1-int-night-lit threshold `12` changed pixels `218349/2073600` (`10.5299%`) MAE `0.012697`.
+- ii-close threshold `12` changed pixels `128/2073600` (`0.0062%`) MAE `0.003213`.
+
+Related documents:[polar-graphics-core.md](../plans/polar-graphics-core.md) / [rendering-streaming.md](../systems/rendering-streaming.md) / [polar-huts.md](../systems/polar-huts.md).

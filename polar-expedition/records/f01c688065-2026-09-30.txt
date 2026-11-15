@@ -1,0 +1,19 @@
+docs/engineering/logs/2026-09-30.md
+
+# 2026-09-30 Engineering log
+
+> Historical recovery recorded October 29, 2026. This is a concise account of surviving records, not a contemporaneous new entry or tests rerun during recovery. Reported results and open items retain their original scope; historical rules do not replace the current GDD.
+
+Source: `dated-log-2026-09-30`; see the [recovery record](evidence/2026-10-29/english-log-backfill/recovery.json).
+
+## Acts I-II integration and equipment design
+
+- Started the approved `codex/polar-mvp-act1-act2` work while preserving the existing shared tree. Captured real formal-entry, backpack, map, physical-book/reading and hut clear/blizzard baselines; retained an initial protected-evidence failure and reran in a distinct directory. The first shared-rule checkpoint passed 59 checks, but implementation and final acceptance were still in progress.
+- Recorded the user's rifle/ammunition/harpoon agreement: finite initial and whole-expedition ammunition, actual shots and remaining loot on death, thrown/recovered harpoons, purpose-specific finite stores, honest held-weapon information and stale supply records. Quantities, ranges, accuracy, hearing and balance required prototype calibration. Design mirrors/identifiers/tables/pictures and 31 rendered pages were checked; this document-only step did not itself implement weapons or rebuild a package.
+
+## Integration delivered after midnight
+
+- The same task completed October 1 as non-Development Windows 0.3.0: shared polar state, continuous body/inventory/stove/clearing actions, 21 people, bilateral protection/exchange, isolated saves, owned rifle/harpoon presentation and an eight-chapter, 32-page illustrated handbook. Island gameplay and independent survey prototypes were retained separately.
+- Shared rules passed 105 and the same-source Windows package 502 checks. Twelve genuine pairs and 284 actual package frames were inspected; 12,564 production inputs and 167 package files matched the release evidence.
+- At 1600x900, clear/blizzard/10x-rest P95 was 16.68/16.67/16.67 ms, peak private memory 5.34 GB, full 512-candidate Ready 398.20 s. Prior release files were archived rather than overwritten without recovery.
+- The existing CTI shader diagnostic remained explicit. Long exploration/combat balance, final terrain assets, asynchronous LOD and detailed foot IK were not delivered by this milestone. The [October 1 continuation](2026-10-01.md) preserves the failed candidates and later hut/loading work rather than treating the first checkpoint as release acceptance.

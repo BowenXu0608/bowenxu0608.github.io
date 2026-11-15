@@ -1,0 +1,292 @@
+docs/engineering/logs/2026-11-03.md
+
+# 2026-11-03 Engineering log
+
+## A watch no longer holds an explorer's plan
+<!-- project-update-log:2026-11-03:watch-holds-plan -->
+
+- Reason：The supply trial report showed keeping watch holding an explorer's plan and reflexes: Grant's ordered meal waited 14.4 game hours until hunger under 8 ended the watch (user: fix it here).
+- Implementation：PolarNpcSimulation.Step lets a watch go on while the plan waits, running the waits and the reflexes, and ends it at any other step.
+- Validation：Offline compile 0 errors; in-Editor check on a new seed-777 expedition: watch, wait, eat ends the watch and eats (satiety 50 to 64); a hungry watcher is fed by the reflex (30 to 44) and keeps watching (watch-check.txt).
+- Decisions and scope：No package of its own; it rides in the next package (0.6.100-test, Thin ice's dm-02). The old agency rehearsal's October 18 save no longer loads, so the check ran in the Editor directly.
+- Remaining work：PolarNpcAgencyRehearsal needs a current fixture to run again.
+- Visual evidence:When an explorer's plan runs while keeping watch is game logic; a screenshot cannot show a plan that waits. The Editor rehearsal checks it instead.
+
+Related documents:[polar-cloud-npcs.md](../systems/polar-cloud-npcs.md) / [current-status.md](../current-status.md).
+
+## Thin ice: pond cost and load soak
+<!-- project-update-log:2026-11-03:pond-cost-soak -->
+
+- Reason：M4 of the deep-water plan: gate the breakthrough's cost and show that ponds load and unload without growth.
+- Implementation：The performance mode (PolarMvpAcceptance.PondSoak.cs) measures pond 33 intact from its bank, breaking through until 6 s after, and quiet 9 s after, uncapped, since 60 fps pacing makes FrameTimingManager count the GPU's idle gaps (+6.6 ms paced, about 0.2 ms uncapped); then it visits that pond and one 250 m away 30 times each. The soak judges private memory by the floor of the last five visits, since one sample read a passing peak as growth in dm-05.
+- Validation：Gameplay 390 on dm-05 and performance 72 on dm-06 (Logs/PolarV7/0.6.102-test). Breaking: frame P95 11.46 ms, GPU P95 +0.25 ms and main thread +0.21 ms over the quiet pond; +40 MiB private and +28 MiB render textures. Soak: every count and native memory +0, private floor +4 and +21 MiB.
+- Remaining work：No paired runs against 0.6.95-test, which cannot run the scene; the runner's 1600x900 window; the front page's save-handling mode not rerun (v20 fixture, rule unchanged).
+- Visual evidence:Test code only: the performance mode gains the pond cost gate and a two-pond load soak; nothing the player sees changes, and dm-05 draws exactly what dm-03 draws.
+
+Related documents:[rendering-streaming.md](../systems/rendering-streaming.md) / [polar-thin-ice-deep-water.md](../plans/polar-thin-ice-deep-water.md).
+
+## The tent from Polar Habitat v1.1 (habitat plan M3)
+<!-- project-update-log:2026-11-03:pack-tent -->
+
+- Reason：M3 of the habitat plan: the Polar Habitat v1.1 two-person tent replaces the code-built tent, with its flaps blending closed, a canvas settle sound, and M2's two heater faults fixed.
+- Implementation：The pack tent (Resources/Polar/Camping/TwoPersonTent, PolarHabitatAuthor.BuildTent) turned half round, stood up from the pitch take's end, with M2's heater, the camp kettle, tin and sack and the pack's bags at the beds' places; front ridge guys stripped; canvas double-sided; the pack's flap meshes rewritten (hems, ties and eyelets rigid to the closed edge, open cloth under the gable, 3 cm out of the posts) and the front hems and groundsheet extended; flaps blend to Closed over 0.6 s with grips on the free edge; Tent/Settle as a flap seats; the open door's pane no longer glows and the burner mouth's seam line is gone; the woven canvas, weathering and STP bag removed.
+- Validation：Shared rules 2748; gameplay 390, weather 80 and ui 463 on hm3-01; ui 463 on hm3-02 and on hm3-03 (final), which differ only in the tent's flap, wing and groundsheet meshes (Logs/PolarV7/0.6.103-test). 43 five-areas cases before and after; a 32-agent review with a second reader per fault and a 14-agent recheck of the final set.
+- Remaining work：The rope ties dip about 1 cm behind the closed canvas at their bend; the world group's tent cases are staged with the talk camera on Adler (before and after alike); M4 huts and Pole Station, M5 release.
+
+### Screenshot comparison
+
+| State | Before | After | Difference |
+|---|---|---|---|
+| Player closing the flap, end | ![Player closing the flap, end before](evidence/2026-11-03/pack-tent/fp-flap-close-end-before.png) | ![Player closing the flap, end after](evidence/2026-11-03/pack-tent/fp-flap-close-end-after.png) | [Comparison](evidence/2026-11-03/pack-tent/fp-flap-close-end-comparison.png) |
+| Player closing the flap, mid | ![Player closing the flap, mid before](evidence/2026-11-03/pack-tent/fp-flap-close-mid-before.png) | ![Player closing the flap, mid after](evidence/2026-11-03/pack-tent/fp-flap-close-mid-after.png) | [Comparison](evidence/2026-11-03/pack-tent/fp-flap-close-mid-comparison.png) |
+| Player opening the flap, end | ![Player opening the flap, end before](evidence/2026-11-03/pack-tent/fp-flap-open-end-before.png) | ![Player opening the flap, end after](evidence/2026-11-03/pack-tent/fp-flap-open-end-after.png) | [Comparison](evidence/2026-11-03/pack-tent/fp-flap-open-end-comparison.png) |
+| Player opening the flap, mid | ![Player opening the flap, mid before](evidence/2026-11-03/pack-tent/fp-flap-open-mid-before.png) | ![Player opening the flap, mid after](evidence/2026-11-03/pack-tent/fp-flap-open-mid-after.png) | [Comparison](evidence/2026-11-03/pack-tent/fp-flap-open-mid-comparison.png) |
+| Player lighting the hut heater | ![Player lighting the hut heater before](evidence/2026-11-03/pack-tent/fp-hut-light-before.png) | ![Player lighting the hut heater after](evidence/2026-11-03/pack-tent/fp-hut-light-after.png) | [Comparison](evidence/2026-11-03/pack-tent/fp-hut-light-comparison.png) |
+| Player pitching, canvas | ![Player pitching, canvas before](evidence/2026-11-03/pack-tent/fp-pitch-canvas-before.png) | ![Player pitching, canvas after](evidence/2026-11-03/pack-tent/fp-pitch-canvas-after.png) | [Comparison](evidence/2026-11-03/pack-tent/fp-pitch-canvas-comparison.png) |
+| Player pitching, frame | ![Player pitching, frame before](evidence/2026-11-03/pack-tent/fp-pitch-frame-before.png) | ![Player pitching, frame after](evidence/2026-11-03/pack-tent/fp-pitch-frame-after.png) | [Comparison](evidence/2026-11-03/pack-tent/fp-pitch-frame-comparison.png) |
+| Player asleep in the tent | ![Player asleep in the tent before](evidence/2026-11-03/pack-tent/fp-sleep-tent-before.png) | ![Player asleep in the tent after](evidence/2026-11-03/pack-tent/fp-sleep-tent-after.png) | [Comparison](evidence/2026-11-03/pack-tent/fp-sleep-tent-comparison.png) |
+| Player striking, mid | ![Player striking, mid before](evidence/2026-11-03/pack-tent/fp-strike-mid-before.png) | ![Player striking, mid after](evidence/2026-11-03/pack-tent/fp-strike-mid-after.png) | [Comparison](evidence/2026-11-03/pack-tent/fp-strike-mid-comparison.png) |
+| Player lighting the tent burner | ![Player lighting the tent burner before](evidence/2026-11-03/pack-tent/fp-tent-light-before.png) | ![Player lighting the tent burner after](evidence/2026-11-03/pack-tent/fp-tent-light-after.png) | [Comparison](evidence/2026-11-03/pack-tent/fp-tent-light-comparison.png) |
+| Player putting out the tent burner | ![Player putting out the tent burner before](evidence/2026-11-03/pack-tent/fp-tent-putout-before.png) | ![Player putting out the tent burner after](evidence/2026-11-03/pack-tent/fp-tent-putout-after.png) | [Comparison](evidence/2026-11-03/pack-tent/fp-tent-putout-comparison.png) |
+| Player refuelling the tent burner | ![Player refuelling the tent burner before](evidence/2026-11-03/pack-tent/fp-tent-refuel-before.png) | ![Player refuelling the tent burner after](evidence/2026-11-03/pack-tent/fp-tent-refuel-after.png) | [Comparison](evidence/2026-11-03/pack-tent/fp-tent-refuel-comparison.png) |
+| Player waking alarmed in the tent | ![Player waking alarmed in the tent before](evidence/2026-11-03/pack-tent/fp-wake-alert-before.png) | ![Player waking alarmed in the tent after](evidence/2026-11-03/pack-tent/fp-wake-alert-after.png) | [Comparison](evidence/2026-11-03/pack-tent/fp-wake-alert-comparison.png) |
+| Hut heater close | ![Hut heater close before](evidence/2026-11-03/pack-tent/hut-close-before.png) | ![Hut heater close after](evidence/2026-11-03/pack-tent/hut-close-after.png) | [Comparison](evidence/2026-11-03/pack-tent/hut-close-comparison.png) |
+| Hut heater from the door | ![Hut heater from the door before](evidence/2026-11-03/pack-tent/hut-door-before.png) | ![Hut heater from the door after](evidence/2026-11-03/pack-tent/hut-door-after.png) | [Comparison](evidence/2026-11-03/pack-tent/hut-door-comparison.png) |
+| Explorer closing the flap, end | ![Explorer closing the flap, end before](evidence/2026-11-03/pack-tent/npc-flap-close-end-before.png) | ![Explorer closing the flap, end after](evidence/2026-11-03/pack-tent/npc-flap-close-end-after.png) | [Comparison](evidence/2026-11-03/pack-tent/npc-flap-close-end-comparison.png) |
+| Explorer closing the flap, mid | ![Explorer closing the flap, mid before](evidence/2026-11-03/pack-tent/npc-flap-close-mid-before.png) | ![Explorer closing the flap, mid after](evidence/2026-11-03/pack-tent/npc-flap-close-mid-after.png) | [Comparison](evidence/2026-11-03/pack-tent/npc-flap-close-mid-comparison.png) |
+| Explorer opening the flap, end | ![Explorer opening the flap, end before](evidence/2026-11-03/pack-tent/npc-flap-open-end-before.png) | ![Explorer opening the flap, end after](evidence/2026-11-03/pack-tent/npc-flap-open-end-after.png) | [Comparison](evidence/2026-11-03/pack-tent/npc-flap-open-end-comparison.png) |
+| Explorer opening the flap, mid | ![Explorer opening the flap, mid before](evidence/2026-11-03/pack-tent/npc-flap-open-mid-before.png) | ![Explorer opening the flap, mid after](evidence/2026-11-03/pack-tent/npc-flap-open-mid-after.png) | [Comparison](evidence/2026-11-03/pack-tent/npc-flap-open-mid-comparison.png) |
+| Explorer refuelling the hut heater | ![Explorer refuelling the hut heater before](evidence/2026-11-03/pack-tent/npc-hut-refuel-before.png) | ![Explorer refuelling the hut heater after](evidence/2026-11-03/pack-tent/npc-hut-refuel-after.png) | [Comparison](evidence/2026-11-03/pack-tent/npc-hut-refuel-comparison.png) |
+| Explorer pitching, canvas | ![Explorer pitching, canvas before](evidence/2026-11-03/pack-tent/npc-pitch-canvas-before.png) | ![Explorer pitching, canvas after](evidence/2026-11-03/pack-tent/npc-pitch-canvas-after.png) | [Comparison](evidence/2026-11-03/pack-tent/npc-pitch-canvas-comparison.png) |
+| Explorer pitching, groundsheet | ![Explorer pitching, groundsheet before](evidence/2026-11-03/pack-tent/npc-pitch-floor-before.png) | ![Explorer pitching, groundsheet after](evidence/2026-11-03/pack-tent/npc-pitch-floor-after.png) | [Comparison](evidence/2026-11-03/pack-tent/npc-pitch-floor-comparison.png) |
+| Explorer pitching, frame | ![Explorer pitching, frame before](evidence/2026-11-03/pack-tent/npc-pitch-frame-before.png) | ![Explorer pitching, frame after](evidence/2026-11-03/pack-tent/npc-pitch-frame-after.png) | [Comparison](evidence/2026-11-03/pack-tent/npc-pitch-frame-comparison.png) |
+| Explorer pitching, ropes and interior | ![Explorer pitching, ropes and interior before](evidence/2026-11-03/pack-tent/npc-pitch-secure-before.png) | ![Explorer pitching, ropes and interior after](evidence/2026-11-03/pack-tent/npc-pitch-secure-after.png) | [Comparison](evidence/2026-11-03/pack-tent/npc-pitch-secure-comparison.png) |
+| Explorer asleep in the tent | ![Explorer asleep in the tent before](evidence/2026-11-03/pack-tent/npc-sleep-tent-before.png) | ![Explorer asleep in the tent after](evidence/2026-11-03/pack-tent/npc-sleep-tent-after.png) | [Comparison](evidence/2026-11-03/pack-tent/npc-sleep-tent-comparison.png) |
+| Explorer striking, mid | ![Explorer striking, mid before](evidence/2026-11-03/pack-tent/npc-strike-mid-before.png) | ![Explorer striking, mid after](evidence/2026-11-03/pack-tent/npc-strike-mid-after.png) | [Comparison](evidence/2026-11-03/pack-tent/npc-strike-mid-comparison.png) |
+| Explorer putting out the tent burner | ![Explorer putting out the tent burner before](evidence/2026-11-03/pack-tent/npc-tent-putout-before.png) | ![Explorer putting out the tent burner after](evidence/2026-11-03/pack-tent/npc-tent-putout-after.png) | [Comparison](evidence/2026-11-03/pack-tent/npc-tent-putout-comparison.png) |
+| Explorer refuelling the tent burner | ![Explorer refuelling the tent burner before](evidence/2026-11-03/pack-tent/npc-tent-refuel-before.png) | ![Explorer refuelling the tent burner after](evidence/2026-11-03/pack-tent/npc-tent-refuel-after.png) | [Comparison](evidence/2026-11-03/pack-tent/npc-tent-refuel-comparison.png) |
+| Explorer waking alarmed in the tent | ![Explorer waking alarmed in the tent before](evidence/2026-11-03/pack-tent/npc-wake-alert-before.png) | ![Explorer waking alarmed in the tent after](evidence/2026-11-03/pack-tent/npc-wake-alert-after.png) | [Comparison](evidence/2026-11-03/pack-tent/npc-wake-alert-comparison.png) |
+| Tent burner lit, from the back | ![Tent burner lit, from the back before](evidence/2026-11-03/pack-tent/tent-back-before.png) | ![Tent burner lit, from the back after](evidence/2026-11-03/pack-tent/tent-back-after.png) | [Comparison](evidence/2026-11-03/pack-tent/tent-back-comparison.png) |
+| Tent burner lit, from the entrance | ![Tent burner lit, from the entrance before](evidence/2026-11-03/pack-tent/tent-entrance-before.png) | ![Tent burner lit, from the entrance after](evidence/2026-11-03/pack-tent/tent-entrance-after.png) | [Comparison](evidence/2026-11-03/pack-tent/tent-entrance-comparison.png) |
+| Tent snow pit | ![Tent snow pit before](evidence/2026-11-03/pack-tent/tent-pit-before.png) | ![Tent snow pit after](evidence/2026-11-03/pack-tent/tent-pit-after.png) | [Comparison](evidence/2026-11-03/pack-tent/tent-pit-comparison.png) |
+| Tent half pitched | ![Tent half pitched before](evidence/2026-11-03/pack-tent/tent-pitch-half-before.png) | ![Tent half pitched after](evidence/2026-11-03/pack-tent/tent-pitch-half-after.png) | [Comparison](evidence/2026-11-03/pack-tent/tent-pitch-half-comparison.png) |
+| Tent pitched | ![Tent pitched before](evidence/2026-11-03/pack-tent/tent-pitched-before.png) | ![Tent pitched after](evidence/2026-11-03/pack-tent/tent-pitched-after.png) | [Comparison](evidence/2026-11-03/pack-tent/tent-pitched-comparison.png) |
+| Tent from the side | ![Tent from the side before](evidence/2026-11-03/pack-tent/tent-side-before.png) | ![Tent from the side after](evidence/2026-11-03/pack-tent/tent-side-after.png) | [Comparison](evidence/2026-11-03/pack-tent/tent-side-comparison.png) |
+| Tent burner lit, standing | ![Tent burner lit, standing before](evidence/2026-11-03/pack-tent/tent-stand-before.png) | ![Tent burner lit, standing after](evidence/2026-11-03/pack-tent/tent-stand-after.png) | [Comparison](evidence/2026-11-03/pack-tent/tent-stand-comparison.png) |
+| Tent burner by day, inside | ![Tent burner by day, inside before](evidence/2026-11-03/pack-tent/tent-stove-day-inside-before.png) | ![Tent burner by day, inside after](evidence/2026-11-03/pack-tent/tent-stove-day-inside-after.png) | [Comparison](evidence/2026-11-03/pack-tent/tent-stove-day-inside-comparison.png) |
+| Tent burner by day, outside | ![Tent burner by day, outside before](evidence/2026-11-03/pack-tent/tent-stove-day-outside-before.png) | ![Tent burner by day, outside after](evidence/2026-11-03/pack-tent/tent-stove-day-outside-after.png) | [Comparison](evidence/2026-11-03/pack-tent/tent-stove-day-outside-comparison.png) |
+| Tent burner at night, inside | ![Tent burner at night, inside before](evidence/2026-11-03/pack-tent/tent-stove-night-inside-before.png) | ![Tent burner at night, inside after](evidence/2026-11-03/pack-tent/tent-stove-night-inside-after.png) | [Comparison](evidence/2026-11-03/pack-tent/tent-stove-night-inside-comparison.png) |
+| Tent burner at night, outside | ![Tent burner at night, outside before](evidence/2026-11-03/pack-tent/tent-stove-night-outside-before.png) | ![Tent burner at night, outside after](evidence/2026-11-03/pack-tent/tent-stove-night-outside-after.png) | [Comparison](evidence/2026-11-03/pack-tent/tent-stove-night-outside-comparison.png) |
+| Tent burner prompt | ![Tent burner prompt before](evidence/2026-11-03/pack-tent/tent-stove-prompt-before.png) | ![Tent burner prompt after](evidence/2026-11-03/pack-tent/tent-stove-prompt-after.png) | [Comparison](evidence/2026-11-03/pack-tent/tent-stove-prompt-comparison.png) |
+| Tent burner prompt with oil | ![Tent burner prompt with oil before](evidence/2026-11-03/pack-tent/tent-stove-prompt-oil-before.png) | ![Tent burner prompt with oil after](evidence/2026-11-03/pack-tent/tent-stove-prompt-oil-after.png) | [Comparison](evidence/2026-11-03/pack-tent/tent-stove-prompt-oil-comparison.png) |
+| Tent half struck | ![Tent half struck before](evidence/2026-11-03/pack-tent/tent-strike-half-before.png) | ![Tent half struck after](evidence/2026-11-03/pack-tent/tent-strike-half-after.png) | [Comparison](evidence/2026-11-03/pack-tent/tent-strike-half-comparison.png) |
+
+Difference metrics:
+- Player closing the flap, end threshold `12` changed pixels `793970/1440000` (`55.1368%`) MAE `0.078899`.
+- Player closing the flap, mid threshold `12` changed pixels `772154/1440000` (`53.6218%`) MAE `0.078597`.
+- Player opening the flap, end threshold `12` changed pixels `791193/1440000` (`54.9440%`) MAE `0.084024`.
+- Player opening the flap, mid threshold `12` changed pixels `763268/1440000` (`53.0047%`) MAE `0.083046`.
+- Player lighting the hut heater threshold `12` changed pixels `746/1440000` (`0.0518%`) MAE `0.001141`.
+- Player pitching, canvas threshold `12` changed pixels `557363/1440000` (`38.7058%`) MAE `0.061578`.
+- Player pitching, frame threshold `12` changed pixels `398157/1440000` (`27.6498%`) MAE `0.059098`.
+- Player asleep in the tent threshold `12` changed pixels `1158742/1440000` (`80.4682%`) MAE `0.082346`.
+- Player striking, mid threshold `12` changed pixels `345881/1440000` (`24.0195%`) MAE `0.063906`.
+- Player lighting the tent burner threshold `12` changed pixels `975283/1440000` (`67.7280%`) MAE `0.092059`.
+- Player putting out the tent burner threshold `12` changed pixels `934167/1440000` (`64.8727%`) MAE `0.085848`.
+- Player refuelling the tent burner threshold `12` changed pixels `929563/1440000` (`64.5530%`) MAE `0.088455`.
+- Player waking alarmed in the tent threshold `12` changed pixels `1022188/1440000` (`70.9853%`) MAE `0.097611`.
+- Hut heater close threshold `12` changed pixels `384/1440000` (`0.0267%`) MAE `0.000136`.
+- Hut heater from the door threshold `12` changed pixels `82/1440000` (`0.0057%`) MAE `0.000035`.
+- Explorer closing the flap, end threshold `12` changed pixels `273793/1440000` (`19.0134%`) MAE `0.027956`.
+- Explorer closing the flap, mid threshold `12` changed pixels `272531/1440000` (`18.9258%`) MAE `0.028283`.
+- Explorer opening the flap, end threshold `12` changed pixels `264809/1440000` (`18.3895%`) MAE `0.027633`.
+- Explorer opening the flap, mid threshold `12` changed pixels `276070/1440000` (`19.1715%`) MAE `0.029520`.
+- Explorer refuelling the hut heater threshold `12` changed pixels `6439/1440000` (`0.4472%`) MAE `0.001889`.
+- Explorer pitching, canvas threshold `12` changed pixels `286870/1440000` (`19.9215%`) MAE `0.028421`.
+- Explorer pitching, groundsheet threshold `12` changed pixels `70518/1440000` (`4.8971%`) MAE `0.010079`.
+- Explorer pitching, frame threshold `12` changed pixels `137028/1440000` (`9.5158%`) MAE `0.022844`.
+- Explorer pitching, ropes and interior threshold `12` changed pixels `226785/1440000` (`15.7490%`) MAE `0.022719`.
+- Explorer asleep in the tent threshold `12` changed pixels `320567/1440000` (`22.2616%`) MAE `0.030958`.
+- Explorer striking, mid threshold `12` changed pixels `125131/1440000` (`8.6897%`) MAE `0.019154`.
+- Explorer putting out the tent burner threshold `12` changed pixels `371454/1440000` (`25.7954%`) MAE `0.046117`.
+- Explorer refuelling the tent burner threshold `12` changed pixels `397531/1440000` (`27.6063%`) MAE `0.048802`.
+- Explorer waking alarmed in the tent threshold `12` changed pixels `307223/1440000` (`21.3349%`) MAE `0.030344`.
+- Tent burner lit, from the back threshold `12` changed pixels `1058685/1440000` (`73.5198%`) MAE `0.091053`.
+- Tent burner lit, from the entrance threshold `12` changed pixels `585487/1440000` (`40.6588%`) MAE `0.054896`.
+- Tent snow pit threshold `12` changed pixels `308358/1440000` (`21.4138%`) MAE `0.034046`.
+- Tent half pitched threshold `12` changed pixels `11522/1440000` (`0.8001%`) MAE `0.003191`.
+- Tent pitched threshold `12` changed pixels `12055/1440000` (`0.8372%`) MAE `0.003355`.
+- Tent from the side threshold `12` changed pixels `332005/1440000` (`23.0559%`) MAE `0.045209`.
+- Tent burner lit, standing threshold `12` changed pixels `947351/1440000` (`65.7883%`) MAE `0.079717`.
+- Tent burner by day, inside threshold `12` changed pixels `1270571/1440000` (`88.2341%`) MAE `0.129014`.
+- Tent burner by day, outside threshold `12` changed pixels `17327/1440000` (`1.2033%`) MAE `0.004013`.
+- Tent burner at night, inside threshold `12` changed pixels `1223611/1440000` (`84.9730%`) MAE `0.097076`.
+- Tent burner at night, outside threshold `12` changed pixels `16834/1440000` (`1.1690%`) MAE `0.005994`.
+- Tent burner prompt threshold `12` changed pixels `972042/1440000` (`67.5029%`) MAE `0.098736`.
+- Tent burner prompt with oil threshold `12` changed pixels `981458/1440000` (`68.1568%`) MAE `0.098969`.
+- Tent half struck threshold `12` changed pixels `14596/1440000` (`1.0136%`) MAE `0.003788`.
+
+Related documents:[polar-habitat-models.md](../plans/polar-habitat-models.md).
+
+## Intact pond ice: clear, cracked, floating (thin-ice plan M3)
+<!-- project-update-log:2026-11-03:intact-ice-look -->
+
+- Reason：M3 of the thin-ice plan: intact pond ice read as a painted floor with Voronoi cell lines and plate seams, not as clear, cracked ice over deep water (concepts 03, 09, 10).
+- Implementation：Each pond gets its own refrozen crack network (PolarIceMap, worker thread, deterministic), drawn as sheets through the ice's 6 cm along the refracted view; white ice along the bank, clear ice darkening to near black 6 m out, bubbles in four layers in patches, clear ice .95 smooth in screen-space reflections; cell lines, plate seams and _PolarDamage removed. Package 0.6.104-test, build ii-02 (ii-01 plus a cheaper crack loop). Render only.
+- Validation：Seed 777 passes 1104 world checks, one new for the maps; gameplay 390 and performance 72 on ii-02, continue 36 and weather 80 on ii-01 (Logs/PolarV7/0.6.104-test). ii-01 failed the pond gate (+2.54 ms GPU P95 breaking through over quiet, the crack loop on the undersides); ii-02 passes at +0.32 ms. Eleven before/after pairs of b4-intact-ice (pond 33, seed 777) inspected.
+- Decisions and scope：Exact crack segments per 1 m cell instead of a distance field (hairlines stay sharp); no pond floor (20 m water since v23), a shore-distance texture instead; no clear coat (the hand-ported Lit has it only in ray tracing); value noise on two grids 37 degrees apart (one grid showed square cells).
+- Remaining work：Against 0.6.102-test's run, not paired, pond 33 is 1.3 ms (bank) to 2 ms (in the pond) slower on the GPU; a paired run has not been made. Next: the plan's M4 (bending and flooding), M5 (the shore), then the pond hole rims.
+
+### Screenshot comparison
+
+| State | Before | After | Difference |
+|---|---|---|---|
+| ii-bank | ![ii-bank before](evidence/2026-11-03/intact-ice-look/ii-bank-before.png) | ![ii-bank after](evidence/2026-11-03/intact-ice-look/ii-bank-after.png) | [Comparison](evidence/2026-11-03/intact-ice-look/ii-bank-comparison.png) |
+| ii-bank-centre | ![ii-bank-centre before](evidence/2026-11-03/intact-ice-look/ii-bank-centre-before.png) | ![ii-bank-centre after](evidence/2026-11-03/intact-ice-look/ii-bank-centre-after.png) | [Comparison](evidence/2026-11-03/intact-ice-look/ii-bank-centre-comparison.png) |
+| ii-close | ![ii-close before](evidence/2026-11-03/intact-ice-look/ii-close-before.png) | ![ii-close after](evidence/2026-11-03/intact-ice-look/ii-close-after.png) | [Comparison](evidence/2026-11-03/intact-ice-look/ii-close-comparison.png) |
+| ii-far | ![ii-far before](evidence/2026-11-03/intact-ice-look/ii-far-before.png) | ![ii-far after](evidence/2026-11-03/intact-ice-look/ii-far-after.png) | [Comparison](evidence/2026-11-03/intact-ice-look/ii-far-comparison.png) |
+| ii-feet | ![ii-feet before](evidence/2026-11-03/intact-ice-look/ii-feet-before.png) | ![ii-feet after](evidence/2026-11-03/intact-ice-look/ii-feet-after.png) | [Comparison](evidence/2026-11-03/intact-ice-look/ii-feet-comparison.png) |
+| ii-night | ![ii-night before](evidence/2026-11-03/intact-ice-look/ii-night-before.png) | ![ii-night after](evidence/2026-11-03/intact-ice-look/ii-night-after.png) | [Comparison](evidence/2026-11-03/intact-ice-look/ii-night-comparison.png) |
+| ii-overcast | ![ii-overcast before](evidence/2026-11-03/intact-ice-look/ii-overcast-before.png) | ![ii-overcast after](evidence/2026-11-03/intact-ice-look/ii-overcast-after.png) | [Comparison](evidence/2026-11-03/intact-ice-look/ii-overcast-comparison.png) |
+| ii-overhead | ![ii-overhead before](evidence/2026-11-03/intact-ice-look/ii-overhead-before.png) | ![ii-overhead after](evidence/2026-11-03/intact-ice-look/ii-overhead-after.png) | [Comparison](evidence/2026-11-03/intact-ice-look/ii-overhead-comparison.png) |
+| ii-overhead-low | ![ii-overhead-low before](evidence/2026-11-03/intact-ice-look/ii-overhead-low-before.png) | ![ii-overhead-low after](evidence/2026-11-03/intact-ice-look/ii-overhead-low-after.png) | [Comparison](evidence/2026-11-03/intact-ice-look/ii-overhead-low-comparison.png) |
+| ii-standing | ![ii-standing before](evidence/2026-11-03/intact-ice-look/ii-standing-before.png) | ![ii-standing after](evidence/2026-11-03/intact-ice-look/ii-standing-after.png) | [Comparison](evidence/2026-11-03/intact-ice-look/ii-standing-comparison.png) |
+| ii-storm | ![ii-storm before](evidence/2026-11-03/intact-ice-look/ii-storm-before.png) | ![ii-storm after](evidence/2026-11-03/intact-ice-look/ii-storm-after.png) | [Comparison](evidence/2026-11-03/intact-ice-look/ii-storm-comparison.png) |
+
+Difference metrics:
+- ii-bank threshold `12` changed pixels `325378/2073600` (`15.6915%`) MAE `0.025248`.
+- ii-bank-centre threshold `12` changed pixels `398727/2073600` (`19.2287%`) MAE `0.033759`.
+- ii-close threshold `12` changed pixels `370659/2073600` (`17.8751%`) MAE `0.025970`.
+- ii-far threshold `12` changed pixels `1939/2073600` (`0.0935%`) MAE `0.001359`.
+- ii-feet threshold `12` changed pixels `772671/2073600` (`37.2623%`) MAE `0.065092`.
+- ii-night threshold `12` changed pixels `380549/2073600` (`18.3521%`) MAE `0.027368`.
+- ii-overcast threshold `12` changed pixels `382225/2073600` (`18.4329%`) MAE `0.028366`.
+- ii-overhead threshold `12` changed pixels `677494/2073600` (`32.6724%`) MAE `0.074440`.
+- ii-overhead-low threshold `12` changed pixels `864611/2073600` (`41.6961%`) MAE `0.111704`.
+- ii-standing threshold `12` changed pixels `777698/2073600` (`37.5047%`) MAE `0.059786`.
+- ii-storm threshold `12` changed pixels `422255/2073600` (`20.3634%`) MAE `0.025658`.
+
+Related documents:[rendering-streaming.md](../systems/rendering-streaming.md) / [polar-thin-ice-upgrade.md](../plans/polar-thin-ice-upgrade.md).
+
+## The island's coast and the sea
+<!-- project-update-log:2026-11-03:coast-and-sea -->
+
+- Reason：The user asked for the island's edges, the ice holes and the sea to look like Codex's ten ice-edge concepts; M1 of the adjusted plan covers the coast and the sea (E10).
+- Implementation：
+  - At the sea the ground draws dark wet rock and stones under the water, a wet band that surges with the weather and an icy glaze above it, and the drawn snow (and SnowAt) thins to the waterline (PolarIceEdge.hlsl, PolarCoast.Snow).
+  - Broken shore ice crowds the waterline: slanted plates 15-40 cm thick of many widths with open water between, many drifted and turned, each with a bent middle row, and young pancake plates loose 1-25 m out, built on a worker within 700 m (PolarCoast, PolarIceEdge.Coast and Bay, kind 9 IceEdge); coastal bays get the same along their walls.
+  - The nearest 512 loose plates ride the HDRP ocean's swell (WaterSimulationSearchJob) and eight shore-wave foam decals break along the nearest waterline (SeaShore.mat). Render only; colliders, rules, saves and world hashes unchanged.
+- Validation：
+  - Build ie-01 (0.6.105-test): gameplay 390, physical 3959, performance 72 and weather 80 pass (Logs/PolarV7/0.6.105-test/ie-01); world hash BF321ACDC2E7B04D unchanged; frame P95 16.7 ms at 60 fps pacing as on 0.6.104-test.
+  - b8-ice-edge after capture ie-m1-after-4 PASS 40, 14 coast and bay pairs compared; at the coast stand 10 runs hold 26,720 vertices and 317 loose plates, 144 riding.
+- Decisions and scope：October 27's 'surf and wet rock are not part of this change' is superseded (design-decisions.md, top section).
+- Remaining work：The performance mode has no coast view, so the coast's own GPU cost is not yet measured; M2 adds a sea view. M2 (floes and offshore icebergs), M3 (shore ice) and M4 (gap walls) follow, each its own package.
+
+### Screenshot comparison
+
+| State | Before | After | Difference |
+|---|---|---|---|
+| A coastal bay's bank | ![A coastal bay's bank before](evidence/2026-11-03/coast-and-sea/bay-bank-before.png) | ![A coastal bay's bank after](evidence/2026-11-03/coast-and-sea/bay-bank-after.png) | [Comparison](evidence/2026-11-03/coast-and-sea/bay-bank-comparison.png) |
+| A coastal bay's wall foot | ![A coastal bay's wall foot before](evidence/2026-11-03/coast-and-sea/bay-foot-before.png) | ![A coastal bay's wall foot after](evidence/2026-11-03/coast-and-sea/bay-foot-after.png) | [Comparison](evidence/2026-11-03/coast-and-sea/bay-foot-comparison.png) |
+| Along the coast | ![Along the coast before](evidence/2026-11-03/coast-and-sea/coast-along-before.png) | ![Along the coast after](evidence/2026-11-03/coast-and-sea/coast-along-after.png) | [Comparison](evidence/2026-11-03/coast-and-sea/coast-along-comparison.png) |
+| The sea's horizon from the coast | ![The sea's horizon from the coast before](evidence/2026-11-03/coast-and-sea/coast-horizon-before.png) | ![The sea's horizon from the coast after](evidence/2026-11-03/coast-and-sea/coast-horizon-after.png) | [Comparison](evidence/2026-11-03/coast-and-sea/coast-horizon-comparison.png) |
+| Coast at the waterline, crouched 0.3 m | ![Coast at the waterline, crouched 0.3 m before](evidence/2026-11-03/coast-and-sea/coast-low-before.png) | ![Coast at the waterline, crouched 0.3 m after](evidence/2026-11-03/coast-and-sea/coast-low-after.png) | [Comparison](evidence/2026-11-03/coast-and-sea/coast-low-comparison.png) |
+| Coast at night | ![Coast at night before](evidence/2026-11-03/coast-and-sea/coast-night-before.png) | ![Coast at night after](evidence/2026-11-03/coast-and-sea/coast-night-after.png) | [Comparison](evidence/2026-11-03/coast-and-sea/coast-night-comparison.png) |
+| Coast from 40 m, oblique | ![Coast from 40 m, oblique before](evidence/2026-11-03/coast-and-sea/coast-oblique-before.png) | ![Coast from 40 m, oblique after](evidence/2026-11-03/coast-and-sea/coast-oblique-after.png) | [Comparison](evidence/2026-11-03/coast-and-sea/coast-oblique-comparison.png) |
+| Coast, overcast | ![Coast, overcast before](evidence/2026-11-03/coast-and-sea/coast-overcast-before.png) | ![Coast, overcast after](evidence/2026-11-03/coast-and-sea/coast-overcast-after.png) | [Comparison](evidence/2026-11-03/coast-and-sea/coast-overcast-comparison.png) |
+| Coast at the waterline, standing | ![Coast at the waterline, standing before](evidence/2026-11-03/coast-and-sea/coast-stand-before.png) | ![Coast at the waterline, standing after](evidence/2026-11-03/coast-and-sea/coast-stand-after.png) | [Comparison](evidence/2026-11-03/coast-and-sea/coast-stand-comparison.png) |
+| Coast in a storm | ![Coast in a storm before](evidence/2026-11-03/coast-and-sea/coast-storm-before.png) | ![Coast in a storm after](evidence/2026-11-03/coast-and-sea/coast-storm-after.png) | [Comparison](evidence/2026-11-03/coast-and-sea/coast-storm-comparison.png) |
+| Coast strafe 0 | ![Coast strafe 0 before](evidence/2026-11-03/coast-and-sea/coast-strafe-0-before.png) | ![Coast strafe 0 after](evidence/2026-11-03/coast-and-sea/coast-strafe-0-after.png) | [Comparison](evidence/2026-11-03/coast-and-sea/coast-strafe-0-comparison.png) |
+| Coast strafe 1 | ![Coast strafe 1 before](evidence/2026-11-03/coast-and-sea/coast-strafe-1-before.png) | ![Coast strafe 1 after](evidence/2026-11-03/coast-and-sea/coast-strafe-1-after.png) | [Comparison](evidence/2026-11-03/coast-and-sea/coast-strafe-1-comparison.png) |
+| Coast strafe 2 | ![Coast strafe 2 before](evidence/2026-11-03/coast-and-sea/coast-strafe-2-before.png) | ![Coast strafe 2 after](evidence/2026-11-03/coast-and-sea/coast-strafe-2-after.png) | [Comparison](evidence/2026-11-03/coast-and-sea/coast-strafe-2-comparison.png) |
+| Coast strafe 3 | ![Coast strafe 3 before](evidence/2026-11-03/coast-and-sea/coast-strafe-3-before.png) | ![Coast strafe 3 after](evidence/2026-11-03/coast-and-sea/coast-strafe-3-after.png) | [Comparison](evidence/2026-11-03/coast-and-sea/coast-strafe-3-comparison.png) |
+
+Difference metrics:
+- A coastal bay's bank threshold `12` changed pixels `967/2073600` (`0.0466%`) MAE `0.004866`.
+- A coastal bay's wall foot threshold `12` changed pixels `224235/2073600` (`10.8138%`) MAE `0.016533`.
+- Along the coast threshold `12` changed pixels `614267/2073600` (`29.6232%`) MAE `0.037905`.
+- The sea's horizon from the coast threshold `12` changed pixels `645448/2073600` (`31.1269%`) MAE `0.043942`.
+- Coast at the waterline, crouched 0.3 m threshold `12` changed pixels `1031729/2073600` (`49.7554%`) MAE `0.176909`.
+- Coast at night threshold `12` changed pixels `613675/2073600` (`29.5947%`) MAE `0.058270`.
+- Coast from 40 m, oblique threshold `12` changed pixels `137055/2073600` (`6.6095%`) MAE `0.018649`.
+- Coast, overcast threshold `12` changed pixels `625341/2073600` (`30.1573%`) MAE `0.064872`.
+- Coast at the waterline, standing threshold `12` changed pixels `667951/2073600` (`32.2121%`) MAE `0.060615`.
+- Coast in a storm threshold `12` changed pixels `671481/2073600` (`32.3824%`) MAE `0.060783`.
+- Coast strafe 0 threshold `12` changed pixels `653313/2073600` (`31.5062%`) MAE `0.059517`.
+- Coast strafe 1 threshold `12` changed pixels `637680/2073600` (`30.7523%`) MAE `0.057192`.
+- Coast strafe 2 threshold `12` changed pixels `615107/2073600` (`29.6637%`) MAE `0.053925`.
+- Coast strafe 3 threshold `12` changed pixels `597685/2073600` (`28.8235%`) MAE `0.051143`.
+
+Related documents:[rendering-streaming.md](../systems/rendering-streaming.md) / [polar-ice-edge-upgrade.md](../plans/polar-ice-edge-upgrade.md) / [design-decisions.md](../../design-decisions.md) / [current-status.md](../current-status.md).
+
+## Thin ice bends and floods under load
+<!-- project-update-log:2026-11-03:ice-bending-flood -->
+
+- Reason：M4 of the thin-ice plan: a loaded plate should bend as one sheet and flood before it breaks; the drawn cap was a rigid dish and water only seeped as a painted stain.
+- Implementation：Loaded weak plates are drawn bent by the vertex stage (D e^-r (cos r + sin r), four bowls from PolarThinIceRuntime.LateUpdate, 1.5x the rules' sag), drawn without their caps' rigid sag so seams meet; plate tops in 0.3 m rows; a dark mirror film draws the flood with the sheet held 3 mm over the water; caps draw camera motion vectors; the CPU dish and the seep are gone. Render only; package 0.6.106-test, build ib-01.
+- Validation：Capture b4-intact-ice PASS 21 before (ib-before) and after (ib-after2); gameplay 390, continue 36 and performance 72 pass on ib-01 (Logs/PolarV7/0.6.106-test/ib-01); pond 33 GPU P95 8.91 ms intact, 11.38 breaking, 11.00 quiet against ii-02's 9.23, 13.17, 12.86 (not paired); the 30-visit soak holds at +0.
+- Decisions and scope：HDRP's pond water over the bent sheet showed the rows as a pale faceted polygon from a low eye (ib-after), so the sheet stops 3 mm over the water and the film is the flood (ib-after2).
+- Remaining work：No motion vectors for the bend itself; the boot is not planted in the bowl. M5 (the shore) is next.
+
+### Screenshot comparison
+
+| State | Before | After | Difference |
+|---|---|---|---|
+| ii-feet | ![ii-feet before](evidence/2026-11-03/ice-bending-flood/ii-feet-before.png) | ![ii-feet after](evidence/2026-11-03/ice-bending-flood/ii-feet-after.png) | [Comparison](evidence/2026-11-03/ice-bending-flood/ii-feet-comparison.png) |
+| ii-load50-bank | ![ii-load50-bank before](evidence/2026-11-03/ice-bending-flood/ii-load50-bank-before.png) | ![ii-load50-bank after](evidence/2026-11-03/ice-bending-flood/ii-load50-bank-after.png) | [Comparison](evidence/2026-11-03/ice-bending-flood/ii-load50-bank-comparison.png) |
+| ii-load50-close | ![ii-load50-close before](evidence/2026-11-03/ice-bending-flood/ii-load50-close-before.png) | ![ii-load50-close after](evidence/2026-11-03/ice-bending-flood/ii-load50-close-after.png) | [Comparison](evidence/2026-11-03/ice-bending-flood/ii-load50-close-comparison.png) |
+| ii-load50-low | ![ii-load50-low before](evidence/2026-11-03/ice-bending-flood/ii-load50-low-before.png) | ![ii-load50-low after](evidence/2026-11-03/ice-bending-flood/ii-load50-low-after.png) | [Comparison](evidence/2026-11-03/ice-bending-flood/ii-load50-low-comparison.png) |
+| ii-load50-overhead | ![ii-load50-overhead before](evidence/2026-11-03/ice-bending-flood/ii-load50-overhead-before.png) | ![ii-load50-overhead after](evidence/2026-11-03/ice-bending-flood/ii-load50-overhead-after.png) | [Comparison](evidence/2026-11-03/ice-bending-flood/ii-load50-overhead-comparison.png) |
+| ii-load95-bank | ![ii-load95-bank before](evidence/2026-11-03/ice-bending-flood/ii-load95-bank-before.png) | ![ii-load95-bank after](evidence/2026-11-03/ice-bending-flood/ii-load95-bank-after.png) | [Comparison](evidence/2026-11-03/ice-bending-flood/ii-load95-bank-comparison.png) |
+| ii-load95-close | ![ii-load95-close before](evidence/2026-11-03/ice-bending-flood/ii-load95-close-before.png) | ![ii-load95-close after](evidence/2026-11-03/ice-bending-flood/ii-load95-close-after.png) | [Comparison](evidence/2026-11-03/ice-bending-flood/ii-load95-close-comparison.png) |
+| ii-load95-low | ![ii-load95-low before](evidence/2026-11-03/ice-bending-flood/ii-load95-low-before.png) | ![ii-load95-low after](evidence/2026-11-03/ice-bending-flood/ii-load95-low-after.png) | [Comparison](evidence/2026-11-03/ice-bending-flood/ii-load95-low-comparison.png) |
+| ii-load95-overhead | ![ii-load95-overhead before](evidence/2026-11-03/ice-bending-flood/ii-load95-overhead-before.png) | ![ii-load95-overhead after](evidence/2026-11-03/ice-bending-flood/ii-load95-overhead-after.png) | [Comparison](evidence/2026-11-03/ice-bending-flood/ii-load95-overhead-comparison.png) |
+| ii-seam95-close | ![ii-seam95-close before](evidence/2026-11-03/ice-bending-flood/ii-seam95-close-before.png) | ![ii-seam95-close after](evidence/2026-11-03/ice-bending-flood/ii-seam95-close-after.png) | [Comparison](evidence/2026-11-03/ice-bending-flood/ii-seam95-close-comparison.png) |
+| ii-seam95-low | ![ii-seam95-low before](evidence/2026-11-03/ice-bending-flood/ii-seam95-low-before.png) | ![ii-seam95-low after](evidence/2026-11-03/ice-bending-flood/ii-seam95-low-after.png) | [Comparison](evidence/2026-11-03/ice-bending-flood/ii-seam95-low-comparison.png) |
+| ii-standing | ![ii-standing before](evidence/2026-11-03/ice-bending-flood/ii-standing-before.png) | ![ii-standing after](evidence/2026-11-03/ice-bending-flood/ii-standing-after.png) | [Comparison](evidence/2026-11-03/ice-bending-flood/ii-standing-comparison.png) |
+
+Difference metrics:
+- ii-feet threshold `12` changed pixels `39401/2073600` (`1.9001%`) MAE `0.009058`.
+- ii-load50-bank threshold `12` changed pixels `5096/2073600` (`0.2458%`) MAE `0.002496`.
+- ii-load50-close threshold `12` changed pixels `15795/2073600` (`0.7617%`) MAE `0.003203`.
+- ii-load50-low threshold `12` changed pixels `32867/2073600` (`1.5850%`) MAE `0.004267`.
+- ii-load50-overhead threshold `12` changed pixels `1385/2073600` (`0.0668%`) MAE `0.001405`.
+- ii-load95-bank threshold `12` changed pixels `22811/2073600` (`1.1001%`) MAE `0.003424`.
+- ii-load95-close threshold `12` changed pixels `192556/2073600` (`9.2861%`) MAE `0.012363`.
+- ii-load95-low threshold `12` changed pixels `66824/2073600` (`3.2226%`) MAE `0.006481`.
+- ii-load95-overhead threshold `12` changed pixels `25400/2073600` (`1.2249%`) MAE `0.002796`.
+- ii-seam95-close threshold `12` changed pixels `137862/2073600` (`6.6484%`) MAE `0.024979`.
+- ii-seam95-low threshold `12` changed pixels `545571/2073600` (`26.3103%`) MAE `0.088758`.
+- ii-standing threshold `12` changed pixels `907/2073600` (`0.0437%`) MAE `0.002372`.
+
+Related documents:[rendering-streaming.md](../systems/rendering-streaming.md) / [polar-thin-ice-upgrade.md](../plans/polar-thin-ice-upgrade.md) / [design-decisions.md](../../design-decisions.md).
+
+## Floes and offshore icebergs: ice-edge plan M2
+<!-- project-update-log:2026-11-03:floes-and-bergs -->
+
+- Reason：M2 of the ice-edge plan (concepts E07, E08): sea floes read as flat glassy pans with a shallow skirt, and nothing stood out at sea.
+- Implementation：Floes are solids built at load from their silhouettes (snow top and lip, fractured faces, waterline notch, a body widening under the sea, brash); sea and bay floes within 400 m ride the swell; 20-28 tabular icebergs stand 0.4-2.2 km past SeaEdge; snow on edge ice takes the ground's wind-packed grain; the performance mode prices the coast's sea view in 16 interleaved pairs. Render only (0.6.107-test, build ie-04).
+- Validation：Gameplay 390 and weather 80 on ie-02; performance 79 on ie-04 (Logs/PolarV7/0.6.107-test/ie-04b): sea view median of 16 pairs +0.05 ms GPU P95, -0.11 ms main (pooled +0.54 ms); 7 before/after pairs in b8-ice-edge.
+- Decisions and scope：Icebergs offshore and render-only (the user's choice of November 3); 20-28 instead of the planned 4-8 so that most views out to sea hold one or two.
+- Remaining work：M3 (river, lake and lead shore ice) and M4 (gap walls), each its own package.
+
+### Screenshot comparison
+
+| State | Before | After | Difference |
+|---|---|---|---|
+| coast-horizon | ![coast-horizon before](evidence/2026-11-03/floes-and-bergs/coast-horizon-before.png) | ![coast-horizon after](evidence/2026-11-03/floes-and-bergs/coast-horizon-after.png) | [Comparison](evidence/2026-11-03/floes-and-bergs/coast-horizon-comparison.png) |
+| coast-night | ![coast-night before](evidence/2026-11-03/floes-and-bergs/coast-night-before.png) | ![coast-night after](evidence/2026-11-03/floes-and-bergs/coast-night-after.png) | [Comparison](evidence/2026-11-03/floes-and-bergs/coast-night-comparison.png) |
+| coast-stand | ![coast-stand before](evidence/2026-11-03/floes-and-bergs/coast-stand-before.png) | ![coast-stand after](evidence/2026-11-03/floes-and-bergs/coast-stand-after.png) | [Comparison](evidence/2026-11-03/floes-and-bergs/coast-stand-comparison.png) |
+| coast-storm | ![coast-storm before](evidence/2026-11-03/floes-and-bergs/coast-storm-before.png) | ![coast-storm after](evidence/2026-11-03/floes-and-bergs/coast-storm-after.png) | [Comparison](evidence/2026-11-03/floes-and-bergs/coast-storm-comparison.png) |
+| floe-20 | ![floe-20 before](evidence/2026-11-03/floes-and-bergs/floe-20-before.png) | ![floe-20 after](evidence/2026-11-03/floes-and-bergs/floe-20-after.png) | [Comparison](evidence/2026-11-03/floes-and-bergs/floe-20-comparison.png) |
+| floe-backlit | ![floe-backlit before](evidence/2026-11-03/floes-and-bergs/floe-backlit-before.png) | ![floe-backlit after](evidence/2026-11-03/floes-and-bergs/floe-backlit-after.png) | [Comparison](evidence/2026-11-03/floes-and-bergs/floe-backlit-comparison.png) |
+| floe-close | ![floe-close before](evidence/2026-11-03/floes-and-bergs/floe-close-before.png) | ![floe-close after](evidence/2026-11-03/floes-and-bergs/floe-close-after.png) | [Comparison](evidence/2026-11-03/floes-and-bergs/floe-close-comparison.png) |
+
+Difference metrics:
+- coast-horizon threshold `12` changed pixels `19036/2073600` (`0.9180%`) MAE `0.003018`.
+- coast-night threshold `12` changed pixels `30153/2073600` (`1.4541%`) MAE `0.001912`.
+- coast-stand threshold `12` changed pixels `18388/2073600` (`0.8868%`) MAE `0.003371`.
+- coast-storm threshold `12` changed pixels `12615/2073600` (`0.6084%`) MAE `0.002496`.
+- floe-20 threshold `12` changed pixels `529965/2073600` (`25.5577%`) MAE `0.032841`.
+- floe-backlit threshold `12` changed pixels `1468981/2073600` (`70.8421%`) MAE `0.090304`.
+- floe-close threshold `12` changed pixels `529009/2073600` (`25.5116%`) MAE `0.027474`.

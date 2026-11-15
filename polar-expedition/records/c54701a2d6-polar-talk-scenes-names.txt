@@ -1,0 +1,257 @@
+docs/engineering/plans/polar-talk-scenes-names.md
+
+# Talk scenes and names plan: camera, acting, names learned by talking, sitting by the fire
+
+Status: approved October 29, 2026. M1 (talk camera) shipped as 0.6.79-test, build `ts-01` ([polar UI](../systems/polar-ui.md#talk-camera-october-29-2026-0679-test)). The glance keeps the frame's size: a turn of the head, not a zoom. M3 (names learned by talking) shipped as 0.6.82-test, build `nm-02` ([gameplay](../systems/polar-gameplay.md#names-learned-by-talking-october-29-2026-0682-test)); asking a name comes before the question about home, which needs one. M2 (talk acting) shipped as 0.6.83-test, build `ta-02` ([gameplay](../systems/polar-gameplay.md#talk-acting-october-29-2026-0683-test)); the pocket pose is fitted with the forearm kept out of the coat, and the goodbye nod skips the breath that a call cue lets out. M4 waits on the user's three Mixamo takes. Labels after 0.6.79-test: 0.6.80-test is the breath session's `bs-01`, 0.6.81-test the NPC session's `nk-02`.
+
+## Context
+
+The user wants conversations to look more cinematic, and names to be something the player learns. Today:
+- `PolarMvpController.FacePartner` (`PolarMvpController.cs:461`) frames every talk the same way: head to waist, the person
+  centred, eased in at a constant rate. Nothing uses depth of field. Exposure is fixed (`PolarHdrpPresentation.cs:154`), so it
+  needs no face metering.
+- Every visible person gets a floating tag 2.1 m above the head (`PolarMvpUi.Hud.cs:216-282`, `PolarPersonalRecords.Glimpse`).
+  The tag shows a name once the player has "met" them. Meeting is `PolarActions.Contact`, which also fires when an explorer
+  merely walks within 4 m (`PolarNpcSimulation.cs:44`).
+- The roster lists all 21 people with name, portrait and district from the start (`PolarMvpUi.Panels.cs:241-283`).
+
+What the user decided (October 29, 2026):
+- Stay in the player's eyes. Every camera move is motivated by the body: turning, breathing, glancing or sitting.
+- No names over heads, and no list of everyone.
+- A name is learned only from words the player hears. Until then a person is called by their looks.
+- At the end, the epilogue reveals every name; some people may never be seen in a whole game.
+- Sitting by the fire is included now.
+
+Four milestones, each shipped as the next free test package (0.6.79-test onward; announce each label to the parallel sessions
+before taking it). 
+
+## Each milestone
+
+1. Before editing production code, run `change_evidence.py start ... --visual` (project-update-log skill) and take the "before"
+   captures listed below. Add a capture-only adapter first if one is needed.
+2. Implement, then run a compile check (Unity or the offline Roslyn compile while a peer holds Unity).
+3. Take the "after" captures of the same cases, then inspect the generated comparisons.
+4. Run the listed Player modes on a new HDRP build (`PolarHdrpBuild.Run -polarHdrpStage <id>`), with
+   `--hdrp --nonactivated-window`. Run the live mode alone.
+5. Update the system docs (`polar-ui.md`, `polar-gameplay.md`, `rendering-streaming.md`, `polar-cloud-npcs.md` as touched),
+   `current-status.md` and the AGENTS.md package line. Run `change_evidence.py finalize`.
+6. Commit by path with the shared-tree tools, push `codex/polar-expedition-huts`, and report.
+
+## M1 Talk camera (presentation only)
+
+- **Left third.**
+  - `FacePartner` adds a yaw offset `atan(tan(hfov/2)/3)` so the head sits on the left third; it is still a third of the way down.
+  - `PolarSurveyPlayer.Face(point, fov)` gains a `yawOffset` argument added to the root's target yaw.
+- **Shot size by beat.** The visible height of the person is set by the first of these that applies:
+  - 2.0 m with the aim lowered so the hands show, when the partner holds a rifle (`heldItem` kind Rifle);
+  - 0.8 m, shoulders up, when the newest partner line tells of a past, or a promise is proposed or pending;
+  - 1.7 m while the player types (`ui.Typing`);
+  - otherwise 1.4 m, as now.
+- **What the beat logic reads.**
+  - A line tells of a past when `P.told` holds an entry with that line's speaker, time and text and `about>=0`.
+  - Promise state comes from the local helpers `Promise()` and `Pact()` in `PolarMvpUi.Npc.cs:125-130`. Move them into one
+    static that the controller can call.
+- **Easing (open, close and every change of shot).**
+  - The tracking rate in `Face` ramps from 0 to 8 over 0.4 s from the moment a shot changes, so moves ease in and out. The
+    controller keeps the times of opening and of the last shot change.
+  - The field of view's return after the talk (`PolarSurveyPlayer.Update:74-78`) ramps the same way.
+- **Depth of field.**
+  - A `DepthOfField` override on the runtime volume in `PolarHdrpPresentation` (cached, as `exposure` is).
+  - Manual ranges: near off; far focus from distance + 0.8 m to distance + 10 m.
+  - Fades in and out over 0.5 s with the talk and is inactive otherwise.
+  - The hands are drawn after post-processing, so they stay sharp.
+- **Breath in the frame.**
+  - `PolarBreath` exposes the player's breathing phase and cycle (`Breather.phase`; cycle 4 s at rest, 1.5 s running).
+  - While talking, `PolarBodyFeedback` adds a 0.15° pitch sway on the breath beside its shiver; nothing else in play changes.
+- **Glance at another voice.**
+  - Trigger: while talking, a new overheard or called line from someone other than the partner, within 8 m and in view.
+  - The view turns to that speaker for the shorter of 2.5 s and the line's reading time, then returns.
+  - At most one glance every 4 s.
+  - New lines are found by the HUD's `heardKnown` pattern (`Hud.cs:295-297`); the speaker's head comes from `ActorSightPoint`.
+- **Heard lines while talking.** The plates move from x 560, y 500 (over a left-third chest) to a top band from y 96, at most two
+  plates. Checked at four resolutions.
+- **Checks** (`PolarUiValidation`).
+  - `:318`: the head projects into the left-third band, walking still works and the mouse does not look.
+  - New: the past and promise push-in; typing widens the shot; a held rifle widens it; depth of field is on only while talking;
+    a glance goes to an overheard speaker and comes back.
+- **Captures.**
+  - `PolarFiveAreasCapture` `fp-talk` frame sequence.
+  - `PolarUiUpgradeCapture` `talk-open`, `talk-words`, `talk-log` and `hud-heard`.
+- **Modes and cost.**
+  - Run ui and gameplay.
+  - Run a paired ui-perf talk scene (`PolarUiPerfValidation`) against fa-01, alternating, three runs each, in one power state,
+    to measure the depth of field's GPU cost.
+
+## M2 Talk acting (presentation only)
+
+- **Thinking while the answer comes.**
+  - `PolarMvpUi` exposes `AwaitingAnswer` (the private `awaiting`, set in `SendConversation`, `PolarMvpUi.cs:160-167`).
+  - While the partner is being waited on, the look-at branch in `PolarCharacterPresentation.cs:77` aims 1.5 m ahead-left and
+    0.6 m below their eye, with one `Breath.Puff`.
+  - Their eyes return when the answer starts typing. `PolarFootPlanting` eases the look target at 4/s; today it snaps.
+- **Typing as the voice.**
+  - The typewriter (`PolarMvpUi.Npc.cs:104-111`) builds per-character reveal times after `ForceMeshUpdate` (`:88`):
+    - base 1/45 s per character;
+    - after `. ! ?` +0.35 s; after `, ; :` +0.12 s; after a dash or "..." +0.4 s;
+    - 1.4 times slower when `PolarBodySigns.Shiver(npc)` or `Limp(npc)` is above 0.5.
+  - `Advance` is unchanged.
+  - The partner's hand beats run while the box types their line (`PolarNpcView.Talk`, `PolarNpcSimulation.cs:768-780`), instead
+    of length/15. Rule timing (`PolarTalk.Speaking`) is untouched.
+- **Hand to the pocket.**
+  - A new hand-keyed Talk-layer clip, `Pocket` (`PolarCharacterMotionAuthor`, fitted numerically like `TalkA`-`TalkC`): the right
+    hand goes to the chest pocket for 1.2 s.
+  - It plays as the first beat of a line in which they tell of their own past. The keepsake is never shown.
+  - The Talk layer goes from 8 to 9 states; the cot check's expected count changes with it.
+- **The player's hand.**
+  - A new first-person gesture, `Beat`: one row in the `PolarMvpAssetBuilder.Gesture` table, the right hand rising into the lower
+    frame, palm up, 0.9 s.
+  - It plays when the player's words are sent: typed, a ready question or the tent line (`SendConversation`, `Npc.cs:133`, `:165`).
+  - `PolarWeaponView.PlayInteraction` maps it. `Weapons.controller` goes from 38 to 39 states, and the build gate expects 39.
+- **Goodbye nod.** A public `PolarNpcView.Nod()`, modelled on `Call(kind)` (`PolarNpcSimulation.cs:793-799`). `CloseConversation`
+  calls it on Goodbye, E or Esc, but not on death, sleep or an attack.
+- **Checks.**
+  - The partner looks away while an answer is awaited and back once it types.
+  - A line with full stops reveals more slowly than 45 characters a second.
+  - A told past starts `Pocket`.
+  - Sending words plays `Beat`.
+  - Goodbye starts `Nod`.
+  - The Talk layer has 9 states and the weapons controller 39.
+- **Captures.** `fp-talk` and `npc-talk` frame sequences; motion sheets for `Pocket` and `Beat`.
+- **Modes.** ui and gameplay.
+
+## M3 Names learned by talking (product change)
+
+**Data.**
+- `PolarPersonRecord` gains `nameKnownAt=-1` and `talkedAt=-1`. Only the player's records use them.
+- `PolarGameplayState` gains `names`, following the `pasts` pattern: new expeditions set 1 (`PolarGameplayFactory`); older saves
+  read 0 and keep the old way (a name is known on meeting, and the list shows everyone met).
+- Save validation (`PolarSaveService.cs:141`): both fields finite and no later than now. `Version` stays 7.
+
+**One gate, in `PolarPersonalRecords`.**
+- `Named(s, viewer, person, at)`: for an NPC viewer, or when `names==0`, this is `Knew(...)` exactly as now. Otherwise
+  `nameKnownAt` is in `[0, at]`.
+- `Called(s, viewer, person, at, capital)`: the name if named; otherwise the person's description if the player has seen them
+  (`metAt`, `lastSeenAt` or `talkedAt` set); otherwise "someone".
+- `Talked(s, viewer, person)`: `talkedAt>=0` (or `Knew` when `names==0`).
+
+**Descriptions.**
+- A `description` on each of the 20 explorers in `PolarCharacterIdentities.All`, written against the rendered period portraits
+  (`Resources/PolarCharacters/Portraits/npc-01..20.png`), since the period overlay re-tints clothing.
+- Short and all different, e.g. "the man in the grey parka". An offline check confirms they are unique.
+
+**Learning a name** (one hook in `PolarNpcInformation.Hear`, for listener 0 with `names>0`, before the belief is kept).
+- **Self.** The speaker's own name appears in their words as a whole capitalised word.
+- **Addressed.** The addressee's name (the `addressedTo` parameter, at least 1) appears in direct address: next to a comma or
+  ending the sentence. The addressee must be within recognition range of the player.
+- **Names that are also words** (Frost, Bell, Grant, Lane, Moss, Reed, Pike, Vale, Dale). A match at the start of a sentence counts
+  only when punctuation follows it, so "Frost got into the stove" does not name Frost.
+- **Effects.** The hook sets `nameKnownAt` the first time. A "Face to face" line sets `talkedAt`, and so does
+  `OpenConversation`.
+
+**Where names show.** Every player-facing name switches to `Called` or `Named`; NPC viewers are unchanged.
+- `PolarMvpUi.Text`: `HeardLine`, `FacingText`, `SaysNothing`, `PactText`, `PromiseText`, `WokenText`, and item names through
+  `KeepsakeName`.
+- `PolarMvpUi.Npc`: the name tab (the description without "the", in capitals), the waiting status and the log.
+- `PolarMvpUi.Panels`: the tent page and the note writer.
+- `PolarMvpUi.Map`: `MapRecordText.Origin`.
+- Upstream: `PolarLabels.OfferTerms` for the player; `PolarNpcInformation.Source`, `ReadNotes` and relayed `sourceName` for
+  listener 0; `PolarNpcMind.Record` "Participated directly"; `PolarActions.ObserveAims` for the victim 0.
+- The ending (`EndingPage`: `KnownRows`, `ActualRows`, `KeepsakeRows`) keeps real names and portraits: the reveal. Anyone whose
+  name the player never learned adds "never named to you".
+
+**Tags.** Remove the `People` group and its binding from `BuildEncounters`; the heard lines stay. `Glimpse` and its offline checks
+go.
+
+**People you've met.**
+- `RosterPage` becomes "PEOPLE YOU'VE MET"; the control name `show-roster` is kept.
+- Rows only for people talked with, in the order met: portrait, `Called` name and the `Seen`/`History`/`Fate`/`Told` lines.
+- No district, and no rows for anyone else. With nobody yet, it reads "Nobody yet."
+
+**Talk choices.**
+- `ask-name`, "What's your name?", shows while the partner is not named.
+- `ask-home` shows only once they are named (and `pasts>0`).
+- At most ten choices still show at once (keys 1-9 and 0).
+
+**Explorer prompts.**
+- When the player is the conversation partner and `names>0`, the snapshot carries whether the player knows the explorer's name.
+- `NpcModelPrompts.Decision` (`ArkNpcClient.cs:172-185`) then appends one line, in the way `PastPolicy` is appended: "They do
+  not know your name unless you have said it to them; give it when you choose."
+- Requests stay within 5,200 bytes (checked by `Tools/CloudNpcCheck`).
+
+**Handbook** (`PolarHandbookContentSource.cs`; captions are at most ten words).
+- Page 21: "People are known by their looks until named."
+- Page 28: "People you have met: what passed between you."
+- Page 32: "roster" becomes "people".
+
+**Product docs.**
+- A new "Adopted October 29, 2026: names learned by talking" section at the top of `docs/GDD.md`. It amends 2.2.1 (no carried
+  roster of names, portraits and districts), 3.4.3 step 2 and the roster row of 5.9.
+- An entry in `docs/design-decisions.md`, also covering the talk-box name tab.
+
+**Tests to update.**
+- `PolarActsRuntimeValidation` (tags `:254-304`, the journal and keepsake name `:374`), `PolarUiValidation` (roster `:377`: Adler
+  listed while unnamed; ten choices `:356`), `PolarMvpAcceptance`.
+- `PolarCloudRuntimeValidation`: live; ask-name, and the name becomes known exactly when the reply says it.
+- `Tools/PolarGameplayCheck` (`:289-391`), `KeepsakeChecks`, `Tools/CloudNpcCheck`, and the `PolarEncounterCapture` adapter.
+
+**New checks.**
+- "I'm Adler." names Adler; "Frost got into the stove." said by Frost does not; overheard "Bell, stay here." names Bell.
+- The tab and journal use descriptions until a name is learned.
+- The list holds only people talked with.
+- An older save (`names` 0) keeps the old naming.
+- The ending reveals every name.
+
+**Captures.** `PolarEncounterCapture` `hud-people` (tags gone); `PolarUiUpgradeCapture` `roster`, `roster-met`, `journal-met`,
+`talk-open` and `hud-heard`; `PolarKeepsakeCapture`.
+
+**Modes.** gameplay, ui, continue, handbook-revision; live (alone, with `ARK_API_KEY`); the offline `PolarGameplayCheck` and
+`CloudNpcCheck`.
+
+## M4 Sitting by the fire (presentation only)
+
+- **Takes.**
+  - The user picks three Mixamo takes; candidates: a sit-down to the ground, a seated idle and a stand-up from sitting.
+  - `PolarCharacterMotionAuthor` trims them into owned clips `SitDown`, `SitIdle` and `SitUp` in
+    `Resources/PolarCharacters/Motion`. The takes stay untracked in `Assets/PolarArtSources/Mixamo`.
+  - `Winter.controller`'s base layer gains three states.
+- **Explorers.**
+  - When sitting starts: after 3 s settled at a lit fire (`PolarActions.AtLitFire`), not moving, with no action or a
+    wait/food/snow action.
+  - Where: facing the fire on clear floor (`PolarRest`'s capsule check). If a cot's end is within 1.2 m, they sit there using
+    `CotDown`'s seated frame.
+  - Getting up: on moving or starting another action, with `SitUp` calmly or fast if harm woke them, as A14 does.
+  - Positions and rules are unchanged.
+- **The player.**
+  - While talking with a seated partner at the same fire, after 1 s without moving, the player's body sits with the same clips.
+  - The eye follows the head through `PolarPlayerBodyView.Eye`, which gains a seated input like kneeling.
+  - WASD stands up at once; input is never delayed.
+  - `FacePartner` then frames from the lowered eye, level with theirs.
+- **Checks** (gameplay).
+  - An explorer settled at a lit hut stove sits within 4 s and stands on walking.
+  - In such a talk the player's eye drops within 0.5 s of sitting and returns on walking.
+  - The controller has the expected state count.
+- **Captures.** A new `fire-talk` case in `PolarFiveAreasCapture.People` (a hut stove at night), plus `npc-talk`.
+- **Modes.** gameplay and ui.
+
+## Verification (whole plan)
+
+- Each milestone is accepted on the listed Player modes passing on its own build, a before/after comparison per changed view,
+  and the docs and log updated.
+- **M1:** also the paired GPU timing for depth of field.
+- **M3:** also a short live talk run: ask three explorers their names and confirm the tab changes only when the name is said.
+- **M4:** also a played check by computer use at a hut stove, at about 0.2 yuan a live minute, only if the user wants it.
+
+## Risks
+
+- **Name matching** by words can miss unusual phrasings, and can be fooled by the nine word-names; the checks cover both.
+  Explorers may rarely give names unasked; "What's your name?" covers that.
+- **Depth of field** adds GPU time while talking. Use the low quality preset and measure it.
+- **Gates and fixtures.** Talk-layer, weapons and base-layer state counts are build or test gates, so update them with each clip.
+  Many fixtures hard-code "Adler" or "Someone".
+- **The M4 takes** wait on the user's choice; M1-M3 do not.
+
+## Out of scope
+
+- Over-the-shoulder or third-person shots, portraits in the box, voices, and showing a keepsake in the hand.
+- A face fill light, unless captures show faces too dark.
+- What explorers know of each other's names: they still know each other on meeting.

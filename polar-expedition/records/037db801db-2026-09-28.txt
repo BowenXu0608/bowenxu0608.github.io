@@ -1,0 +1,25 @@
+docs/engineering/logs/2026-09-28.md
+
+# 2026-09-28 Engineering log
+
+> Historical recovery recorded October 29, 2026. This is a concise account of surviving records, not a contemporaneous new entry or tests rerun during recovery. Reported results and open items retain their original scope; historical rules do not replace the current GDD.
+
+Source: `dated-log-2026-09-28`; see the [recovery record](evidence/2026-10-29/english-log-backfill/recovery.json).
+
+## Polar design adoption and source inventory
+
+- Adopted the user-supplied September 27 polar design without treating the island implementation as its specification. Preserved the prior design before replacement and checked all 624 ordered source blocks, 52 mechanisms, five constraints, thirty Dynamics entries, eight tables and three original pictures. This first step changed documents only.
+- Imported seven polar environment/prop packages, 2074 asset/metadata files, retaining GUIDs and recording two Unity 6 compatibility edits plus material upgrades. Unity compiled successfully; production visual checks passed 133 roots/122 materials and 29 protected project inputs stayed byte-identical. Import alone did not wire polar gameplay or publish a package.
+
+## Two-pass WFC survey prototype
+
+- Built an independent polar survey world with 64 candidates, rotation/connectivity-constrained regional WFC, eight terrain types, 21 personal districts, ten ordinary huts each and public nodes, derived art, chunk loading and first-person/debug views.
+- Initial data checks passed 64/64 candidates, 100/100 worlds, eight negative cases and 219 route/storage checks; Editor 4361/4361 and Player 4362/4362 passed. Recorded 1600x900 Player P95 was 16.67 ms, private memory 2.96 GiB, without continuing growth across three distant round trips. Four genuine pairs and 23 gallery frames were inspected.
+- Reworked visible grid structure, physical projection, huts, mountains and optional fictional northern treeline, and added low sun/fog/strong blowing snow. The next stage passed Editor 7896 and Player 7898 checks; P95 remained approximately 16.67 ms, private memory 3.68 GiB. The user's half-day spacing referred to game time: 600 s/day and 5 m/s implied 1500 m; seed 777's nearest sample was 2009.17 m.
+
+## Snow, mountain regression and random refresh
+
+- Corrected terrain-layer exclusion from Global Snow and added relief/dry snow to near/far ground and upward surfaces, protecting interiors and excluding sea. Four genuine pairs plus component-off controls were inspected; Player 7901 checks passed. Relief did not create physical snow depth, footsteps or accumulation.
+- Fixed particle-driven snow-occlusion regressions, square dark patches and narrow post-WFC ice walls. Planned broad mountain shoulders before selection, strengthened curvature/traversal gates and increased distant geometry. Added random refresh with actual seed display and old-resource retirement.
+- Final data checks passed 64 candidates, 100 deterministic worlds, twelve negative cases and 219 route/storage checks. Windows Player passed 8069, including real mountain capsule collision and two random refreshes; six genuine pairs were inspected. Clear/blizzard P95 was 16.67 ms, private memory 5.14 GiB, map preparation 106.94 s excluding prior asset load. Protected inputs remained unchanged.
+- These were hardware-specific survey-prototype results. Formal NPC strategy, survival economy, final terrain assets, exhaustive capsule positions, long exploration and wider hardware were still open. The known CTI shader diagnostic remained recorded.

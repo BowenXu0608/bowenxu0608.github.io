@@ -1,0 +1,399 @@
+docs/engineering/logs/2026-10-21.md
+
+# 2026-10-21 Engineering log
+
+## Live unrelated-request press holds explorer planning
+<!-- project-update-log:2026-10-21:live-unrelated-press -->
+
+- Reason：fv-08 passed the live location question but stopped in the unrelated-request scene on 'Button unavailable: send-message', 1.5 s after the last shot: the race fixed at the location question, after the staged offer asks the explorer to decide.
+- Implementation：PausePlanning in PolarCloudRuntimeValidation holds explorers' planning with the director's own pause (pausedUntil) and returns the action that resumes it. The location step uses it as before, and the unrelated-request scene uses it from the staged offer to its Send press. TestFolder is fv-09; the label stays 0.6.30-test.
+- Validation：Three assemblies compile (polar_index_compile tree). fv-09: gameplay passes 339 checks and live passes 68 (106 requests all completed, 0.29 yuan by the run's count; Ellis refuses the unrelated request for good).
+- Decisions and scope：Resume right before each press, so a failed Talk is still answered by the queued decision.
+- Visual evidence:Only the live acceptance test's staging changes; the game's code and pixels are unchanged.
+
+Related documents:[polar-cloud-npcs.md](../systems/polar-cloud-npcs.md) / [current-status.md](../current-status.md).
+
+## Distant cliff band normals
+<!-- project-update-log:2026-10-21:cliff-band-normals -->
+
+- Reason：The user asked to confirm the faint stripes inside distant cliff rock bands and to fix them unless they had improved; they were unchanged from er-01.
+- Implementation：
+  - Distant meshes difference their normals a whole vertex spacing either side on each axis (PolarWorldStreamer.MeshNormal, PolarWorldController.Normal with per-axis offsets; the morph's coarse grid and fans too); near chunks keep 0.15. Same four height samples.
+  - Distant blocks trade columns for rows until cells are about square at the same vertex count (Grid); resolution levels, refinement and the cliff band's blocks are unchanged, and the band measures each axis with its own spacing.
+- Validation：
+  - Three assemblies compile. Six genuine pairs (four relief views from the vantage, the camp's near and middle views) with the five-areas adapter.
+  - Package 0.6.31-test sq-01 against er-01, alternating on the same 120 Hz display, two runs each: new game playable 62.8 and 54.6 s (55.7, 56.5), refined 249.1 and 223.5 s (295.5, 266.0); Continue playable 21.7 and 19.9 s (21.1, 20.6), refined 209.4 and 195.0 s (214.6, 242.4); P95 while refining 8.34 ms in all four (8.34-12.49), worst frame 333-567 ms (404-650). The 62.8 s run lost its time in world generation, which this change does not touch.
+- Decisions and scope：Diagnosed with temporary shader views: not the rock texture, shadow maps, screen-space occlusion, illumination or reflections, smoothness from coverage, or the terrain itself (true heights are smooth apart from one 4-5 m step); the cause was distant-mesh vertex normals differenced 0.15 lattice units either side, which alias a face narrower than the mesh spacing.
+- Remaining work：Fainter ribs remain on the upper part of the relief streak; removing them needs a smoother normal kernel than a box difference, cheapest from the mesh's own grid heights.
+
+### Screenshot comparison
+
+| State | Before | After | Difference |
+|---|---|---|---|
+| Highest ground 2.6 km from camp, settled | ![Highest ground 2.6 km from camp, settled before](evidence/2026-10-21/cliff-band-normals/middle-settled-before.png) | ![Highest ground 2.6 km from camp, settled after](evidence/2026-10-21/cliff-band-normals/middle-settled-after.png) | [Comparison](evidence/2026-10-21/cliff-band-normals/middle-settled-comparison.png) |
+| 79-degree slope 230 m from camp, settled | ![79-degree slope 230 m from camp, settled before](evidence/2026-10-21/cliff-band-normals/near-settled-before.png) | ![79-degree slope 230 m from camp, settled after](evidence/2026-10-21/cliff-band-normals/near-settled-after.png) | [Comparison](evidence/2026-10-21/cliff-band-normals/near-settled-comparison.png) |
+| Relief, far view, settled | ![Relief, far view, settled before](evidence/2026-10-21/cliff-band-normals/relief-far-settled-before.png) | ![Relief, far view, settled after](evidence/2026-10-21/cliff-band-normals/relief-far-settled-after.png) | [Comparison](evidence/2026-10-21/cliff-band-normals/relief-far-settled-comparison.png) |
+| Relief, left view, settled | ![Relief, left view, settled before](evidence/2026-10-21/cliff-band-normals/relief-left-settled-before.png) | ![Relief, left view, settled after](evidence/2026-10-21/cliff-band-normals/relief-left-settled-after.png) | [Comparison](evidence/2026-10-21/cliff-band-normals/relief-left-settled-comparison.png) |
+| Relief, right view, settled | ![Relief, right view, settled before](evidence/2026-10-21/cliff-band-normals/relief-right-settled-before.png) | ![Relief, right view, settled after](evidence/2026-10-21/cliff-band-normals/relief-right-settled-after.png) | [Comparison](evidence/2026-10-21/cliff-band-normals/relief-right-settled-comparison.png) |
+| Relief peak from the vantage, settled | ![Relief peak from the vantage, settled before](evidence/2026-10-21/cliff-band-normals/relief-settled-before.png) | ![Relief peak from the vantage, settled after](evidence/2026-10-21/cliff-band-normals/relief-settled-after.png) | [Comparison](evidence/2026-10-21/cliff-band-normals/relief-settled-comparison.png) |
+
+Difference metrics:
+- Highest ground 2.6 km from camp, settled threshold `12` changed pixels `5274/1440000` (`0.3663%`) MAE `0.001482`.
+- 79-degree slope 230 m from camp, settled threshold `12` changed pixels `33232/1440000` (`2.3078%`) MAE `0.004668`.
+- Relief, far view, settled threshold `12` changed pixels `14592/1440000` (`1.0133%`) MAE `0.003016`.
+- Relief, left view, settled threshold `12` changed pixels `25207/1440000` (`1.7505%`) MAE `0.003689`.
+- Relief, right view, settled threshold `12` changed pixels `16455/1440000` (`1.1427%`) MAE `0.003537`.
+- Relief peak from the vantage, settled threshold `12` changed pixels `14918/1440000` (`1.0360%`) MAE `0.002785`.
+
+Related documents:[rendering-streaming.md](../systems/rendering-streaming.md).
+
+## Thick snow at every distance: snow edges, Cliffs_01 rock, rock caps, micro and contact shadows
+<!-- project-update-log:2026-10-21:thick-snow-s1 -->
+
+- Reason：The user: the ground snow reads thin, like a paper on the ground, and slope rock shows an unnatural repeating frieze; they supplied PBR Rocks - Nature Pack 3.0. All snow was pixel shading, so rock and bare patches were colour changes at the same height, and the slope-rock map's large rectangular strata repeated every 7 m.
+- Implementation：
+  - Slope rock and every kind-7 rock use owned 2K copies of Cliffs_01 (height in the albedo's alpha) instead of T_beach_cliff_01; rock luma .248 to .186.
+  - Rock/snow and bare/snow edges follow the rock's and gravel's height; snow fills cracks on faces that look up; rock and bare ground darken in a band under the snow edge, which sits at mask level .3.
+  - Slightly rougher snow, steeper sastrugi lee slopes and deeper hollows; rock caps swell up to 4 cm with a darker band under them; micro shadows and sun contact shadows.
+- Validation：
+  - Three assemblies and the Polar, habitat and particle shaders compile without errors; 19 genuine pairs from PolarFiveAreasCapture (camp, relief) and PolarArtCapture (b3-ground, b5-land), all captures PASS.
+  - Package 0.6.32-test sn-01: gameplay 339, physical 831, performance 59, weather 80, weather-resume 10 and ui 382 pass; peak 6.14 GB; performance-mode P95 16.68-16.70 ms as fv-01; uncapped Editor P95 mean 9.86 to 10.13 ms over 18 rows.
+- Decisions and scope：
+  - Stage 1 of four works in shading and the rock map, which shows at every distance; a raised layer would be below a pixel in these frames. Cap coverage stays as it was (the boulder was already mostly white).
+  - Two snow-only views (blizzard, looking down) stay below the comparison threshold and are kept as stability evidence.
+- Remaining work：A fine diagonal hatch on steep faces 150-250 m away; frozen pond edges stay flat; open snow needs the raised layer, relief and footprints of Stages 2-3.
+
+### Screenshot comparison
+
+| State | Before | After | Difference |
+|---|---|---|---|
+| Boulder, downwind contact (b3-06) | ![Boulder, downwind contact (b3-06) before](evidence/2026-10-21/thick-snow-s1/boulder-contact-before.png) | ![Boulder, downwind contact (b3-06) after](evidence/2026-10-21/thick-snow-s1/boulder-contact-after.png) | [Comparison](evidence/2026-10-21/thick-snow-s1/boulder-contact-comparison.png) |
+| Camp, far silhouette 6-15 km (settled) | ![Camp, far silhouette 6-15 km (settled) before](evidence/2026-10-21/thick-snow-s1/camp-far-before.png) | ![Camp, far silhouette 6-15 km (settled) after](evidence/2026-10-21/thick-snow-s1/camp-far-after.png) | [Comparison](evidence/2026-10-21/thick-snow-s1/camp-far-comparison.png) |
+| Camp, high ground 1-3 km (settled) | ![Camp, high ground 1-3 km (settled) before](evidence/2026-10-21/thick-snow-s1/camp-middle-before.png) | ![Camp, high ground 1-3 km (settled) after](evidence/2026-10-21/thick-snow-s1/camp-middle-after.png) | [Comparison](evidence/2026-10-21/thick-snow-s1/camp-middle-comparison.png) |
+| Camp, near ground and slope rock (settled) | ![Camp, near ground and slope rock (settled) before](evidence/2026-10-21/thick-snow-s1/camp-near-before.png) | ![Camp, near ground and slope rock (settled) after](evidence/2026-10-21/thick-snow-s1/camp-near-after.png) | [Comparison](evidence/2026-10-21/thick-snow-s1/camp-near-comparison.png) |
+| Clear night (b3-22) | ![Clear night (b3-22) before](evidence/2026-10-21/thick-snow-s1/clear-night-before.png) | ![Clear night (b3-22) after](evidence/2026-10-21/thick-snow-s1/clear-night-after.png) | [Comparison](evidence/2026-10-21/thick-snow-s1/clear-night-comparison.png) |
+| Open land, blizzard by day (b5) | ![Open land, blizzard by day (b5) before](evidence/2026-10-21/thick-snow-s1/land-day-blizzard-before.png) | ![Open land, blizzard by day (b5) after](evidence/2026-10-21/thick-snow-s1/land-day-blizzard-after.png) | [Comparison](evidence/2026-10-21/thick-snow-s1/land-day-blizzard-comparison.png) |
+| Open land, clear day (b5) | ![Open land, clear day (b5) before](evidence/2026-10-21/thick-snow-s1/land-day-clear-before.png) | ![Open land, clear day (b5) after](evidence/2026-10-21/thick-snow-s1/land-day-clear-after.png) | [Comparison](evidence/2026-10-21/thick-snow-s1/land-day-clear-comparison.png) |
+| Open land, medium snow by day (b5) | ![Open land, medium snow by day (b5) before](evidence/2026-10-21/thick-snow-s1/land-day-medium-before.png) | ![Open land, medium snow by day (b5) after](evidence/2026-10-21/thick-snow-s1/land-day-medium-after.png) | [Comparison](evidence/2026-10-21/thick-snow-s1/land-day-medium-comparison.png) |
+| Open land, clear night (b5) | ![Open land, clear night (b5) before](evidence/2026-10-21/thick-snow-s1/land-night-clear-before.png) | ![Open land, clear night (b5) after](evidence/2026-10-21/thick-snow-s1/land-night-clear-after.png) | [Comparison](evidence/2026-10-21/thick-snow-s1/land-night-clear-comparison.png) |
+| Relief vantage: rock bands on slopes (settled) | ![Relief vantage: rock bands on slopes (settled) before](evidence/2026-10-21/thick-snow-s1/relief-before.png) | ![Relief vantage: rock bands on slopes (settled) after](evidence/2026-10-21/thick-snow-s1/relief-after.png) | [Comparison](evidence/2026-10-21/thick-snow-s1/relief-comparison.png) |
+| Relief vantage, far (settled) | ![Relief vantage, far (settled) before](evidence/2026-10-21/thick-snow-s1/relief-far-before.png) | ![Relief vantage, far (settled) after](evidence/2026-10-21/thick-snow-s1/relief-far-after.png) | [Comparison](evidence/2026-10-21/thick-snow-s1/relief-far-comparison.png) |
+| Relief vantage, left (settled) | ![Relief vantage, left (settled) before](evidence/2026-10-21/thick-snow-s1/relief-left-before.png) | ![Relief vantage, left (settled) after](evidence/2026-10-21/thick-snow-s1/relief-left-after.png) | [Comparison](evidence/2026-10-21/thick-snow-s1/relief-left-comparison.png) |
+| Relief vantage, right (settled) | ![Relief vantage, right (settled) before](evidence/2026-10-21/thick-snow-s1/relief-right-before.png) | ![Relief vantage, right (settled) after](evidence/2026-10-21/thick-snow-s1/relief-right-after.png) | [Comparison](evidence/2026-10-21/thick-snow-s1/relief-right-comparison.png) |
+| Route, near (b3-07) | ![Route, near (b3-07) before](evidence/2026-10-21/thick-snow-s1/route-near-before.png) | ![Route, near (b3-07) after](evidence/2026-10-21/thick-snow-s1/route-near-after.png) | [Comparison](evidence/2026-10-21/thick-snow-s1/route-near-comparison.png) |
+| Sastrugi tile (b3-11) | ![Sastrugi tile (b3-11) before](evidence/2026-10-21/thick-snow-s1/sastrugi-before.png) | ![Sastrugi tile (b3-11) after](evidence/2026-10-21/thick-snow-s1/sastrugi-after.png) | [Comparison](evidence/2026-10-21/thick-snow-s1/sastrugi-comparison.png) |
+| Sastrugi across a low sun (b3-19) | ![Sastrugi across a low sun (b3-19) before](evidence/2026-10-21/thick-snow-s1/sastrugi-low-sun-before.png) | ![Sastrugi across a low sun (b3-19) after](evidence/2026-10-21/thick-snow-s1/sastrugi-low-sun-after.png) | [Comparison](evidence/2026-10-21/thick-snow-s1/sastrugi-low-sun-comparison.png) |
+| Open snow, looking down (b3-02) | ![Open snow, looking down (b3-02) before](evidence/2026-10-21/thick-snow-s1/snow-down-before.png) | ![Open snow, looking down (b3-02) after](evidence/2026-10-21/thick-snow-s1/snow-down-after.png) | [Comparison](evidence/2026-10-21/thick-snow-s1/snow-down-comparison.png) |
+| Open snow, oblique (b3-01) | ![Open snow, oblique (b3-01) before](evidence/2026-10-21/thick-snow-s1/snow-oblique-before.png) | ![Open snow, oblique (b3-01) after](evidence/2026-10-21/thick-snow-s1/snow-oblique-after.png) | [Comparison](evidence/2026-10-21/thick-snow-s1/snow-oblique-comparison.png) |
+| Steep face (b3-10) | ![Steep face (b3-10) before](evidence/2026-10-21/thick-snow-s1/steep-face-before.png) | ![Steep face (b3-10) after](evidence/2026-10-21/thick-snow-s1/steep-face-after.png) | [Comparison](evidence/2026-10-21/thick-snow-s1/steep-face-comparison.png) |
+
+Difference metrics:
+- Boulder, downwind contact (b3-06) threshold `12` changed pixels `29929/2073600` (`1.4433%`) MAE `0.003933`.
+- Camp, far silhouette 6-15 km (settled) threshold `12` changed pixels `1023/1440000` (`0.0710%`) MAE `0.001249`.
+- Camp, high ground 1-3 km (settled) threshold `12` changed pixels `5188/1440000` (`0.3603%`) MAE `0.001677`.
+- Camp, near ground and slope rock (settled) threshold `12` changed pixels `13960/1440000` (`0.9694%`) MAE `0.003658`.
+- Clear night (b3-22) threshold `12` changed pixels `14334/2073600` (`0.6913%`) MAE `0.003002`.
+- Open land, blizzard by day (b5) threshold `12` changed pixels `1/2073600` (`0.0000%`) MAE `0.000568`.
+- Open land, clear day (b5) threshold `12` changed pixels `2538/2073600` (`0.1224%`) MAE `0.001813`.
+- Open land, medium snow by day (b5) threshold `12` changed pixels `88/2073600` (`0.0042%`) MAE `0.001457`.
+- Open land, clear night (b5) threshold `12` changed pixels `3675/2073600` (`0.1772%`) MAE `0.002396`.
+- Relief vantage: rock bands on slopes (settled) threshold `12` changed pixels `43468/1440000` (`3.0186%`) MAE `0.005314`.
+- Relief vantage, far (settled) threshold `12` changed pixels `43335/1440000` (`3.0094%`) MAE `0.005325`.
+- Relief vantage, left (settled) threshold `12` changed pixels `53316/1440000` (`3.7025%`) MAE `0.006291`.
+- Relief vantage, right (settled) threshold `12` changed pixels `33455/1440000` (`2.3233%`) MAE `0.004737`.
+- Route, near (b3-07) threshold `12` changed pixels `13699/2073600` (`0.6606%`) MAE `0.002692`.
+- Sastrugi tile (b3-11) threshold `12` changed pixels `40785/2073600` (`1.9669%`) MAE `0.004956`.
+- Sastrugi across a low sun (b3-19) threshold `12` changed pixels `6960/2073600` (`0.3356%`) MAE `0.002948`.
+- Open snow, looking down (b3-02) threshold `12` changed pixels `0/2073600` (`0.0000%`) MAE `0.002970`.
+- Open snow, oblique (b3-01) threshold `12` changed pixels `9040/2073600` (`0.4360%`) MAE `0.002101`.
+- Steep face (b3-10) threshold `12` changed pixels `265519/2073600` (`12.8047%`) MAE `0.021183`.
+
+Related documents:[rendering-streaming.md](../systems/rendering-streaming.md) / [current-status.md](../current-status.md) / [polar-thick-snow.md](../plans/polar-thick-snow.md) / [design-decisions.md](../../design-decisions.md).
+
+## Distant normals from the grid's own heights
+<!-- project-update-log:2026-10-21:cliff-sobel-normals -->
+
+- Reason：0.6.31-test left faint ribs on distant sheer cliff faces (the relief streak 300-590 m from the vantage): distant normals were a box difference of one vertex spacing, which lit a face narrower than the spacing steep or flat by where it fell between vertices.
+- Implementation：
+  - Distant grid normals come from the block's own positions and two rings around it (PolarWorldStreamer.Surround, GridNormal): central differences of the grid smoothed 1-2-1 both ways, about one height sample per vertex instead of five.
+  - Stitches, fan centres and gap-outline points interpolate the grid's normals over its triangles (MeshNormal, OffGrid); the morph rebuilds the coarse mesh's normals the same way; vertices on the near window's edge take the near chunks' 0.15-unit normal. PolarWorldController.Normal keeps only its 0.15-unit form.
+- Validation：
+  - Three assemblies compile. 13 genuine pairs from PolarFiveAreasCapture (camp and relief views; five of them light the normals alone through a temporary shader switch, removed afterwards). In Play Mode the streamer's normals match an independent computation within 0.16 degrees over 1,652 vertices; blocks at the same spacing share identical edge normals, including across the angular seam.
+  - Package 0.6.33-test cn-01 against sn-01, alternating, two runs each: refinement complete 140.0-143.2 s new game (225.1-245.7) and 109.4-109.7 s Continue (197.1-217.1); playable 51.6-53.0 s (53.9-57.5) and 16.9-17.7 s (20.0-20.8); P95 while refining 8.34-8.35 ms in all eight; worst frame 329-471 and 392-438 ms (575 plus one 17.6 s stall, and 333-367 ms).
+- Decisions and scope：
+  - A 3x3 Sobel kernel (one ring) was built and captured first; it left a fainter chain of beads along the face in a top-down shading of the streak's block, so the kernel spreads each difference over two spacings. A sheer face narrower than a vertex spacing now shades softly; the rock band's colour still marks it.
+  - Player modes were not rerun: only distant meshes' normals change, and the acceptance's distant checks count resolution levels, which are unchanged.
+- Remaining work：Blocks at different spacings (a 256 beside a 128) still differ slightly at their shared edge, as before. The sides of the cliff band 200-400 m away show feathered teeth in the normal view, from the band's vertex colour and the rock map.
+
+### Screenshot comparison
+
+| State | Before | After | Difference |
+|---|---|---|---|
+| Highest silhouette 6 km from camp, settled | ![Highest silhouette 6 km from camp, settled before](evidence/2026-10-21/cliff-sobel-normals/far-before.png) | ![Highest silhouette 6 km from camp, settled after](evidence/2026-10-21/cliff-sobel-normals/far-after.png) | [Comparison](evidence/2026-10-21/cliff-sobel-normals/far-comparison.png) |
+| Highest ground 2.6 km from camp, settled | ![Highest ground 2.6 km from camp, settled before](evidence/2026-10-21/cliff-sobel-normals/middle-before.png) | ![Highest ground 2.6 km from camp, settled after](evidence/2026-10-21/cliff-sobel-normals/middle-after.png) | [Comparison](evidence/2026-10-21/cliff-sobel-normals/middle-comparison.png) |
+| Highest ground 2.6 km from camp, normals lit alone | ![Highest ground 2.6 km from camp, normals lit alone before](evidence/2026-10-21/cliff-sobel-normals/middle-flat-before.png) | ![Highest ground 2.6 km from camp, normals lit alone after](evidence/2026-10-21/cliff-sobel-normals/middle-flat-after.png) | [Comparison](evidence/2026-10-21/cliff-sobel-normals/middle-flat-comparison.png) |
+| 79-degree slope 230 m from camp, settled | ![79-degree slope 230 m from camp, settled before](evidence/2026-10-21/cliff-sobel-normals/near-before.png) | ![79-degree slope 230 m from camp, settled after](evidence/2026-10-21/cliff-sobel-normals/near-after.png) | [Comparison](evidence/2026-10-21/cliff-sobel-normals/near-comparison.png) |
+| Cliff 230-400 m from camp, normals lit alone, crop | ![Cliff 230-400 m from camp, normals lit alone, crop before](evidence/2026-10-21/cliff-sobel-normals/near-cliff-flat-before.png) | ![Cliff 230-400 m from camp, normals lit alone, crop after](evidence/2026-10-21/cliff-sobel-normals/near-cliff-flat-after.png) | [Comparison](evidence/2026-10-21/cliff-sobel-normals/near-cliff-flat-comparison.png) |
+| Camp near view, normals lit alone, settled | ![Camp near view, normals lit alone, settled before](evidence/2026-10-21/cliff-sobel-normals/near-flat-before.png) | ![Camp near view, normals lit alone, settled after](evidence/2026-10-21/cliff-sobel-normals/near-flat-after.png) | [Comparison](evidence/2026-10-21/cliff-sobel-normals/near-flat-comparison.png) |
+| Relief peak from the vantage, settled | ![Relief peak from the vantage, settled before](evidence/2026-10-21/cliff-sobel-normals/relief-before.png) | ![Relief peak from the vantage, settled after](evidence/2026-10-21/cliff-sobel-normals/relief-after.png) | [Comparison](evidence/2026-10-21/cliff-sobel-normals/relief-comparison.png) |
+| Relief, far view, settled | ![Relief, far view, settled before](evidence/2026-10-21/cliff-sobel-normals/relief-far-before.png) | ![Relief, far view, settled after](evidence/2026-10-21/cliff-sobel-normals/relief-far-after.png) | [Comparison](evidence/2026-10-21/cliff-sobel-normals/relief-far-comparison.png) |
+| Relief, normals lit alone (grey albedo, vertex normals), settled | ![Relief, normals lit alone (grey albedo, vertex normals), settled before](evidence/2026-10-21/cliff-sobel-normals/relief-flat-before.png) | ![Relief, normals lit alone (grey albedo, vertex normals), settled after](evidence/2026-10-21/cliff-sobel-normals/relief-flat-after.png) | [Comparison](evidence/2026-10-21/cliff-sobel-normals/relief-flat-comparison.png) |
+| Relief, left view, settled | ![Relief, left view, settled before](evidence/2026-10-21/cliff-sobel-normals/relief-left-before.png) | ![Relief, left view, settled after](evidence/2026-10-21/cliff-sobel-normals/relief-left-after.png) | [Comparison](evidence/2026-10-21/cliff-sobel-normals/relief-left-comparison.png) |
+| Relief, right view, settled | ![Relief, right view, settled before](evidence/2026-10-21/cliff-sobel-normals/relief-right-before.png) | ![Relief, right view, settled after](evidence/2026-10-21/cliff-sobel-normals/relief-right-after.png) | [Comparison](evidence/2026-10-21/cliff-sobel-normals/relief-right-comparison.png) |
+| Relief streak (block 11,7, 300-590 m), settled, crop | ![Relief streak (block 11,7, 300-590 m), settled, crop before](evidence/2026-10-21/cliff-sobel-normals/relief-streak-before.png) | ![Relief streak (block 11,7, 300-590 m), settled, crop after](evidence/2026-10-21/cliff-sobel-normals/relief-streak-after.png) | [Comparison](evidence/2026-10-21/cliff-sobel-normals/relief-streak-comparison.png) |
+| Relief streak, normals lit alone, crop | ![Relief streak, normals lit alone, crop before](evidence/2026-10-21/cliff-sobel-normals/relief-streak-flat-before.png) | ![Relief streak, normals lit alone, crop after](evidence/2026-10-21/cliff-sobel-normals/relief-streak-flat-after.png) | [Comparison](evidence/2026-10-21/cliff-sobel-normals/relief-streak-flat-comparison.png) |
+
+Difference metrics:
+- Highest silhouette 6 km from camp, settled threshold `12` changed pixels `835/1440000` (`0.0580%`) MAE `0.001201`.
+- Highest ground 2.6 km from camp, settled threshold `12` changed pixels `1605/1440000` (`0.1115%`) MAE `0.001315`.
+- Highest ground 2.6 km from camp, normals lit alone threshold `12` changed pixels `0/1440000` (`0.0000%`) MAE `0.000765`.
+- 79-degree slope 230 m from camp, settled threshold `12` changed pixels `7646/1440000` (`0.5310%`) MAE `0.002344`.
+- Cliff 230-400 m from camp, normals lit alone, crop threshold `12` changed pixels `267/60000` (`0.4450%`) MAE `0.003787`.
+- Camp near view, normals lit alone, settled threshold `12` changed pixels `380/1440000` (`0.0264%`) MAE `0.001143`.
+- Relief peak from the vantage, settled threshold `12` changed pixels `3631/1440000` (`0.2522%`) MAE `0.002184`.
+- Relief, far view, settled threshold `12` changed pixels `4013/1440000` (`0.2787%`) MAE `0.002569`.
+- Relief, normals lit alone (grey albedo, vertex normals), settled threshold `12` changed pixels `98/1440000` (`0.0068%`) MAE `0.000637`.
+- Relief, left view, settled threshold `12` changed pixels `3162/1440000` (`0.2196%`) MAE `0.002005`.
+- Relief, right view, settled threshold `12` changed pixels `1809/1440000` (`0.1256%`) MAE `0.002049`.
+- Relief streak (block 11,7, 300-590 m), settled, crop threshold `12` changed pixels `1446/72000` (`2.0083%`) MAE `0.006231`.
+- Relief streak, normals lit alone, crop threshold `12` changed pixels `96/72000` (`0.1333%`) MAE `0.002516`.
+
+Related documents:[rendering-streaming.md](../systems/rendering-streaming.md) / [current-status.md](../current-status.md).
+
+## Thick snow Stage 2: a drawn snow layer 0.10 m above the ground
+<!-- project-update-log:2026-10-21:thick-snow-s2 -->
+
+- Reason：Stage 2 of the thick-snow plan (approved; the user asked to continue through every stage): the ground snow read as paint on the ground; Stage 2 gives it height near the player, so boots, tents, crates and rocks stand in it.
+- Implementation：
+  - A depth of world position only (PolarSnowDepth: the painted snow's cover, slope, rocky-tile, knoll-rock and river-ice terms with an exposure noise, up to 0.10 m; 0 round huts, in the hub sectors and on pond and gap outlines) is baked into terrain vertices' tangent w and lifted by PolarMeshModification.hlsl in every pass; near chunks everywhere, distant blocks on the window cut.
+  - Pitched and pitching tents clear it through a global array (PolarSnowShelter); items put down lie on it (Seat with SnowAt, display only) and are seated again when tents change it; narrow cracks lie in it; drift runs 0.10 m higher; OnLocalCutBoundary also accepts the window column at x = Width.
+- Validation：
+  - Two adversarial review rounds (16 and 11 confirmed findings) fixed before the build; three assemblies and every Polar and habitat shader compile; 29 genuine pairs (five-areas and polar-art), all captures PASS, no seams in the 600-frame level-of-detail walk.
+  - Package 0.6.34-test sd-01: gameplay 339, physical 831, performance 59 (P95 16.67-16.71 ms), weather 80, weather-resume 10 and ui 382 pass, peak 6.16 GB; alternating with cn-01, weather GPU and loading times are unchanged.
+- Decisions and scope：0.10 m keeps within the earlier 0.15 m cap for walkable visual snow; the relay's 2 cm bound on visual-only snow no longer applies to the ground's own layer. Bodies, scatter, escarpment proxies and stuck harpoons are not lifted.
+- Remaining work：Stages 3-4 (deep snow with relief and footprints near the player; pack rocks). The change is subtle from 30 m on; around the inner ring a near chunk released by the window drops its layer 20-55 m away.
+
+### Screenshot comparison
+
+| State | Before | After | Difference |
+|---|---|---|---|
+| Boulder, downwind contact (b3-06) | ![Boulder, downwind contact (b3-06) before](evidence/2026-10-21/thick-snow-s2/boulder-contact-before.png) | ![Boulder, downwind contact (b3-06) after](evidence/2026-10-21/thick-snow-s2/boulder-contact-after.png) | [Comparison](evidence/2026-10-21/thick-snow-s2/boulder-contact-comparison.png) |
+| Camp, high ground 1-3 km (settled) | ![Camp, high ground 1-3 km (settled) before](evidence/2026-10-21/thick-snow-s2/camp-middle-before.png) | ![Camp, high ground 1-3 km (settled) after](evidence/2026-10-21/thick-snow-s2/camp-middle-after.png) | [Comparison](evidence/2026-10-21/thick-snow-s2/camp-middle-comparison.png) |
+| Camp, near ground and slope rock (settled) | ![Camp, near ground and slope rock (settled) before](evidence/2026-10-21/thick-snow-s2/camp-near-before.png) | ![Camp, near ground and slope rock (settled) after](evidence/2026-10-21/thick-snow-s2/camp-near-after.png) | [Comparison](evidence/2026-10-21/thick-snow-s2/camp-near-comparison.png) |
+| Harpoon thrown into snow | ![Harpoon thrown into snow before](evidence/2026-10-21/thick-snow-s2/harpoon-snow-before.png) | ![Harpoon thrown into snow after](evidence/2026-10-21/thick-snow-s2/harpoon-snow-after.png) | [Comparison](evidence/2026-10-21/thick-snow-s2/harpoon-snow-comparison.png) |
+| Hut entrance in snow (b6) | ![Hut entrance in snow (b6) before](evidence/2026-10-21/thick-snow-s2/hut-entrance-snow-before.png) | ![Hut entrance in snow (b6) after](evidence/2026-10-21/thick-snow-s2/hut-entrance-snow-after.png) | [Comparison](evidence/2026-10-21/thick-snow-s2/hut-entrance-snow-comparison.png) |
+| Hut, front by day (b6) | ![Hut, front by day (b6) before](evidence/2026-10-21/thick-snow-s2/hut-front-before.png) | ![Hut, front by day (b6) after](evidence/2026-10-21/thick-snow-s2/hut-front-after.png) | [Comparison](evidence/2026-10-21/thick-snow-s2/hut-front-comparison.png) |
+| Open land, clear day (b5) | ![Open land, clear day (b5) before](evidence/2026-10-21/thick-snow-s2/land-day-clear-before.png) | ![Open land, clear day (b5) after](evidence/2026-10-21/thick-snow-s2/land-day-clear-after.png) | [Comparison](evidence/2026-10-21/thick-snow-s2/land-day-clear-comparison.png) |
+| Open land, medium snow by day (b5) | ![Open land, medium snow by day (b5) before](evidence/2026-10-21/thick-snow-s2/land-day-medium-before.png) | ![Open land, medium snow by day (b5) after](evidence/2026-10-21/thick-snow-s2/land-day-medium-after.png) | [Comparison](evidence/2026-10-21/thick-snow-s2/land-day-medium-comparison.png) |
+| Level-of-detail walk, frame 100 | ![Level-of-detail walk, frame 100 before](evidence/2026-10-21/thick-snow-s2/lod-walk-100-before.png) | ![Level-of-detail walk, frame 100 after](evidence/2026-10-21/thick-snow-s2/lod-walk-100-after.png) | [Comparison](evidence/2026-10-21/thick-snow-s2/lod-walk-100-comparison.png) |
+| Level-of-detail walk, frame 300 | ![Level-of-detail walk, frame 300 before](evidence/2026-10-21/thick-snow-s2/lod-walk-300-before.png) | ![Level-of-detail walk, frame 300 after](evidence/2026-10-21/thick-snow-s2/lod-walk-300-after.png) | [Comparison](evidence/2026-10-21/thick-snow-s2/lod-walk-300-comparison.png) |
+| Level-of-detail walk, frame 500 | ![Level-of-detail walk, frame 500 before](evidence/2026-10-21/thick-snow-s2/lod-walk-500-before.png) | ![Level-of-detail walk, frame 500 after](evidence/2026-10-21/thick-snow-s2/lod-walk-500-after.png) | [Comparison](evidence/2026-10-21/thick-snow-s2/lod-walk-500-comparison.png) |
+| Dead person on the ground (contacts) | ![Dead person on the ground (contacts) before](evidence/2026-10-21/thick-snow-s2/person-dead-before.png) | ![Dead person on the ground (contacts) after](evidence/2026-10-21/thick-snow-s2/person-dead-after.png) | [Comparison](evidence/2026-10-21/thick-snow-s2/person-dead-comparison.png) |
+| Person sleeping on the ground (contacts) | ![Person sleeping on the ground (contacts) before](evidence/2026-10-21/thick-snow-s2/person-sleeping-before.png) | ![Person sleeping on the ground (contacts) after](evidence/2026-10-21/thick-snow-s2/person-sleeping-after.png) | [Comparison](evidence/2026-10-21/thick-snow-s2/person-sleeping-comparison.png) |
+| Person on a slope (contacts) | ![Person on a slope (contacts) before](evidence/2026-10-21/thick-snow-s2/person-slope-before.png) | ![Person on a slope (contacts) after](evidence/2026-10-21/thick-snow-s2/person-slope-after.png) | [Comparison](evidence/2026-10-21/thick-snow-s2/person-slope-comparison.png) |
+| Person standing, side (contacts) | ![Person standing, side (contacts) before](evidence/2026-10-21/thick-snow-s2/person-standing-before.png) | ![Person standing, side (contacts) after](evidence/2026-10-21/thick-snow-s2/person-standing-after.png) | [Comparison](evidence/2026-10-21/thick-snow-s2/person-standing-comparison.png) |
+| Frozen pond, broken (b4) | ![Frozen pond, broken (b4) before](evidence/2026-10-21/thick-snow-s2/pond-broken-before.png) | ![Frozen pond, broken (b4) after](evidence/2026-10-21/thick-snow-s2/pond-broken-after.png) | [Comparison](evidence/2026-10-21/thick-snow-s2/pond-broken-comparison.png) |
+| Frozen pond, intact (b4) | ![Frozen pond, intact (b4) before](evidence/2026-10-21/thick-snow-s2/pond-intact-before.png) | ![Frozen pond, intact (b4) after](evidence/2026-10-21/thick-snow-s2/pond-intact-after.png) | [Comparison](evidence/2026-10-21/thick-snow-s2/pond-intact-comparison.png) |
+| Relief vantage: rock bands on slopes (settled) | ![Relief vantage: rock bands on slopes (settled) before](evidence/2026-10-21/thick-snow-s2/relief-before.png) | ![Relief vantage: rock bands on slopes (settled) after](evidence/2026-10-21/thick-snow-s2/relief-after.png) | [Comparison](evidence/2026-10-21/thick-snow-s2/relief-comparison.png) |
+| Relief vantage, left (settled) | ![Relief vantage, left (settled) before](evidence/2026-10-21/thick-snow-s2/relief-left-before.png) | ![Relief vantage, left (settled) after](evidence/2026-10-21/thick-snow-s2/relief-left-after.png) | [Comparison](evidence/2026-10-21/thick-snow-s2/relief-left-comparison.png) |
+| Route, near (b3-07) | ![Route, near (b3-07) before](evidence/2026-10-21/thick-snow-s2/route-near-before.png) | ![Route, near (b3-07) after](evidence/2026-10-21/thick-snow-s2/route-near-after.png) | [Comparison](evidence/2026-10-21/thick-snow-s2/route-near-comparison.png) |
+| Sastrugi tile (b3-11) | ![Sastrugi tile (b3-11) before](evidence/2026-10-21/thick-snow-s2/sastrugi-before.png) | ![Sastrugi tile (b3-11) after](evidence/2026-10-21/thick-snow-s2/sastrugi-after.png) | [Comparison](evidence/2026-10-21/thick-snow-s2/sastrugi-comparison.png) |
+| Sastrugi across a low sun (b3-19) | ![Sastrugi across a low sun (b3-19) before](evidence/2026-10-21/thick-snow-s2/sastrugi-low-sun-before.png) | ![Sastrugi across a low sun (b3-19) after](evidence/2026-10-21/thick-snow-s2/sastrugi-low-sun-after.png) | [Comparison](evidence/2026-10-21/thick-snow-s2/sastrugi-low-sun-comparison.png) |
+| Open snow, looking down (b3-02) | ![Open snow, looking down (b3-02) before](evidence/2026-10-21/thick-snow-s2/snow-down-before.png) | ![Open snow, looking down (b3-02) after](evidence/2026-10-21/thick-snow-s2/snow-down-after.png) | [Comparison](evidence/2026-10-21/thick-snow-s2/snow-down-comparison.png) |
+| Open snow, oblique (b3-01) | ![Open snow, oblique (b3-01) before](evidence/2026-10-21/thick-snow-s2/snow-oblique-before.png) | ![Open snow, oblique (b3-01) after](evidence/2026-10-21/thick-snow-s2/snow-oblique-after.png) | [Comparison](evidence/2026-10-21/thick-snow-s2/snow-oblique-comparison.png) |
+| Pole Station from 60 m (b6) | ![Pole Station from 60 m (b6) before](evidence/2026-10-21/thick-snow-s2/station-60m-before.png) | ![Pole Station from 60 m (b6) after](evidence/2026-10-21/thick-snow-s2/station-60m-after.png) | [Comparison](evidence/2026-10-21/thick-snow-s2/station-60m-comparison.png) |
+| Steep face (b3-10) | ![Steep face (b3-10) before](evidence/2026-10-21/thick-snow-s2/steep-face-before.png) | ![Steep face (b3-10) after](evidence/2026-10-21/thick-snow-s2/steep-face-after.png) | [Comparison](evidence/2026-10-21/thick-snow-s2/steep-face-comparison.png) |
+| Tent pitched at the camp | ![Tent pitched at the camp before](evidence/2026-10-21/thick-snow-s2/tent-pitched-before.png) | ![Tent pitched at the camp after](evidence/2026-10-21/thick-snow-s2/tent-pitched-after.png) | [Comparison](evidence/2026-10-21/thick-snow-s2/tent-pitched-comparison.png) |
+| Tent with its stove, from outside by day | ![Tent with its stove, from outside by day before](evidence/2026-10-21/thick-snow-s2/tent-stove-outside-before.png) | ![Tent with its stove, from outside by day after](evidence/2026-10-21/thick-snow-s2/tent-stove-outside-after.png) | [Comparison](evidence/2026-10-21/thick-snow-s2/tent-stove-outside-comparison.png) |
+| Tundra, oblique (b3-04) | ![Tundra, oblique (b3-04) before](evidence/2026-10-21/thick-snow-s2/tundra-oblique-before.png) | ![Tundra, oblique (b3-04) after](evidence/2026-10-21/thick-snow-s2/tundra-oblique-after.png) | [Comparison](evidence/2026-10-21/thick-snow-s2/tundra-oblique-comparison.png) |
+
+Difference metrics:
+- Boulder, downwind contact (b3-06) threshold `12` changed pixels `9629/2073600` (`0.4644%`) MAE `0.002389`.
+- Camp, high ground 1-3 km (settled) threshold `12` changed pixels `1674/1440000` (`0.1163%`) MAE `0.003358`.
+- Camp, near ground and slope rock (settled) threshold `12` changed pixels `7154/1440000` (`0.4968%`) MAE `0.003093`.
+- Harpoon thrown into snow threshold `12` changed pixels `14658/1440000` (`1.0179%`) MAE `0.011624`.
+- Hut entrance in snow (b6) threshold `12` changed pixels `2413/2073600` (`0.1164%`) MAE `0.002015`.
+- Hut, front by day (b6) threshold `12` changed pixels `4155/2073600` (`0.2004%`) MAE `0.001725`.
+- Open land, clear day (b5) threshold `12` changed pixels `7294/2073600` (`0.3518%`) MAE `0.006950`.
+- Open land, medium snow by day (b5) threshold `12` changed pixels `6082/2073600` (`0.2933%`) MAE `0.006707`.
+- Level-of-detail walk, frame 100 threshold `12` changed pixels `13772/1440000` (`0.9564%`) MAE `0.005337`.
+- Level-of-detail walk, frame 300 threshold `12` changed pixels `20226/1440000` (`1.4046%`) MAE `0.006534`.
+- Level-of-detail walk, frame 500 threshold `12` changed pixels `22837/1440000` (`1.5859%`) MAE `0.008144`.
+- Dead person on the ground (contacts) threshold `12` changed pixels `19532/2073600` (`0.9419%`) MAE `0.009405`.
+- Person sleeping on the ground (contacts) threshold `12` changed pixels `18696/2073600` (`0.9016%`) MAE `0.009630`.
+- Person on a slope (contacts) threshold `12` changed pixels `450216/2073600` (`21.7118%`) MAE `0.028756`.
+- Person standing, side (contacts) threshold `12` changed pixels `27590/2073600` (`1.3305%`) MAE `0.007833`.
+- Frozen pond, broken (b4) threshold `12` changed pixels `8010/2073600` (`0.3863%`) MAE `0.005492`.
+- Frozen pond, intact (b4) threshold `12` changed pixels `6262/2073600` (`0.3020%`) MAE `0.005261`.
+- Relief vantage: rock bands on slopes (settled) threshold `12` changed pixels `5913/1440000` (`0.4106%`) MAE `0.003622`.
+- Relief vantage, left (settled) threshold `12` changed pixels `12411/1440000` (`0.8619%`) MAE `0.004972`.
+- Route, near (b3-07) threshold `12` changed pixels `76561/2073600` (`3.6922%`) MAE `0.012025`.
+- Sastrugi tile (b3-11) threshold `12` changed pixels `53794/2073600` (`2.5942%`) MAE `0.012109`.
+- Sastrugi across a low sun (b3-19) threshold `12` changed pixels `78373/2073600` (`3.7796%`) MAE `0.012175`.
+- Open snow, looking down (b3-02) threshold `12` changed pixels `10982/2073600` (`0.5296%`) MAE `0.011082`.
+- Open snow, oblique (b3-01) threshold `12` changed pixels `11044/2073600` (`0.5326%`) MAE `0.007178`.
+- Pole Station from 60 m (b6) threshold `12` changed pixels `4372/2073600` (`0.2108%`) MAE `0.001930`.
+- Steep face (b3-10) threshold `12` changed pixels `63902/2073600` (`3.0817%`) MAE `0.011090`.
+- Tent pitched at the camp threshold `12` changed pixels `9580/1440000` (`0.6653%`) MAE `0.004386`.
+- Tent with its stove, from outside by day threshold `12` changed pixels `13588/1440000` (`0.9436%`) MAE `0.005247`.
+- Tundra, oblique (b3-04) threshold `12` changed pixels `7549/2073600` (`0.3641%`) MAE `0.003167`.
+
+Related documents:[rendering-streaming.md](../systems/rendering-streaming.md) / [current-status.md](../current-status.md) / [polar-thick-snow.md](../plans/polar-thick-snow.md) / [design-decisions.md](../../design-decisions.md).
+
+## Distant cliff band edges
+<!-- project-update-log:2026-10-21:cliff-band-edges -->
+
+- Reason：After 0.6.33-test the sides of the distant cliff band 200-600 m away still showed feathered dark teeth: rows of horizontal spikes and two long fingers on the cliff by the camp, toothed sides on the relief streak.
+- Implementation：
+  - PolarWorldStreamer.CliffBand fades the band's strength linearly over its three vertex spacings, which the distant mesh's triangles interpolate exactly (a smoothstep fade drew one tooth per row).
+  - SurfaceColor writes the strength as negative vertex R (0 to -1): as .86-1 the band also read as a rocky tile, whose noise patches drew the fingers. Knoll cores keep .86-.98.
+  - PolarGroundSurface's band coverage rises over a quarter of the strength, centred at .35, with a smaller slow-noise shift; the rock edge rule is unchanged, so other rock looks as before. Package 0.6.35-test, build cb-01.
+- Validation：
+  - Three assemblies compile. 12 genuine pairs from PolarFiveAreasCapture (camp and relief views); before = the thick-snow session's captures of 2dc657b3, after = the same views with the fix.
+  - cb-01 against sd-01, alternating (cb, sd, sd, cb), one run each twice: refinement complete 147.0-148.6 s new game (145.8-147.1 s) and 110.2-112.4 s Continue (111.3-113.5 s); playable 53.4-54.4 s (53.4-54.3 s) and 17.4-18.3 s (17.9-18.0 s); P95 while refining 8.34-8.35 ms in all eight. A first round in the opposite order ran while another session compiled and is not counted.
+- Decisions and scope：
+  - Diagnosed with a temporary shader switch (band value, slope coverage, combined coverage, rock with and without the map height, contour views): not the normals or the slope term.
+  - One value per vertex serves weak and strong bands alike, so six coverage variants were captured on every camp and relief view: centred at .43 a steep rise broke the range view's weak ridge band into fragments; .35 keeps it continuous, with strong bands about 1.5 m wider each side at a 6 m spacing.
+  - A global edge change (constant sharpness, half the map height beyond 40 m) was tried and dropped: it removed faint slope rock near the camp and made rock patches 2-6 km away blocky.
+  - Player modes were not rerun: only distant meshes' colours and the ground shader's band line change, and the acceptance's distant checks count resolution levels, which are unchanged.
+- Remaining work：A band still changes width at a border between a 256 and a 128 block, as before; the faintest cliff lines (sheerness under about .35) show no rock at a distance, where they showed scattered streaks.
+
+### Screenshot comparison
+
+| State | Before | After | Difference |
+|---|---|---|---|
+| Highest silhouette 6 km from camp, settled | ![Highest silhouette 6 km from camp, settled before](evidence/2026-10-21/cliff-band-edges/far-before.png) | ![Highest silhouette 6 km from camp, settled after](evidence/2026-10-21/cliff-band-edges/far-after.png) | [Comparison](evidence/2026-10-21/cliff-band-edges/far-comparison.png) |
+| Highest ground 2.6 km from camp, settled | ![Highest ground 2.6 km from camp, settled before](evidence/2026-10-21/cliff-band-edges/middle-before.png) | ![Highest ground 2.6 km from camp, settled after](evidence/2026-10-21/cliff-band-edges/middle-after.png) | [Comparison](evidence/2026-10-21/cliff-band-edges/middle-comparison.png) |
+| 79-degree slope 230 m from camp, settled | ![79-degree slope 230 m from camp, settled before](evidence/2026-10-21/cliff-band-edges/near-before.png) | ![79-degree slope 230 m from camp, settled after](evidence/2026-10-21/cliff-band-edges/near-after.png) | [Comparison](evidence/2026-10-21/cliff-band-edges/near-comparison.png) |
+| Cliff band 230-400 m from camp, settled, crop | ![Cliff band 230-400 m from camp, settled, crop before](evidence/2026-10-21/cliff-band-edges/near-band-before.png) | ![Cliff band 230-400 m from camp, settled, crop after](evidence/2026-10-21/cliff-band-edges/near-band-after.png) | [Comparison](evidence/2026-10-21/cliff-band-edges/near-band-comparison.png) |
+| Weak cliff line by a bare patch near the camp, crop | ![Weak cliff line by a bare patch near the camp, crop before](evidence/2026-10-21/cliff-band-edges/near-weak-before.png) | ![Weak cliff line by a bare patch near the camp, crop after](evidence/2026-10-21/cliff-band-edges/near-weak-after.png) | [Comparison](evidence/2026-10-21/cliff-band-edges/near-weak-comparison.png) |
+| Outward from Pole Station, settled | ![Outward from Pole Station, settled before](evidence/2026-10-21/cliff-band-edges/range-before.png) | ![Outward from Pole Station, settled after](evidence/2026-10-21/cliff-band-edges/range-after.png) | [Comparison](evidence/2026-10-21/cliff-band-edges/range-comparison.png) |
+| Weak ridge band in the range view, crop | ![Weak ridge band in the range view, crop before](evidence/2026-10-21/cliff-band-edges/range-ridge-before.png) | ![Weak ridge band in the range view, crop after](evidence/2026-10-21/cliff-band-edges/range-ridge-after.png) | [Comparison](evidence/2026-10-21/cliff-band-edges/range-ridge-comparison.png) |
+| Relief peak from the vantage, settled | ![Relief peak from the vantage, settled before](evidence/2026-10-21/cliff-band-edges/relief-before.png) | ![Relief peak from the vantage, settled after](evidence/2026-10-21/cliff-band-edges/relief-after.png) | [Comparison](evidence/2026-10-21/cliff-band-edges/relief-comparison.png) |
+| Relief, far view, settled | ![Relief, far view, settled before](evidence/2026-10-21/cliff-band-edges/relief-far-before.png) | ![Relief, far view, settled after](evidence/2026-10-21/cliff-band-edges/relief-far-after.png) | [Comparison](evidence/2026-10-21/cliff-band-edges/relief-far-comparison.png) |
+| Relief, left view, settled | ![Relief, left view, settled before](evidence/2026-10-21/cliff-band-edges/relief-left-before.png) | ![Relief, left view, settled after](evidence/2026-10-21/cliff-band-edges/relief-left-after.png) | [Comparison](evidence/2026-10-21/cliff-band-edges/relief-left-comparison.png) |
+| Relief, right view, settled | ![Relief, right view, settled before](evidence/2026-10-21/cliff-band-edges/relief-right-before.png) | ![Relief, right view, settled after](evidence/2026-10-21/cliff-band-edges/relief-right-after.png) | [Comparison](evidence/2026-10-21/cliff-band-edges/relief-right-comparison.png) |
+| Relief streak (block 11,7, 300-590 m), settled, crop | ![Relief streak (block 11,7, 300-590 m), settled, crop before](evidence/2026-10-21/cliff-band-edges/relief-streak-before.png) | ![Relief streak (block 11,7, 300-590 m), settled, crop after](evidence/2026-10-21/cliff-band-edges/relief-streak-after.png) | [Comparison](evidence/2026-10-21/cliff-band-edges/relief-streak-comparison.png) |
+
+Difference metrics:
+- Highest silhouette 6 km from camp, settled threshold `12` changed pixels `1491/1440000` (`0.1035%`) MAE `0.001221`.
+- Highest ground 2.6 km from camp, settled threshold `12` changed pixels `2365/1440000` (`0.1642%`) MAE `0.001416`.
+- 79-degree slope 230 m from camp, settled threshold `12` changed pixels `13986/1440000` (`0.9712%`) MAE `0.002565`.
+- Cliff band 230-400 m from camp, settled, crop threshold `12` changed pixels `4212/60000` (`7.0200%`) MAE `0.012699`.
+- Weak cliff line by a bare patch near the camp, crop threshold `12` changed pixels `4946/48000` (`10.3042%`) MAE `0.012290`.
+- Outward from Pole Station, settled threshold `12` changed pixels `4372/1440000` (`0.3036%`) MAE `0.002323`.
+- Weak ridge band in the range view, crop threshold `12` changed pixels `1424/54000` (`2.6370%`) MAE `0.006538`.
+- Relief peak from the vantage, settled threshold `12` changed pixels `6610/1440000` (`0.4590%`) MAE `0.002159`.
+- Relief, far view, settled threshold `12` changed pixels `7255/1440000` (`0.5038%`) MAE `0.002367`.
+- Relief, left view, settled threshold `12` changed pixels `13105/1440000` (`0.9101%`) MAE `0.002892`.
+- Relief, right view, settled threshold `12` changed pixels `7380/1440000` (`0.5125%`) MAE `0.002353`.
+- Relief streak (block 11,7, 300-590 m), settled, crop threshold `12` changed pixels `5448/72000` (`7.5667%`) MAE `0.013920`.
+
+Related documents:[rendering-streaming.md](../systems/rendering-streaming.md) / [current-status.md](../current-status.md).
+
+## Thick snow Stage 3: deep snow, relief and footprints near the player
+<!-- project-update-log:2026-10-21:thick-snow-s3 -->
+
+- Reason：Stage 3 of the thick-snow plan (the user asked to complete every stage): Stage 2's 0.10 m layer was still subtle; the snow needed real depth, relief and tracks near the player.
+- Implementation：
+  - Open snow is drawn 0.15-0.45 m deep by exposure to the wind on every terrain vertex (PolarSnowDepth), thinning over 3 m to pond outlines; the distant morph carries the coarse depth.
+  - A tessellated twin of the ground (PolarGround.shader, generated by PolarGroundTwinAuthor) draws sastrugi crests, grain, edge steps and exact tent pits within 18 m (12 m in a blizzard); its shadow pass is not tessellated. Gap cutting keeps whole any triangle a gap does not touch, and the relief stays flat at gap and pond edges, so T-junctions cannot open.
+  - PolarSnowTracks: a toroidal footprint field round the camera stamped by boots within 18 m and refilled by falling snow, never saved; setting Footprints Off / Player / Everyone; the relief flattens round items, lying people and cracks; the dead and sleepers outdoors lie on the snow. GDD 3.4.2 and 6.7 amended.
+- Validation：
+  - Spec chosen from three designs by judges; two code reviews; offline fxc compile of every pass; 42 genuine pairs with a capture-only tracks group; 0 holes in both probes; settings check 72 pass.
+  - Package 0.6.36-test: gameplay 339, performance 59, weather 80, weather-resume 10 and ui 382 pass on st-01, physical 831 on st-03 after fixing a window-edge sample; against cb-01, weather GPU +0.6 ms at most and loading within its gates.
+- Decisions and scope：GPU: the spec's full reach, 12 px segments and tessellated shadows cost +1.5 to +3.8 ms; fallback F1 (18/12 m, 20 px) and a plain shadow pass bring the Editor A/B to +0.3 to +0.95 ms (the trail rows about 0.1 ms over the 0.8 ms budget).
+- Remaining work：Stage 4 (pack rocks in the world). Crest shadows are short; the front-page run with the Footprints stepper check was not run (it needs the window in front).
+
+### Screenshot comparison
+
+| State | Before | After | Difference |
+|---|---|---|---|
+| Dead person and a tin, from 20 m | ![Dead person and a tin, from 20 m before](evidence/2026-10-21/thick-snow-s3/body-item-far-before.png) | ![Dead person and a tin, from 20 m after](evidence/2026-10-21/thick-snow-s3/body-item-far-after.png) | [Comparison](evidence/2026-10-21/thick-snow-s3/body-item-far-comparison.png) |
+| Dead person and a tin, from 4 m | ![Dead person and a tin, from 4 m before](evidence/2026-10-21/thick-snow-s3/body-item-near-before.png) | ![Dead person and a tin, from 4 m after](evidence/2026-10-21/thick-snow-s3/body-item-near-after.png) | [Comparison](evidence/2026-10-21/thick-snow-s3/body-item-near-comparison.png) |
+| Boulder, downwind contact (b3-06) | ![Boulder, downwind contact (b3-06) before](evidence/2026-10-21/thick-snow-s3/boulder-contact-before.png) | ![Boulder, downwind contact (b3-06) after](evidence/2026-10-21/thick-snow-s3/boulder-contact-after.png) | [Comparison](evidence/2026-10-21/thick-snow-s3/boulder-contact-comparison.png) |
+| Camp, high ground 1-3 km (settled) | ![Camp, high ground 1-3 km (settled) before](evidence/2026-10-21/thick-snow-s3/camp-middle-before.png) | ![Camp, high ground 1-3 km (settled) after](evidence/2026-10-21/thick-snow-s3/camp-middle-after.png) | [Comparison](evidence/2026-10-21/thick-snow-s3/camp-middle-comparison.png) |
+| Camp, near ground and slope rock (settled) | ![Camp, near ground and slope rock (settled) before](evidence/2026-10-21/thick-snow-s3/camp-near-before.png) | ![Camp, near ground and slope rock (settled) after](evidence/2026-10-21/thick-snow-s3/camp-near-after.png) | [Comparison](evidence/2026-10-21/thick-snow-s3/camp-near-comparison.png) |
+| Sastrugi across the wind, low sun | ![Sastrugi across the wind, low sun before](evidence/2026-10-21/thick-snow-s3/grazing-across-low-before.png) | ![Sastrugi across the wind, low sun after](evidence/2026-10-21/thick-snow-s3/grazing-across-low-after.png) | [Comparison](evidence/2026-10-21/thick-snow-s3/grazing-across-low-comparison.png) |
+| Sastrugi along the wind, day | ![Sastrugi along the wind, day before](evidence/2026-10-21/thick-snow-s3/grazing-along-day-before.png) | ![Sastrugi along the wind, day after](evidence/2026-10-21/thick-snow-s3/grazing-along-day-after.png) | [Comparison](evidence/2026-10-21/thick-snow-s3/grazing-along-day-comparison.png) |
+| Sastrugi along the wind, night | ![Sastrugi along the wind, night before](evidence/2026-10-21/thick-snow-s3/grazing-along-night-before.png) | ![Sastrugi along the wind, night after](evidence/2026-10-21/thick-snow-s3/grazing-along-night-after.png) | [Comparison](evidence/2026-10-21/thick-snow-s3/grazing-along-night-comparison.png) |
+| Hut and its cleared disc | ![Hut and its cleared disc before](evidence/2026-10-21/thick-snow-s3/hut-disc-before.png) | ![Hut and its cleared disc after](evidence/2026-10-21/thick-snow-s3/hut-disc-after.png) | [Comparison](evidence/2026-10-21/thick-snow-s3/hut-disc-comparison.png) |
+| Hut, front by day (b6) | ![Hut, front by day (b6) before](evidence/2026-10-21/thick-snow-s3/hut-front-before.png) | ![Hut, front by day (b6) after](evidence/2026-10-21/thick-snow-s3/hut-front-after.png) | [Comparison](evidence/2026-10-21/thick-snow-s3/hut-front-comparison.png) |
+| Open land, blizzard by day (b5) | ![Open land, blizzard by day (b5) before](evidence/2026-10-21/thick-snow-s3/land-day-blizzard-before.png) | ![Open land, blizzard by day (b5) after](evidence/2026-10-21/thick-snow-s3/land-day-blizzard-after.png) | [Comparison](evidence/2026-10-21/thick-snow-s3/land-day-blizzard-comparison.png) |
+| Open land, clear day (b5) | ![Open land, clear day (b5) before](evidence/2026-10-21/thick-snow-s3/land-day-clear-before.png) | ![Open land, clear day (b5) after](evidence/2026-10-21/thick-snow-s3/land-day-clear-after.png) | [Comparison](evidence/2026-10-21/thick-snow-s3/land-day-clear-comparison.png) |
+| Dead person on the ground (contacts) | ![Dead person on the ground (contacts) before](evidence/2026-10-21/thick-snow-s3/person-dead-before.png) | ![Dead person on the ground (contacts) after](evidence/2026-10-21/thick-snow-s3/person-dead-after.png) | [Comparison](evidence/2026-10-21/thick-snow-s3/person-dead-comparison.png) |
+| Person sleeping on the ground (contacts) | ![Person sleeping on the ground (contacts) before](evidence/2026-10-21/thick-snow-s3/person-sleeping-before.png) | ![Person sleeping on the ground (contacts) after](evidence/2026-10-21/thick-snow-s3/person-sleeping-after.png) | [Comparison](evidence/2026-10-21/thick-snow-s3/person-sleeping-comparison.png) |
+| Person on a slope (contacts) | ![Person on a slope (contacts) before](evidence/2026-10-21/thick-snow-s3/person-slope-before.png) | ![Person on a slope (contacts) after](evidence/2026-10-21/thick-snow-s3/person-slope-after.png) | [Comparison](evidence/2026-10-21/thick-snow-s3/person-slope-comparison.png) |
+| Person standing, side (contacts) | ![Person standing, side (contacts) before](evidence/2026-10-21/thick-snow-s3/person-standing-before.png) | ![Person standing, side (contacts) after](evidence/2026-10-21/thick-snow-s3/person-standing-after.png) | [Comparison](evidence/2026-10-21/thick-snow-s3/person-standing-comparison.png) |
+| Frozen pond, intact (b4) | ![Frozen pond, intact (b4) before](evidence/2026-10-21/thick-snow-s3/pond-intact-before.png) | ![Frozen pond, intact (b4) after](evidence/2026-10-21/thick-snow-s3/pond-intact-after.png) | [Comparison](evidence/2026-10-21/thick-snow-s3/pond-intact-comparison.png) |
+| Relief vantage: rock bands on slopes (settled) | ![Relief vantage: rock bands on slopes (settled) before](evidence/2026-10-21/thick-snow-s3/relief-before.png) | ![Relief vantage: rock bands on slopes (settled) after](evidence/2026-10-21/thick-snow-s3/relief-after.png) | [Comparison](evidence/2026-10-21/thick-snow-s3/relief-comparison.png) |
+| Relief vantage, left (settled) | ![Relief vantage, left (settled) before](evidence/2026-10-21/thick-snow-s3/relief-left-before.png) | ![Relief vantage, left (settled) after](evidence/2026-10-21/thick-snow-s3/relief-left-after.png) | [Comparison](evidence/2026-10-21/thick-snow-s3/relief-left-comparison.png) |
+| Relief fade band, 26 m ahead | ![Relief fade band, 26 m ahead before](evidence/2026-10-21/thick-snow-s3/relief-pair-a-before.png) | ![Relief fade band, 26 m ahead after](evidence/2026-10-21/thick-snow-s3/relief-pair-a-after.png) | [Comparison](evidence/2026-10-21/thick-snow-s3/relief-pair-a-comparison.png) |
+| Relief fade band, half a metre on | ![Relief fade band, half a metre on before](evidence/2026-10-21/thick-snow-s3/relief-pair-b-before.png) | ![Relief fade band, half a metre on after](evidence/2026-10-21/thick-snow-s3/relief-pair-b-after.png) | [Comparison](evidence/2026-10-21/thick-snow-s3/relief-pair-b-comparison.png) |
+| Route, near (b3-07) | ![Route, near (b3-07) before](evidence/2026-10-21/thick-snow-s3/route-near-before.png) | ![Route, near (b3-07) after](evidence/2026-10-21/thick-snow-s3/route-near-after.png) | [Comparison](evidence/2026-10-21/thick-snow-s3/route-near-comparison.png) |
+| Sastrugi tile (b3-11) | ![Sastrugi tile (b3-11) before](evidence/2026-10-21/thick-snow-s3/sastrugi-before.png) | ![Sastrugi tile (b3-11) after](evidence/2026-10-21/thick-snow-s3/sastrugi-after.png) | [Comparison](evidence/2026-10-21/thick-snow-s3/sastrugi-comparison.png) |
+| Sastrugi across a low sun (b3-19) | ![Sastrugi across a low sun (b3-19) before](evidence/2026-10-21/thick-snow-s3/sastrugi-low-sun-before.png) | ![Sastrugi across a low sun (b3-19) after](evidence/2026-10-21/thick-snow-s3/sastrugi-low-sun-after.png) | [Comparison](evidence/2026-10-21/thick-snow-s3/sastrugi-low-sun-comparison.png) |
+| Footprints setting Everyone | ![Footprints setting Everyone before](evidence/2026-10-21/thick-snow-s3/setting-everyone-before.png) | ![Footprints setting Everyone after](evidence/2026-10-21/thick-snow-s3/setting-everyone-after.png) | [Comparison](evidence/2026-10-21/thick-snow-s3/setting-everyone-comparison.png) |
+| Footprints setting Off | ![Footprints setting Off before](evidence/2026-10-21/thick-snow-s3/setting-off-before.png) | ![Footprints setting Off after](evidence/2026-10-21/thick-snow-s3/setting-off-after.png) | [Comparison](evidence/2026-10-21/thick-snow-s3/setting-off-comparison.png) |
+| Footprints setting Player | ![Footprints setting Player before](evidence/2026-10-21/thick-snow-s3/setting-player-before.png) | ![Footprints setting Player after](evidence/2026-10-21/thick-snow-s3/setting-player-after.png) | [Comparison](evidence/2026-10-21/thick-snow-s3/setting-player-comparison.png) |
+| Open snow, looking down (b3-02) | ![Open snow, looking down (b3-02) before](evidence/2026-10-21/thick-snow-s3/snow-down-before.png) | ![Open snow, looking down (b3-02) after](evidence/2026-10-21/thick-snow-s3/snow-down-after.png) | [Comparison](evidence/2026-10-21/thick-snow-s3/snow-down-comparison.png) |
+| Open snow at the player's feet | ![Open snow at the player's feet before](evidence/2026-10-21/thick-snow-s3/snow-feet-before.png) | ![Open snow at the player's feet after](evidence/2026-10-21/thick-snow-s3/snow-feet-after.png) | [Comparison](evidence/2026-10-21/thick-snow-s3/snow-feet-comparison.png) |
+| Open snow, oblique (b3-01) | ![Open snow, oblique (b3-01) before](evidence/2026-10-21/thick-snow-s3/snow-oblique-before.png) | ![Open snow, oblique (b3-01) after](evidence/2026-10-21/thick-snow-s3/snow-oblique-after.png) | [Comparison](evidence/2026-10-21/thick-snow-s3/snow-oblique-comparison.png) |
+| Pole Station from 60 m (b6) | ![Pole Station from 60 m (b6) before](evidence/2026-10-21/thick-snow-s3/station-60m-before.png) | ![Pole Station from 60 m (b6) after](evidence/2026-10-21/thick-snow-s3/station-60m-after.png) | [Comparison](evidence/2026-10-21/thick-snow-s3/station-60m-comparison.png) |
+| Steep face (b3-10) | ![Steep face (b3-10) before](evidence/2026-10-21/thick-snow-s3/steep-face-before.png) | ![Steep face (b3-10) after](evidence/2026-10-21/thick-snow-s3/steep-face-after.png) | [Comparison](evidence/2026-10-21/thick-snow-s3/steep-face-comparison.png) |
+| Camp tent and its cleared floor | ![Camp tent and its cleared floor before](evidence/2026-10-21/thick-snow-s3/tent-pit-before.png) | ![Camp tent and its cleared floor after](evidence/2026-10-21/thick-snow-s3/tent-pit-after.png) | [Comparison](evidence/2026-10-21/thick-snow-s3/tent-pit-comparison.png) |
+| Camp tent, from the side | ![Camp tent, from the side before](evidence/2026-10-21/thick-snow-s3/tent-side-before.png) | ![Camp tent, from the side after](evidence/2026-10-21/thick-snow-s3/tent-side-after.png) | [Comparison](evidence/2026-10-21/thick-snow-s3/tent-side-comparison.png) |
+| Trail, from 16 m back | ![Trail, from 16 m back before](evidence/2026-10-21/thick-snow-s3/trail-far-before.png) | ![Trail, from 16 m back after](evidence/2026-10-21/thick-snow-s3/trail-far-after.png) | [Comparison](evidence/2026-10-21/thick-snow-s3/trail-far-comparison.png) |
+| Trail of 24 prints, along it | ![Trail of 24 prints, along it before](evidence/2026-10-21/thick-snow-s3/trail-near-before.png) | ![Trail of 24 prints, along it after](evidence/2026-10-21/thick-snow-s3/trail-near-after.png) | [Comparison](evidence/2026-10-21/thick-snow-s3/trail-near-comparison.png) |
+| Trail after 30 s of blizzard | ![Trail after 30 s of blizzard before](evidence/2026-10-21/thick-snow-s3/trail-refill-30-before.png) | ![Trail after 30 s of blizzard after](evidence/2026-10-21/thick-snow-s3/trail-refill-30-after.png) | [Comparison](evidence/2026-10-21/thick-snow-s3/trail-refill-30-comparison.png) |
+| Trail after 60 s of blizzard | ![Trail after 60 s of blizzard before](evidence/2026-10-21/thick-snow-s3/trail-refill-60-before.png) | ![Trail after 60 s of blizzard after](evidence/2026-10-21/thick-snow-s3/trail-refill-60-after.png) | [Comparison](evidence/2026-10-21/thick-snow-s3/trail-refill-60-comparison.png) |
+| Trail, from the side | ![Trail, from the side before](evidence/2026-10-21/thick-snow-s3/trail-side-before.png) | ![Trail, from the side after](evidence/2026-10-21/thick-snow-s3/trail-side-after.png) | [Comparison](evidence/2026-10-21/thick-snow-s3/trail-side-comparison.png) |
+| Player walking, frame 30 | ![Player walking, frame 30 before](evidence/2026-10-21/thick-snow-s3/walk-30-before.png) | ![Player walking, frame 30 after](evidence/2026-10-21/thick-snow-s3/walk-30-after.png) | [Comparison](evidence/2026-10-21/thick-snow-s3/walk-30-comparison.png) |
+| Near window edge at the camp | ![Near window edge at the camp before](evidence/2026-10-21/thick-snow-s3/window-camp-before.png) | ![Near window edge at the camp after](evidence/2026-10-21/thick-snow-s3/window-camp-after.png) | [Comparison](evidence/2026-10-21/thick-snow-s3/window-camp-comparison.png) |
+| Near window edge near the inner ring | ![Near window edge near the inner ring before](evidence/2026-10-21/thick-snow-s3/window-inner-before.png) | ![Near window edge near the inner ring after](evidence/2026-10-21/thick-snow-s3/window-inner-after.png) | [Comparison](evidence/2026-10-21/thick-snow-s3/window-inner-comparison.png) |
+
+Difference metrics:
+- Dead person and a tin, from 20 m threshold `12` changed pixels `12391/1440000` (`0.8605%`) MAE `0.007084`.
+- Dead person and a tin, from 4 m threshold `12` changed pixels `95024/1440000` (`6.5989%`) MAE `0.016742`.
+- Boulder, downwind contact (b3-06) threshold `12` changed pixels `23774/2073600` (`1.1465%`) MAE `0.003281`.
+- Camp, high ground 1-3 km (settled) threshold `12` changed pixels `3574/1440000` (`0.2482%`) MAE `0.004012`.
+- Camp, near ground and slope rock (settled) threshold `12` changed pixels `33970/1440000` (`2.3590%`) MAE `0.005211`.
+- Sastrugi across the wind, low sun threshold `12` changed pixels `25522/1440000` (`1.7724%`) MAE `0.008006`.
+- Sastrugi along the wind, day threshold `12` changed pixels `10348/1440000` (`0.7186%`) MAE `0.005733`.
+- Sastrugi along the wind, night threshold `12` changed pixels `45803/1440000` (`3.1808%`) MAE `0.009336`.
+- Hut and its cleared disc threshold `12` changed pixels `53158/1440000` (`3.6915%`) MAE `0.010177`.
+- Hut, front by day (b6) threshold `12` changed pixels `14226/2073600` (`0.6861%`) MAE `0.002455`.
+- Open land, blizzard by day (b5) threshold `12` changed pixels `5217/2073600` (`0.2516%`) MAE `0.006498`.
+- Open land, clear day (b5) threshold `12` changed pixels `10680/2073600` (`0.5150%`) MAE `0.006836`.
+- Dead person on the ground (contacts) threshold `12` changed pixels `29048/2073600` (`1.4008%`) MAE `0.012348`.
+- Person sleeping on the ground (contacts) threshold `12` changed pixels `28061/2073600` (`1.3533%`) MAE `0.011987`.
+- Person on a slope (contacts) threshold `12` changed pixels `732104/2073600` (`35.3059%`) MAE `0.042066`.
+- Person standing, side (contacts) threshold `12` changed pixels `49663/2073600` (`2.3950%`) MAE `0.009610`.
+- Frozen pond, intact (b4) threshold `12` changed pixels `9879/2073600` (`0.4764%`) MAE `0.008026`.
+- Relief vantage: rock bands on slopes (settled) threshold `12` changed pixels `8061/1440000` (`0.5598%`) MAE `0.003935`.
+- Relief vantage, left (settled) threshold `12` changed pixels `14029/1440000` (`0.9742%`) MAE `0.004736`.
+- Relief fade band, 26 m ahead threshold `12` changed pixels `98911/1440000` (`6.8688%`) MAE `0.015288`.
+- Relief fade band, half a metre on threshold `12` changed pixels `92117/1440000` (`6.3970%`) MAE `0.014668`.
+- Route, near (b3-07) threshold `12` changed pixels `66432/2073600` (`3.2037%`) MAE `0.011090`.
+- Sastrugi tile (b3-11) threshold `12` changed pixels `53630/2073600` (`2.5863%`) MAE `0.011952`.
+- Sastrugi across a low sun (b3-19) threshold `12` changed pixels `89820/2073600` (`4.3316%`) MAE `0.012820`.
+- Footprints setting Everyone threshold `12` changed pixels `67091/1440000` (`4.6591%`) MAE `0.013920`.
+- Footprints setting Off threshold `12` changed pixels `25186/1440000` (`1.7490%`) MAE `0.010762`.
+- Footprints setting Player threshold `12` changed pixels `49306/1440000` (`3.4240%`) MAE `0.012830`.
+- Open snow, looking down (b3-02) threshold `12` changed pixels `49778/2073600` (`2.4006%`) MAE `0.014045`.
+- Open snow at the player's feet threshold `12` changed pixels `10766/1440000` (`0.7476%`) MAE `0.011854`.
+- Open snow, oblique (b3-01) threshold `12` changed pixels `14386/2073600` (`0.6938%`) MAE `0.008644`.
+- Pole Station from 60 m (b6) threshold `12` changed pixels `2787/2073600` (`0.1344%`) MAE `0.001415`.
+- Steep face (b3-10) threshold `12` changed pixels `67468/2073600` (`3.2537%`) MAE `0.009554`.
+- Camp tent and its cleared floor threshold `12` changed pixels `109530/1440000` (`7.6063%`) MAE `0.012663`.
+- Camp tent, from the side threshold `12` changed pixels `116751/1440000` (`8.1077%`) MAE `0.012646`.
+- Trail, from 16 m back threshold `12` changed pixels `14401/1440000` (`1.0001%`) MAE `0.007129`.
+- Trail of 24 prints, along it threshold `12` changed pixels `43712/1440000` (`3.0356%`) MAE `0.011285`.
+- Trail after 30 s of blizzard threshold `12` changed pixels `53237/1440000` (`3.6970%`) MAE `0.010449`.
+- Trail after 60 s of blizzard threshold `12` changed pixels `45719/1440000` (`3.1749%`) MAE `0.009830`.
+- Trail, from the side threshold `12` changed pixels `173188/1440000` (`12.0269%`) MAE `0.019860`.
+- Player walking, frame 30 threshold `12` changed pixels `104736/1440000` (`7.2733%`) MAE `0.021034`.
+- Near window edge at the camp threshold `12` changed pixels `37357/1440000` (`2.5942%`) MAE `0.008926`.
+- Near window edge near the inner ring threshold `12` changed pixels `1331514/1440000` (`92.4663%`) MAE `0.076368`.
+
+Related documents:[rendering-streaming.md](../systems/rendering-streaming.md) / [current-status.md](../current-status.md) / [polar-thick-snow.md](../plans/polar-thick-snow.md) / [design-decisions.md](../../design-decisions.md) / [GDD.md](../../GDD.md).

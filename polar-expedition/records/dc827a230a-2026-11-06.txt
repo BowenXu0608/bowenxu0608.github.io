@@ -1,0 +1,319 @@
+docs/engineering/logs/2026-11-06.md
+
+# 2026-11-06 Engineering log
+
+## Hut timber from a CC0 plank set
+<!-- project-update-log:2026-11-06:hut-timber -->
+
+- Reason：Graphics core M6's timber step (G04.01): the pack's three timber sets were procedural, nearly flat grain, so hut walls, roof, floor and ceiling read as smeared khaki.
+- Implementation：Seam-free weathered grain cut from Poly Haven's CC0 plank_flooring_03 (Tools/polar_hut_timber.py: gap-free plank middles laid side by side, strips at even brightness, the old sets' mean colour and smoothness) replaces TimberGrey, TimberWarm and TimberDark; 2.25 m to a texture (_BaseColorMap tiling 1/2.25, kept by PolarHabitatAuthor.WriteMaterials), at 1024 px as PolarHabitatImport holds the pack's textures.
+- Validation：Package 0.6.119-test, build ht-01: gameplay 390 and performance 79 pass (Logs/PolarV7/0.6.119-test/ht-01). Before m6-after4 (0.6.118-test), after timber-after, sections b4-intact-ice and b6-habitat in the same order: grain on every timber surface, means within 4% except the unlit heater by day.
+- Decisions and scope：weathered_brown_planks (CC0) was set aside for its paint traces and nails; 2048 px timber was left out (about 38 MB more for sharper close views).
+- Remaining work：None for the graphics core plan's four milestones.
+
+### Screenshot comparison
+
+| State | Before | After | Difference |
+|---|---|---|---|
+| b6-entrance-snow-00 | ![b6-entrance-snow-00 before](evidence/2026-11-06/hut-timber/b6-entrance-snow-00-before.png) | ![b6-entrance-snow-00 after](evidence/2026-11-06/hut-timber/b6-entrance-snow-00-after.png) | [Comparison](evidence/2026-11-06/hut-timber/b6-entrance-snow-00-comparison.png) |
+| b6-ext-day-front | ![b6-ext-day-front before](evidence/2026-11-06/hut-timber/b6-ext-day-front-before.png) | ![b6-ext-day-front after](evidence/2026-11-06/hut-timber/b6-ext-day-front-after.png) | [Comparison](evidence/2026-11-06/hut-timber/b6-ext-day-front-comparison.png) |
+| b6-ext-day-roof | ![b6-ext-day-roof before](evidence/2026-11-06/hut-timber/b6-ext-day-roof-before.png) | ![b6-ext-day-roof after](evidence/2026-11-06/hut-timber/b6-ext-day-roof-after.png) | [Comparison](evidence/2026-11-06/hut-timber/b6-ext-day-roof-comparison.png) |
+| b6-int-gable-ceiling-day | ![b6-int-gable-ceiling-day before](evidence/2026-11-06/hut-timber/b6-int-gable-ceiling-day-before.png) | ![b6-int-gable-ceiling-day after](evidence/2026-11-06/hut-timber/b6-int-gable-ceiling-day-after.png) | [Comparison](evidence/2026-11-06/hut-timber/b6-int-gable-ceiling-day-comparison.png) |
+| b6-int-room-day | ![b6-int-room-day before](evidence/2026-11-06/hut-timber/b6-int-room-day-before.png) | ![b6-int-room-day after](evidence/2026-11-06/hut-timber/b6-int-room-day-after.png) | [Comparison](evidence/2026-11-06/hut-timber/b6-int-room-day-comparison.png) |
+| b6-int-room-night-lit | ![b6-int-room-night-lit before](evidence/2026-11-06/hut-timber/b6-int-room-night-lit-before.png) | ![b6-int-room-night-lit after](evidence/2026-11-06/hut-timber/b6-int-room-night-lit-after.png) | [Comparison](evidence/2026-11-06/hut-timber/b6-int-room-night-lit-comparison.png) |
+| b6-int-stove-day-unlit | ![b6-int-stove-day-unlit before](evidence/2026-11-06/hut-timber/b6-int-stove-day-unlit-before.png) | ![b6-int-stove-day-unlit after](evidence/2026-11-06/hut-timber/b6-int-stove-day-unlit-after.png) | [Comparison](evidence/2026-11-06/hut-timber/b6-int-stove-day-unlit-comparison.png) |
+| b6-lod-045m | ![b6-lod-045m before](evidence/2026-11-06/hut-timber/b6-lod-045m-before.png) | ![b6-lod-045m after](evidence/2026-11-06/hut-timber/b6-lod-045m-after.png) | [Comparison](evidence/2026-11-06/hut-timber/b6-lod-045m-comparison.png) |
+| b6-station-int-up-day | ![b6-station-int-up-day before](evidence/2026-11-06/hut-timber/b6-station-int-up-day-before.png) | ![b6-station-int-up-day after](evidence/2026-11-06/hut-timber/b6-station-int-up-day-after.png) | [Comparison](evidence/2026-11-06/hut-timber/b6-station-int-up-day-comparison.png) |
+| b6-store-stocked-day | ![b6-store-stocked-day before](evidence/2026-11-06/hut-timber/b6-store-stocked-day-before.png) | ![b6-store-stocked-day after](evidence/2026-11-06/hut-timber/b6-store-stocked-day-after.png) | [Comparison](evidence/2026-11-06/hut-timber/b6-store-stocked-day-comparison.png) |
+| b6-v1-int-day | ![b6-v1-int-day before](evidence/2026-11-06/hut-timber/b6-v1-int-day-before.png) | ![b6-v1-int-day after](evidence/2026-11-06/hut-timber/b6-v1-int-day-after.png) | [Comparison](evidence/2026-11-06/hut-timber/b6-v1-int-day-comparison.png) |
+| b6-v3-ext-day | ![b6-v3-ext-day before](evidence/2026-11-06/hut-timber/b6-v3-ext-day-before.png) | ![b6-v3-ext-day after](evidence/2026-11-06/hut-timber/b6-v3-ext-day-after.png) | [Comparison](evidence/2026-11-06/hut-timber/b6-v3-ext-day-comparison.png) |
+
+Difference metrics:
+- b6-entrance-snow-00 threshold `12` changed pixels `197393/2073600` (`9.5193%`) MAE `0.010257`.
+- b6-ext-day-front threshold `12` changed pixels `46783/2073600` (`2.2561%`) MAE `0.003783`.
+- b6-ext-day-roof threshold `12` changed pixels `67456/2073600` (`3.2531%`) MAE `0.004495`.
+- b6-int-gable-ceiling-day threshold `12` changed pixels `437474/2073600` (`21.0973%`) MAE `0.024026`.
+- b6-int-room-day threshold `12` changed pixels `277856/2073600` (`13.3997%`) MAE `0.016018`.
+- b6-int-room-night-lit threshold `12` changed pixels `435208/2073600` (`20.9880%`) MAE `0.019495`.
+- b6-int-stove-day-unlit threshold `12` changed pixels `1394617/2073600` (`67.2558%`) MAE `0.058905`.
+- b6-lod-045m threshold `12` changed pixels `1891/2073600` (`0.0912%`) MAE `0.001109`.
+- b6-station-int-up-day threshold `12` changed pixels `643901/2073600` (`31.0523%`) MAE `0.032658`.
+- b6-store-stocked-day threshold `12` changed pixels `269635/2073600` (`13.0032%`) MAE `0.015199`.
+- b6-v1-int-day threshold `12` changed pixels `232828/2073600` (`11.2282%`) MAE `0.013649`.
+- b6-v3-ext-day threshold `12` changed pixels `216380/2073600` (`10.4350%`) MAE `0.011358`.
+
+Related documents:[polar-huts.md](../systems/polar-huts.md) / [polar-graphics-core.md](../plans/polar-graphics-core.md) / [polar-art-resources.md](../../art/polar-art-resources.md).
+
+## Graphics presets and the Graphics tab (M1a)
+<!-- project-update-log:2026-11-06:graphics-presets -->
+
+- Reason：The user asked for graphics settings like Forza Horizon 6's: presets plus single options, with today's look as High.
+- Implementation：
+  - PolarGraphicsProfile (pure): presets Low, Medium, High, Ultra, Extreme and Custom over twelve options; PolarGraphics applies them and raises Changed; settings files version 2, version 1 read as High.
+  - Owners read PolarGraphics.Current: HDRP volume tiers, cloud steps, sun and lamp shadow sizes, motion blur, snow relief reach, snow particle rate and cap, sea tessellation, mip limit and anisotropic filtering.
+  - A Graphics tab between Picture and Sound with descriptions and costs in its hint line; Footprints moved there; the Display tab's quality stepper removed; maxDirectionalShadowMapResolution 4096.
+- Validation：
+  - Tools/PolarSettingsCheck 87 checks, including a copy of the player's own version 1 file.
+  - 143 art captures at High against a genuine before: median 0.10% of pixels changed, as two same-code after runs (0.08%); b6 compared alone on both sides.
+  - Front page 139, startup 4, screen-args 3; gameplay 390 at High and at Low (same world hash); performance 79 at High (paced views equal ht-01; uncapped pond and sea +0.05-0.73 ms GPU over an unpaired ht-01 control, which itself drifted +0.37-0.84 ms).
+  - Contact sheets at all five presets (presets-sheet-a.jpg, presets-sheet-b.jpg): thin-ice cracks, open water and the lit window read at Low.
+- Decisions and scope：
+  - Unity's quality level stays the top one, which Players and captures always used; the five levels stay in QualitySettings.asset, unused.
+  - High equals the old constants by construction (HDRP's default Medium tiers, scales of 1).
+- Remaining work：
+  - M1b live readout and video memory meter, M1c anti-aliasing and upscaling and flag motion vectors, M1d benchmark and paired per-preset performance.
+  - Low's day interiors are 25% brighter (SSGI off falls back to the sky probe); left as the Low look.
+
+### Screenshot comparison
+
+| State | Before | After | Difference |
+|---|---|---|---|
+| b5-day-blizzard (High) | ![b5-day-blizzard (High) before](evidence/2026-11-06/graphics-presets/b5-day-blizzard-before.png) | ![b5-day-blizzard (High) after](evidence/2026-11-06/graphics-presets/b5-day-blizzard-after.png) | [Comparison](evidence/2026-11-06/graphics-presets/b5-day-blizzard-comparison.png) |
+| b5-day-clear (High) | ![b5-day-clear (High) before](evidence/2026-11-06/graphics-presets/b5-day-clear-before.png) | ![b5-day-clear (High) after](evidence/2026-11-06/graphics-presets/b5-day-clear-after.png) | [Comparison](evidence/2026-11-06/graphics-presets/b5-day-clear-comparison.png) |
+| b5-day-heavy (High) | ![b5-day-heavy (High) before](evidence/2026-11-06/graphics-presets/b5-day-heavy-before.png) | ![b5-day-heavy (High) after](evidence/2026-11-06/graphics-presets/b5-day-heavy-after.png) | [Comparison](evidence/2026-11-06/graphics-presets/b5-day-heavy-comparison.png) |
+| b5-flake-ground-day (High) | ![b5-flake-ground-day (High) before](evidence/2026-11-06/graphics-presets/b5-flake-ground-day-before.png) | ![b5-flake-ground-day (High) after](evidence/2026-11-06/graphics-presets/b5-flake-ground-day-after.png) | [Comparison](evidence/2026-11-06/graphics-presets/b5-flake-ground-day-comparison.png) |
+| b5-indoor-door-night-stove (High) | ![b5-indoor-door-night-stove (High) before](evidence/2026-11-06/graphics-presets/b5-indoor-door-night-stove-before.png) | ![b5-indoor-door-night-stove (High) after](evidence/2026-11-06/graphics-presets/b5-indoor-door-night-stove-after.png) | [Comparison](evidence/2026-11-06/graphics-presets/b5-indoor-door-night-stove-comparison.png) |
+| b5-night-clear (High) | ![b5-night-clear (High) before](evidence/2026-11-06/graphics-presets/b5-night-clear-before.png) | ![b5-night-clear (High) after](evidence/2026-11-06/graphics-presets/b5-night-clear-after.png) | [Comparison](evidence/2026-11-06/graphics-presets/b5-night-clear-comparison.png) |
+| b5-pond-drift-intact (High) | ![b5-pond-drift-intact (High) before](evidence/2026-11-06/graphics-presets/b5-pond-drift-intact-before.png) | ![b5-pond-drift-intact (High) after](evidence/2026-11-06/graphics-presets/b5-pond-drift-intact-after.png) | [Comparison](evidence/2026-11-06/graphics-presets/b5-pond-drift-intact-comparison.png) |
+| b6-ext-day-front (High) | ![b6-ext-day-front (High) before](evidence/2026-11-06/graphics-presets/b6-ext-day-front-before.png) | ![b6-ext-day-front (High) after](evidence/2026-11-06/graphics-presets/b6-ext-day-front-after.png) | [Comparison](evidence/2026-11-06/graphics-presets/b6-ext-day-front-comparison.png) |
+| b6-int-room-night-lit (High) | ![b6-int-room-night-lit (High) before](evidence/2026-11-06/graphics-presets/b6-int-room-night-lit-before.png) | ![b6-int-room-night-lit (High) after](evidence/2026-11-06/graphics-presets/b6-int-room-night-lit-after.png) | [Comparison](evidence/2026-11-06/graphics-presets/b6-int-room-night-lit-comparison.png) |
+| b6-int-stove-night-lit (High) | ![b6-int-stove-night-lit (High) before](evidence/2026-11-06/graphics-presets/b6-int-stove-night-lit-before.png) | ![b6-int-stove-night-lit (High) after](evidence/2026-11-06/graphics-presets/b6-int-stove-night-lit-after.png) | [Comparison](evidence/2026-11-06/graphics-presets/b6-int-stove-night-lit-comparison.png) |
+| b6-station-ext-day-060m (High) | ![b6-station-ext-day-060m (High) before](evidence/2026-11-06/graphics-presets/b6-station-ext-day-060m-before.png) | ![b6-station-ext-day-060m (High) after](evidence/2026-11-06/graphics-presets/b6-station-ext-day-060m-after.png) | [Comparison](evidence/2026-11-06/graphics-presets/b6-station-ext-day-060m-comparison.png) |
+| blizzard-gust-a (High) | ![blizzard-gust-a (High) before](evidence/2026-11-06/graphics-presets/blizzard-gust-a-before.png) | ![blizzard-gust-a (High) after](evidence/2026-11-06/graphics-presets/blizzard-gust-a-after.png) | [Comparison](evidence/2026-11-06/graphics-presets/blizzard-gust-a-comparison.png) |
+| day-1 (High) | ![day-1 (High) before](evidence/2026-11-06/graphics-presets/day-1-before.png) | ![day-1 (High) after](evidence/2026-11-06/graphics-presets/day-1-after.png) | [Comparison](evidence/2026-11-06/graphics-presets/day-1-comparison.png) |
+| ii-close (High) | ![ii-close (High) before](evidence/2026-11-06/graphics-presets/ii-close-before.png) | ![ii-close (High) after](evidence/2026-11-06/graphics-presets/ii-close-after.png) | [Comparison](evidence/2026-11-06/graphics-presets/ii-close-comparison.png) |
+| ii-load95-close (High) | ![ii-load95-close (High) before](evidence/2026-11-06/graphics-presets/ii-load95-close-before.png) | ![ii-load95-close (High) after](evidence/2026-11-06/graphics-presets/ii-load95-close-after.png) | [Comparison](evidence/2026-11-06/graphics-presets/ii-load95-close-comparison.png) |
+| ii-night (High) | ![ii-night (High) before](evidence/2026-11-06/graphics-presets/ii-night-before.png) | ![ii-night (High) after](evidence/2026-11-06/graphics-presets/ii-night-after.png) | [Comparison](evidence/2026-11-06/graphics-presets/ii-night-comparison.png) |
+| night-1 (High) | ![night-1 (High) before](evidence/2026-11-06/graphics-presets/night-1-before.png) | ![night-1 (High) after](evidence/2026-11-06/graphics-presets/night-1-after.png) | [Comparison](evidence/2026-11-06/graphics-presets/night-1-comparison.png) |
+
+Difference metrics:
+- b5-day-blizzard (High) threshold `12` changed pixels `1003/2073600` (`0.0484%`) MAE `0.007238`.
+- b5-day-clear (High) threshold `12` changed pixels `9444/2073600` (`0.4554%`) MAE `0.002835`.
+- b5-day-heavy (High) threshold `12` changed pixels `2382/2073600` (`0.1149%`) MAE `0.001618`.
+- b5-flake-ground-day (High) threshold `12` changed pixels `485/2073600` (`0.0234%`) MAE `0.004375`.
+- b5-indoor-door-night-stove (High) threshold `12` changed pixels `104/2073600` (`0.0050%`) MAE `0.000712`.
+- b5-night-clear (High) threshold `12` changed pixels `4204/2073600` (`0.2027%`) MAE `0.001701`.
+- b5-pond-drift-intact (High) threshold `12` changed pixels `93/2073600` (`0.0045%`) MAE `0.001229`.
+- b6-ext-day-front (High) threshold `12` changed pixels `5149/2073600` (`0.2483%`) MAE `0.001837`.
+- b6-int-room-night-lit (High) threshold `12` changed pixels `8515/2073600` (`0.4106%`) MAE `0.002082`.
+- b6-int-stove-night-lit (High) threshold `12` changed pixels `13780/2073600` (`0.6645%`) MAE `0.003179`.
+- b6-station-ext-day-060m (High) threshold `12` changed pixels `1736/2073600` (`0.0837%`) MAE `0.001162`.
+- blizzard-gust-a (High) threshold `12` changed pixels `2/2073600` (`0.0001%`) MAE `0.000893`.
+- day-1 (High) threshold `12` changed pixels `34/2073600` (`0.0016%`) MAE `0.000919`.
+- ii-close (High) threshold `12` changed pixels `1033/2073600` (`0.0498%`) MAE `0.001632`.
+- ii-load95-close (High) threshold `12` changed pixels `397/2073600` (`0.0191%`) MAE `0.001333`.
+- ii-night (High) threshold `12` changed pixels `1341/2073600` (`0.0647%`) MAE `0.001250`.
+- night-1 (High) threshold `12` changed pixels `311/2073600` (`0.0150%`) MAE `0.000930`.
+
+Related documents:[polar-settings.md](../systems/polar-settings.md) / [rendering-streaming.md](../systems/rendering-streaming.md) / [polar-graphics-core.md](../plans/polar-graphics-core.md).
+
+## Performance overlay and video memory meter (graphics core M1b, 0.6.121-test)
+<!-- project-update-log:2026-11-06:performance-overlay -->
+
+- Reason：M1b of the user's Forza Horizon 6 settings plan: a live performance readout and a video memory meter.
+- Implementation：
+  - PolarPerformanceOverlay: Display's Performance overlay (Off, Frame rate, Full) in the UI's top right corner with no input; Full shows frame time, CPU main and render threads and GPU from FrameTimingManager, the limit, video memory of its budget (DXGI) and the game's memory, rebuilt twice a second.
+  - The Graphics tab's video memory meter beside Restore defaults, read once a second, amber past 90%; settings field performanceOverlay (Off by default, file still version 2).
+  - PolarSettingsCapture also captures the Graphics tab and the front page with any overlay at Full (capture-only).
+- Validation：
+  - Tools/PolarSettingsCheck 91; front page 148, startup 4, screen-args 3 on po-03; gameplay 390 and ui 463 on po-01, which differs only inside the overlay.
+  - Captures: the meter row, the Display tab's new row and the overlay corner change; the Picture tab is unchanged (control, 0%).
+- Decisions and scope：
+  - The meter shows the measured reading, not an estimate from per-level deltas: every option applies at once, so the reading follows each change.
+  - The limit reads vsync or cap while frames keep within 10% of its interval, since under vertical sync the GPU time counts its wait.
+- Remaining work：
+  - M1c anti-aliasing and upscaling and flag motion vectors; M1d benchmark and paired per-preset performance.
+  - In the Editor, whose Game view does not wait for vertical sync, the limit can read vsync above the refresh rate.
+
+### Screenshot comparison
+
+| State | Before | After | Difference |
+|---|---|---|---|
+| front-overlay after | ![front-overlay after before](evidence/2026-11-06/performance-overlay/front-overlay-before.png) | ![front-overlay after after](evidence/2026-11-06/performance-overlay/front-overlay-after.png) | [Comparison](evidence/2026-11-06/performance-overlay/front-overlay-comparison.png) |
+| settings-display after | ![settings-display after before](evidence/2026-11-06/performance-overlay/settings-display-before.png) | ![settings-display after after](evidence/2026-11-06/performance-overlay/settings-display-after.png) | [Comparison](evidence/2026-11-06/performance-overlay/settings-display-comparison.png) |
+| settings-graphics after | ![settings-graphics after before](evidence/2026-11-06/performance-overlay/settings-graphics-before.png) | ![settings-graphics after after](evidence/2026-11-06/performance-overlay/settings-graphics-after.png) | [Comparison](evidence/2026-11-06/performance-overlay/settings-graphics-comparison.png) |
+| settings-picture after | ![settings-picture after before](evidence/2026-11-06/performance-overlay/settings-picture-before.png) | ![settings-picture after after](evidence/2026-11-06/performance-overlay/settings-picture-after.png) | [Comparison](evidence/2026-11-06/performance-overlay/settings-picture-comparison.png) |
+
+Difference metrics:
+- front-overlay after threshold `12` changed pixels `4769/1440000` (`0.3312%`) MAE `0.001763`.
+- settings-display after threshold `12` changed pixels `14228/1440000` (`0.9881%`) MAE `0.001477`.
+- settings-graphics after threshold `12` changed pixels `19375/1440000` (`1.3455%`) MAE `0.001142`.
+- settings-picture after threshold `12` changed pixels `0/1440000` (`0.0000%`) MAE `0.000000`.
+
+Related documents:[polar-settings.md](../systems/polar-settings.md).
+
+## Anti-aliasing and upscaling choices, flag motion vectors (0.6.122-test)
+<!-- project-update-log:2026-11-06:anti-aliasing-upscaling -->
+
+- Reason：M1c of the graphics core plan's M1: Forza Horizon 6's anti-aliasing and upscaling choices, and route flags that TAA and motion blur follow.
+- Implementation：Graphics tab rows Anti-aliasing (TAA default, SMAA, TAA upscale, FSR 1, DLSS, FSR 2 where HDRP finds them), Render scale (67/58/50% on software dynamic resolution) and Sharpness; DLSS and FSR 2 from Unity's built-in NVIDIA and AMD modules; route-flag cloth motion in uv5 with RouteFlagCloth.mat (_AddPrecomputedVelocity); the hands and handbook under an upscaler take HDRP's off-screen rescale for light lookups, since HDRP's light lists are at the render size. Package 0.6.122-test, build aa-05.
+- Validation：Gameplay 390 under TAA, DLSS, TAA upscale and FSR 1 on aa-05; FSR 2 gameplay 390 and TAA ui 463 on aa-01; the bottom-right sleeve in motion-fp-InteractClose-50 reads 20.4 under TAA, 8.7 under DLSS on aa-04 and 20.4 on aa-05; Tools/PolarSettingsCheck 95; front page 104 on aa-01 including the Graphics-tab rows; Editor method shots in Logs/ProjectUpdateCapture/m1c-live are same-build comparisons. The settings-picture pair is unchanged on purpose (no Picture row moved).
+- Decisions and scope：STP, a free 50-100% scale, dynamic resolution Hold the frame limit and frame generation left out on DX11; a preset never changes the method, scale or sharpness.
+- Remaining work：Front page on aa-05 with the window in front (display confirm, per-method screenshots and GPU times); DLSS breath smears reported, not fixed; M1d benchmark.
+
+### Screenshot comparison
+
+| State | Before | After | Difference |
+|---|---|---|---|
+| flag-far (TAA) | ![flag-far (TAA) before](evidence/2026-11-06/anti-aliasing-upscaling/flag-far-before.png) | ![flag-far (TAA) after](evidence/2026-11-06/anti-aliasing-upscaling/flag-far-after.png) | [Comparison](evidence/2026-11-06/anti-aliasing-upscaling/flag-far-comparison.png) |
+| flag-far-storm (TAA) | ![flag-far-storm (TAA) before](evidence/2026-11-06/anti-aliasing-upscaling/flag-far-storm-before.png) | ![flag-far-storm (TAA) after](evidence/2026-11-06/anti-aliasing-upscaling/flag-far-storm-after.png) | [Comparison](evidence/2026-11-06/anti-aliasing-upscaling/flag-far-storm-comparison.png) |
+| flag-near (TAA) | ![flag-near (TAA) before](evidence/2026-11-06/anti-aliasing-upscaling/flag-near-before.png) | ![flag-near (TAA) after](evidence/2026-11-06/anti-aliasing-upscaling/flag-near-after.png) | [Comparison](evidence/2026-11-06/anti-aliasing-upscaling/flag-near-comparison.png) |
+| flag-near-storm (TAA) | ![flag-near-storm (TAA) before](evidence/2026-11-06/anti-aliasing-upscaling/flag-near-storm-before.png) | ![flag-near-storm (TAA) after](evidence/2026-11-06/anti-aliasing-upscaling/flag-near-storm-after.png) | [Comparison](evidence/2026-11-06/anti-aliasing-upscaling/flag-near-storm-comparison.png) |
+| Waving flag in a snowstorm, close (TAA) | ![Waving flag in a snowstorm, close (TAA) before](evidence/2026-11-06/anti-aliasing-upscaling/flag-near-storm-close-before.png) | ![Waving flag in a snowstorm, close (TAA) after](evidence/2026-11-06/anti-aliasing-upscaling/flag-near-storm-close-after.png) | [Comparison](evidence/2026-11-06/anti-aliasing-upscaling/flag-near-storm-close-comparison.png) |
+| First-person hands indoors under DLSS 67%, bottom right | ![First-person hands indoors under DLSS 67%, bottom right before](evidence/2026-11-06/anti-aliasing-upscaling/hands-dlss-before.png) | ![First-person hands indoors under DLSS 67%, bottom right after](evidence/2026-11-06/anti-aliasing-upscaling/hands-dlss-after.png) | [Comparison](evidence/2026-11-06/anti-aliasing-upscaling/hands-dlss-comparison.png) |
+| settings-graphics | ![settings-graphics before](evidence/2026-11-06/anti-aliasing-upscaling/settings-graphics-before.png) | ![settings-graphics after](evidence/2026-11-06/anti-aliasing-upscaling/settings-graphics-after.png) | [Comparison](evidence/2026-11-06/anti-aliasing-upscaling/settings-graphics-comparison.png) |
+| settings-picture | ![settings-picture before](evidence/2026-11-06/anti-aliasing-upscaling/settings-picture-before.png) | ![settings-picture after](evidence/2026-11-06/anti-aliasing-upscaling/settings-picture-after.png) | [Comparison](evidence/2026-11-06/anti-aliasing-upscaling/settings-picture-comparison.png) |
+
+Difference metrics:
+- flag-far (TAA) threshold `12` changed pixels `1212/1440000` (`0.0842%`) MAE `0.002148`.
+- flag-far-storm (TAA) threshold `12` changed pixels `26/1440000` (`0.0018%`) MAE `0.000649`.
+- flag-near (TAA) threshold `12` changed pixels `2971/1440000` (`0.2063%`) MAE `0.002047`.
+- flag-near-storm (TAA) threshold `12` changed pixels `1436/1440000` (`0.0997%`) MAE `0.001336`.
+- Waving flag in a snowstorm, close (TAA) threshold `12` changed pixels `1306/151200` (`0.8638%`) MAE `0.003355`.
+- First-person hands indoors under DLSS 67%, bottom right threshold `12` changed pixels `156709/360000` (`43.5303%`) MAE `0.038285`.
+- settings-graphics threshold `12` changed pixels `146704/1440000` (`10.1878%`) MAE `0.023139`.
+- settings-picture threshold `12` changed pixels `0/1440000` (`0.0000%`) MAE `0.000000`.
+
+Related documents:[polar-settings.md](../systems/polar-settings.md) / [rendering-streaming.md](../systems/rendering-streaming.md) / [polar-graphics-core.md](../plans/polar-graphics-core.md).
+
+## Graphics benchmark and preset recommendation (0.6.123-test)
+<!-- project-update-log:2026-11-06:graphics-benchmark -->
+
+- Reason：M1d of the graphics core plan's M1, which completes M1: Forza Horizon 6's benchmark with a suggested preset.
+- Implementation：A Benchmark button on the front page and Run benchmark on the Graphics tab run about 100 s on seed 777 in a throwaway expedition under persistentDataPath/PolarBenchmarks/expedition with no explorers' director (open snow, a hut at night with the stove lit, a pond, the coast, a blend into a blizzard; uncapped after the distant refinement); a results page with average, 1% low, 95% of frames within, GPU or CPU share, peak video memory, parts and settings, each run saved as JSON and the last three listed; PolarGraphicsProfile.Recommend suggests one preset lower when GPU-held and P95 is over the frame limit's budget, one higher under 70%, applied only by Apply; a frame is the GPU's when the GPU is busy for 90% of it, and the performance overlay's Limited by follows that rule; -polarRunBenchmark <folder> for Player runs. Results pages: [Low](evidence/2026-11-06/graphics-benchmark/results-low.png), [Extreme](evidence/2026-11-06/graphics-benchmark/results-extreme.png).
+- Validation：Player at 1600x900 with TAA: Low 167 fps, P95 8.3 ms, GPU 74%, suggesting Medium, and Extreme 59 fps, P95 20.0 ms, GPU 95%, suggesting Ultra on gb-04; Low on gb-05 156 fps, Medium; the player's data folder (19 files) hashed the same before and after every run; front page 172, startup 4 and screen-args 3 on gb-05, with M1c's per-method GPU times (TAA 7.72, SMAA 7.74, TAA upscale 5.70, FSR 1 5.69, DLSS 5.91, FSR 2 6.16 ms at Quality 67%); Tools/PolarSettingsCheck 99.
+- Decisions and scope：The suggestion's budget is the frame limit's when vertical sync is off and a limit is set, otherwise 60 fps; the page says 95% of frames within instead of P95, which the interface wording rule rejects; the comparison of GPU and CPU thread times was replaced after gb-02, where it judged 43% of Extreme's frames GPU-held while main and GPU rose together from Low to Extreme.
+- Remaining work：A per-preset table of Medium, High and Ultra from the benchmark; gameplay not rerun (the expedition path changes only while the benchmark runs).
+
+### Screenshot comparison
+
+| State | Before | After | Difference |
+|---|---|---|---|
+| front-page 1600x900 | ![front-page 1600x900 before](evidence/2026-11-06/graphics-benchmark/front-page-before.png) | ![front-page 1600x900 after](evidence/2026-11-06/graphics-benchmark/front-page-after.png) | [Comparison](evidence/2026-11-06/graphics-benchmark/front-page-comparison.png) |
+| settings-graphics 1600x900 | ![settings-graphics 1600x900 before](evidence/2026-11-06/graphics-benchmark/settings-graphics-before.png) | ![settings-graphics 1600x900 after](evidence/2026-11-06/graphics-benchmark/settings-graphics-after.png) | [Comparison](evidence/2026-11-06/graphics-benchmark/settings-graphics-comparison.png) |
+
+Difference metrics:
+- front-page 1600x900 threshold `12` changed pixels `25397/1440000` (`1.7637%`) MAE `0.002011`.
+- settings-graphics 1600x900 threshold `12` changed pixels `11147/1440000` (`0.7741%`) MAE `0.001996`.
+
+Related documents:[polar-settings.md](../systems/polar-settings.md) / [polar-graphics-core.md](../plans/polar-graphics-core.md).
+
+## Benchmark at every graphics preset (0.6.123-test)
+<!-- project-update-log:2026-11-06:preset-benchmarks -->
+
+- Reason：The user asked for the benchmark at Medium, High and Ultra after M1d, completing the per-preset report in the M1 plan's verification.
+- Implementation：No code or asset change. The built benchmark ran at Medium, High and Ultra on gb-05, beside Low (gb-05) and Extreme (gb-04); polar-settings.md gains the per-preset table and current-status.md its summary.
+- Validation：Average fps Low 157, Medium 127, High 109, Ultra 79, Extreme 59; GPU time against High .66, .83, 1, 1.41 and 1.89, so Ultra is within the plan's 1.5; suggestions Medium, High, none, none and Ultra, each following the rule; the player's data folder hashed the same before and after (Logs/PolarBenchmark/0.6.123-test/gb-05-*).
+- Decisions and scope：Low and Medium's aims of about .6 and .8 of High are report only; at .66 and .83 they were left as they are.
+- Remaining work：Gameplay on gb-05 not rerun.
+- Visual evidence:Measurements only: no code, asset or build changed, so nothing on screen differs; the results pages are the benchmark's own.
+
+Related documents:[polar-settings.md](../systems/polar-settings.md) / [current-status.md](../current-status.md).
+
+## Gameplay on the benchmark build (0.6.123-test)
+<!-- project-update-log:2026-11-06:benchmark-gameplay -->
+
+- Reason：The user asked for the gameplay mode on the benchmark build, the one check M1d had left out.
+- Implementation：No code or asset change; current-status.md, polar-settings.md and AGENTS.md record the result.
+- Validation：Gameplay 390 on gb-05 in 594 s with --hdrp --nonactivated-window, peak private memory 7.42 GB (aa-05 7.37 GB, gp-01 7.39 GB) (Logs/PolarV7/0.6.123-test/gb-05).
+- Remaining work：None for M1.
+- Visual evidence:A test run only: no code, asset or build changed.
+
+Related documents:[current-status.md](../current-status.md) / [polar-settings.md](../systems/polar-settings.md).
+
+## Ultra and Extreme interiors as bright as High
+<!-- project-update-log:2026-11-06:preset-interiors -->
+
+- Reason：The user's preset comparison showed hut rooms at Ultra and Extreme much darker by day than High and a damaged hut's moonlit snow whiter at night; asked whether Ultra and Extreme should keep High's interior brightness, the user chose to match High.
+- Implementation：Ultra and Extreme take High's ambient occlusion, global illumination and volumetric fog in PolarGraphicsProfile.Options (levels 1, 2 and 1); the higher levels stay as Custom choices. PolarSettingsCheck checks the three. Package 0.6.124-test, build pi-01.
+- Validation：PolarSettingsCheck 101. b6-habitat art captures (34 views) at Ultra and Extreme: interiors within run-to-run noise of High except the corner with the heater out by day (.251 and .228 against .267; before .130 and .081). Benchmark on pi-01: Ultra 99 fps (was 79), Extreme 89 fps (was 59); the player's data folder hashed the same before and after (Logs/PolarBenchmark/0.6.124-test).
+- Decisions and scope：Only the three options that darken rooms were matched; Ultra and Extreme keep their sharper sun and lamp shadows, reflections, clouds, water, particles and terrain detail.
+- Remaining work：Player gameplay not rerun (High, the default, is unchanged). Extreme's heater-out corner by day varies .153-.237 run to run.
+
+### Screenshot comparison
+
+| State | Before | After | Difference |
+|---|---|---|---|
+| Extreme: Damaged hut at midnight | ![Extreme: Damaged hut at midnight before](evidence/2026-11-06/preset-interiors/extreme-damaged-night-before.png) | ![Extreme: Damaged hut at midnight after](evidence/2026-11-06/preset-interiors/extreme-damaged-night-after.png) | [Comparison](evidence/2026-11-06/preset-interiors/extreme-damaged-night-comparison.png) |
+| Extreme: Hut in clear sun | ![Extreme: Hut in clear sun before](evidence/2026-11-06/preset-interiors/extreme-outside-day-before.png) | ![Extreme: Hut in clear sun after](evidence/2026-11-06/preset-interiors/extreme-outside-day-after.png) | [Comparison](evidence/2026-11-06/preset-interiors/extreme-outside-day-comparison.png) |
+| Extreme: Hut at night from outside | ![Extreme: Hut at night from outside before](evidence/2026-11-06/preset-interiors/extreme-outside-night-before.png) | ![Extreme: Hut at night from outside after](evidence/2026-11-06/preset-interiors/extreme-outside-night-after.png) | [Comparison](evidence/2026-11-06/preset-interiors/extreme-outside-night-comparison.png) |
+| Extreme: Hut room by day | ![Extreme: Hut room by day before](evidence/2026-11-06/preset-interiors/extreme-room-day-before.png) | ![Extreme: Hut room by day after](evidence/2026-11-06/preset-interiors/extreme-room-day-after.png) | [Comparison](evidence/2026-11-06/preset-interiors/extreme-room-day-comparison.png) |
+| Extreme: Hut by day, heater out | ![Extreme: Hut by day, heater out before](evidence/2026-11-06/preset-interiors/extreme-stove-day-before.png) | ![Extreme: Hut by day, heater out after](evidence/2026-11-06/preset-interiors/extreme-stove-day-after.png) | [Comparison](evidence/2026-11-06/preset-interiors/extreme-stove-day-comparison.png) |
+| Extreme: Hut at night, heater lit | ![Extreme: Hut at night, heater lit before](evidence/2026-11-06/preset-interiors/extreme-stove-night-before.png) | ![Extreme: Hut at night, heater lit after](evidence/2026-11-06/preset-interiors/extreme-stove-night-after.png) | [Comparison](evidence/2026-11-06/preset-interiors/extreme-stove-night-comparison.png) |
+| Ultra: Damaged hut at midnight | ![Ultra: Damaged hut at midnight before](evidence/2026-11-06/preset-interiors/ultra-damaged-night-before.png) | ![Ultra: Damaged hut at midnight after](evidence/2026-11-06/preset-interiors/ultra-damaged-night-after.png) | [Comparison](evidence/2026-11-06/preset-interiors/ultra-damaged-night-comparison.png) |
+| Ultra: Hut in clear sun | ![Ultra: Hut in clear sun before](evidence/2026-11-06/preset-interiors/ultra-outside-day-before.png) | ![Ultra: Hut in clear sun after](evidence/2026-11-06/preset-interiors/ultra-outside-day-after.png) | [Comparison](evidence/2026-11-06/preset-interiors/ultra-outside-day-comparison.png) |
+| Ultra: Hut at night from outside | ![Ultra: Hut at night from outside before](evidence/2026-11-06/preset-interiors/ultra-outside-night-before.png) | ![Ultra: Hut at night from outside after](evidence/2026-11-06/preset-interiors/ultra-outside-night-after.png) | [Comparison](evidence/2026-11-06/preset-interiors/ultra-outside-night-comparison.png) |
+| Ultra: Hut room by day | ![Ultra: Hut room by day before](evidence/2026-11-06/preset-interiors/ultra-room-day-before.png) | ![Ultra: Hut room by day after](evidence/2026-11-06/preset-interiors/ultra-room-day-after.png) | [Comparison](evidence/2026-11-06/preset-interiors/ultra-room-day-comparison.png) |
+| Ultra: Hut by day, heater out | ![Ultra: Hut by day, heater out before](evidence/2026-11-06/preset-interiors/ultra-stove-day-before.png) | ![Ultra: Hut by day, heater out after](evidence/2026-11-06/preset-interiors/ultra-stove-day-after.png) | [Comparison](evidence/2026-11-06/preset-interiors/ultra-stove-day-comparison.png) |
+| Ultra: Hut at night, heater lit | ![Ultra: Hut at night, heater lit before](evidence/2026-11-06/preset-interiors/ultra-stove-night-before.png) | ![Ultra: Hut at night, heater lit after](evidence/2026-11-06/preset-interiors/ultra-stove-night-after.png) | [Comparison](evidence/2026-11-06/preset-interiors/ultra-stove-night-comparison.png) |
+
+Difference metrics:
+- Extreme: Damaged hut at midnight threshold `12` changed pixels `1853527/2073600` (`89.3869%`) MAE `0.119252`.
+- Extreme: Hut in clear sun threshold `12` changed pixels `6681/2073600` (`0.3222%`) MAE `0.002477`.
+- Extreme: Hut at night from outside threshold `12` changed pixels `14309/2073600` (`0.6901%`) MAE `0.001905`.
+- Extreme: Hut room by day threshold `12` changed pixels `166957/2073600` (`8.0516%`) MAE `0.013476`.
+- Extreme: Hut by day, heater out threshold `12` changed pixels `1987482/2073600` (`95.8469%`) MAE `0.137784`.
+- Extreme: Hut at night, heater lit threshold `12` changed pixels `1035496/2073600` (`49.9371%`) MAE `0.045500`.
+- Ultra: Damaged hut at midnight threshold `12` changed pixels `1317692/2073600` (`63.5461%`) MAE `0.047186`.
+- Ultra: Hut in clear sun threshold `12` changed pixels `6144/2073600` (`0.2963%`) MAE `0.002502`.
+- Ultra: Hut at night from outside threshold `12` changed pixels `11922/2073600` (`0.5749%`) MAE `0.001869`.
+- Ultra: Hut room by day threshold `12` changed pixels `166998/2073600` (`8.0535%`) MAE `0.013420`.
+- Ultra: Hut by day, heater out threshold `12` changed pixels `1984561/2073600` (`95.7061%`) MAE `0.113488`.
+- Ultra: Hut at night, heater lit threshold `12` changed pixels `232264/2073600` (`11.2010%`) MAE `0.016028`.
+
+Related documents:[polar-settings.md](../systems/polar-settings.md) / [current-status.md](../current-status.md).
+
+## Natural snow and rock edges
+<!-- project-update-log:2026-11-06:snow-rock-natural -->
+
+- Reason：The user's view of the hills from 170 m over pond 33 showed edges no real hill draws: a straight rock ribbon of one width, straight-edged grey bare sheets along crests, cobbled rock faces and a white dotted line.
+- Implementation：PolarData.hlsl: slope rock follows fall-line ribs (33 and 11 m), couloirs, contour ledges and an 80 m wander, with snow on ledges of sheer faces; the distant cliff band's edge wanders and the band thins into snowed-over stretches; wind-bare crests break into gravel patches (four octaves on a lower base) with a narrower painted edge, de-tiled gravel and tundra maps and a wandering tone; the rock map takes a 58 m repeat beyond 300-600 m. PolarSnowDepth.Mask and .Bare mirror it for the drawn snow depth and the moss scatter. New capture section b3-snow-rock. Package 0.6.125-test, build sr-01. Render only.
+- Validation：19 deterministic views (b3-ground, b4-intact-ice, b3-snow-rock) against a genuine before, changed 0.1-43%; gameplay 390 on sr-01; performance 79 on sr-01-pc2 (the first run stopped on the pond check at +0.74 ms main thread, the rerun measured -0.21 ms GPU and +0.22 ms main).
+- Remaining work：Close up, a crest's snow edge over gravel is a soft wash; near cliff faces keep their even height (world geometry); a straight seam in the ii-distant-far view was not diagnosed; rocky-tile patches on flat ground keep their crisp outline.
+
+### Screenshot comparison
+
+| State | Before | After | Difference |
+|---|---|---|---|
+| Open snow (control) | ![Open snow (control) before](evidence/2026-11-06/snow-rock-natural/b3-01-snow-oblique-before.png) | ![Open snow (control) after](evidence/2026-11-06/snow-rock-natural/b3-01-snow-oblique-after.png) | [Comparison](evidence/2026-11-06/snow-rock-natural/b3-01-snow-oblique-comparison.png) |
+| Bare crest, oblique | ![Bare crest, oblique before](evidence/2026-11-06/snow-rock-natural/b3-04-tundra-oblique-before.png) | ![Bare crest, oblique after](evidence/2026-11-06/snow-rock-natural/b3-04-tundra-oblique-after.png) | [Comparison](evidence/2026-11-06/snow-rock-natural/b3-04-tundra-oblique-comparison.png) |
+| Bare crest, down | ![Bare crest, down before](evidence/2026-11-06/snow-rock-natural/b3-05-tundra-down-before.png) | ![Bare crest, down after](evidence/2026-11-06/snow-rock-natural/b3-05-tundra-down-after.png) | [Comparison](evidence/2026-11-06/snow-rock-natural/b3-05-tundra-down-comparison.png) |
+| Steep rock face | ![Steep rock face before](evidence/2026-11-06/snow-rock-natural/b3-10-steep-face-before.png) | ![Steep rock face after](evidence/2026-11-06/snow-rock-natural/b3-10-steep-face-after.png) | [Comparison](evidence/2026-11-06/snow-rock-natural/b3-10-steep-face-comparison.png) |
+| Hills from 170 m over pond 33 (the user's view) | ![Hills from 170 m over pond 33 (the user's view) before](evidence/2026-11-06/snow-rock-natural/ii-distant-before.png) | ![Hills from 170 m over pond 33 (the user's view) after](evidence/2026-11-06/snow-rock-natural/ii-distant-after.png) | [Comparison](evidence/2026-11-06/snow-rock-natural/ii-distant-comparison.png) |
+| Hills from 320 m over pond 33 | ![Hills from 320 m over pond 33 before](evidence/2026-11-06/snow-rock-natural/ii-distant-far-before.png) | ![Hills from 320 m over pond 33 after](evidence/2026-11-06/snow-rock-natural/ii-distant-far-after.png) | [Comparison](evidence/2026-11-06/snow-rock-natural/ii-distant-far-comparison.png) |
+| Along the cliff line | ![Along the cliff line before](evidence/2026-11-06/snow-rock-natural/sr-cliff-along-before.png) | ![Along the cliff line after](evidence/2026-11-06/snow-rock-natural/sr-cliff-along-after.png) | [Comparison](evidence/2026-11-06/snow-rock-natural/sr-cliff-along-comparison.png) |
+| Cliff line from 600 m | ![Cliff line from 600 m before](evidence/2026-11-06/snow-rock-natural/sr-cliff-far-before.png) | ![Cliff line from 600 m after](evidence/2026-11-06/snow-rock-natural/sr-cliff-far-after.png) | [Comparison](evidence/2026-11-06/snow-rock-natural/sr-cliff-far-comparison.png) |
+| Cliff line from 180 m | ![Cliff line from 180 m before](evidence/2026-11-06/snow-rock-natural/sr-cliff-mid-before.png) | ![Cliff line from 180 m after](evidence/2026-11-06/snow-rock-natural/sr-cliff-mid-after.png) | [Comparison](evidence/2026-11-06/snow-rock-natural/sr-cliff-mid-comparison.png) |
+| Wind-bare crest from 250 m | ![Wind-bare crest from 250 m before](evidence/2026-11-06/snow-rock-natural/sr-crest-far-before.png) | ![Wind-bare crest from 250 m after](evidence/2026-11-06/snow-rock-natural/sr-crest-far-after.png) | [Comparison](evidence/2026-11-06/snow-rock-natural/sr-crest-far-comparison.png) |
+| Wind-bare crest from 90 m | ![Wind-bare crest from 90 m before](evidence/2026-11-06/snow-rock-natural/sr-crest-mid-before.png) | ![Wind-bare crest from 90 m after](evidence/2026-11-06/snow-rock-natural/sr-crest-mid-after.png) | [Comparison](evidence/2026-11-06/snow-rock-natural/sr-crest-mid-comparison.png) |
+| Wind-bare crest from 30 m | ![Wind-bare crest from 30 m before](evidence/2026-11-06/snow-rock-natural/sr-crest-near-before.png) | ![Wind-bare crest from 30 m after](evidence/2026-11-06/snow-rock-natural/sr-crest-near-after.png) | [Comparison](evidence/2026-11-06/snow-rock-natural/sr-crest-near-comparison.png) |
+| 40 m over home, north | ![40 m over home, north before](evidence/2026-11-06/snow-rock-natural/sr-pano-000-before.png) | ![40 m over home, north after](evidence/2026-11-06/snow-rock-natural/sr-pano-000-after.png) | [Comparison](evidence/2026-11-06/snow-rock-natural/sr-pano-000-comparison.png) |
+| 40 m over home, east | ![40 m over home, east before](evidence/2026-11-06/snow-rock-natural/sr-pano-090-before.png) | ![40 m over home, east after](evidence/2026-11-06/snow-rock-natural/sr-pano-090-after.png) | [Comparison](evidence/2026-11-06/snow-rock-natural/sr-pano-090-comparison.png) |
+| 40 m over home, south | ![40 m over home, south before](evidence/2026-11-06/snow-rock-natural/sr-pano-180-before.png) | ![40 m over home, south after](evidence/2026-11-06/snow-rock-natural/sr-pano-180-after.png) | [Comparison](evidence/2026-11-06/snow-rock-natural/sr-pano-180-comparison.png) |
+| 40 m over home, west | ![40 m over home, west before](evidence/2026-11-06/snow-rock-natural/sr-pano-270-before.png) | ![40 m over home, west after](evidence/2026-11-06/snow-rock-natural/sr-pano-270-after.png) | [Comparison](evidence/2026-11-06/snow-rock-natural/sr-pano-270-comparison.png) |
+| Highest ground from 1 km | ![Highest ground from 1 km before](evidence/2026-11-06/snow-rock-natural/sr-peak-far-before.png) | ![Highest ground from 1 km after](evidence/2026-11-06/snow-rock-natural/sr-peak-far-after.png) | [Comparison](evidence/2026-11-06/snow-rock-natural/sr-peak-far-comparison.png) |
+| Highest ground from 350 m | ![Highest ground from 350 m before](evidence/2026-11-06/snow-rock-natural/sr-peak-mid-before.png) | ![Highest ground from 350 m after](evidence/2026-11-06/snow-rock-natural/sr-peak-mid-after.png) | [Comparison](evidence/2026-11-06/snow-rock-natural/sr-peak-mid-comparison.png) |
+| Steep slope from 30 m | ![Steep slope from 30 m before](evidence/2026-11-06/snow-rock-natural/sr-steep-near-before.png) | ![Steep slope from 30 m after](evidence/2026-11-06/snow-rock-natural/sr-steep-near-after.png) | [Comparison](evidence/2026-11-06/snow-rock-natural/sr-steep-near-comparison.png) |
+
+Difference metrics:
+- Open snow (control) threshold `12` changed pixels `133589/2073600` (`6.4424%`) MAE `0.017899`.
+- Bare crest, oblique threshold `12` changed pixels `623881/2073600` (`30.0869%`) MAE `0.075639`.
+- Bare crest, down threshold `12` changed pixels `891851/2073600` (`43.0098%`) MAE `0.113657`.
+- Steep rock face threshold `12` changed pixels `32405/2073600` (`1.5627%`) MAE `0.009981`.
+- Hills from 170 m over pond 33 (the user's view) threshold `12` changed pixels `66813/2073600` (`3.2221%`) MAE `0.009017`.
+- Hills from 320 m over pond 33 threshold `12` changed pixels `96926/2073600` (`4.6743%`) MAE `0.012062`.
+- Along the cliff line threshold `12` changed pixels `178468/2073600` (`8.6067%`) MAE `0.022026`.
+- Cliff line from 600 m threshold `12` changed pixels `164498/2073600` (`7.9330%`) MAE `0.023126`.
+- Cliff line from 180 m threshold `12` changed pixels `137492/2073600` (`6.6306%`) MAE `0.022751`.
+- Wind-bare crest from 250 m threshold `12` changed pixels `14247/2073600` (`0.6871%`) MAE `0.002993`.
+- Wind-bare crest from 90 m threshold `12` changed pixels `116547/2073600` (`5.6205%`) MAE `0.015782`.
+- Wind-bare crest from 30 m threshold `12` changed pixels `151123/2073600` (`7.2880%`) MAE `0.017830`.
+- 40 m over home, north threshold `12` changed pixels `87090/2073600` (`4.1999%`) MAE `0.011972`.
+- 40 m over home, east threshold `12` changed pixels `49853/2073600` (`2.4042%`) MAE `0.007181`.
+- 40 m over home, south threshold `12` changed pixels `137785/2073600` (`6.6447%`) MAE `0.016922`.
+- 40 m over home, west threshold `12` changed pixels `13687/2073600` (`0.6601%`) MAE `0.002603`.
+- Highest ground from 1 km threshold `12` changed pixels `97669/2073600` (`4.7101%`) MAE `0.016699`.
+- Highest ground from 350 m threshold `12` changed pixels `2622/2073600` (`0.1264%`) MAE `0.003738`.
+- Steep slope from 30 m threshold `12` changed pixels `99377/2073600` (`4.7925%`) MAE `0.018462`.
+
+Related documents:[rendering-streaming.md](../systems/rendering-streaming.md) / [current-status.md](../current-status.md).

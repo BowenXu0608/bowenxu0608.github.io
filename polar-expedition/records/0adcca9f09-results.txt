@@ -1,0 +1,153 @@
+docs/engineering/logs/evidence/2026-11-14/terrain-draw-order/results.md
+
+# Terrain drawn near to far: the benchmark pond's GPU cost (0.6.154-test)
+
+November 14, 2026. Package `Builds/HdrpMilestones/to-01`. RTX 4070 Laptop GPU, 2560 by 1440, High, TAA, Direct3D 11.
+
+## In short
+
+- The extra GPU time of the benchmark's pond part is not the pond. From the bank the camera looks west across the island, and
+  nearly all of the island's distant terrain enters the view: 645 of its 672 blocks (8.8 million triangles), against 131 blocks
+  (3.5 million) on the open-snow walk. From the open-snow spot, looking west costs the same extra time.
+- 2.08 ms of the 2.73 ms pond-minus-snow gap is the GBuffer pass. About half of that is geometry (vertex work on triangles
+  that end up hidden or smaller than a pixel) and up to 1.0 ms is ground shaded and then hidden by nearer ground.
+- **Applied:** terrain is drawn near to far, after everything else (14 lines in `PolarWorldStreamer.cs`). The picture does not
+  change. On the release benchmark the pond's GPU time falls by about 0.3 to 0.5 ms and the coast's by about 0.35 ms; open
+  snow, the hut and the blizzard are unchanged.
+- **Not reached:** the pond's P95 is 17.03 and 17.06 ms on the new package, still over 16.67 ms (17.13 and 17.42 before).
+- **For a decision:** the larger part of the gap is the number of distant-terrain triangles in view. Lowering it changes how far
+  ridges are drawn, so it was measured, not changed.
+
+## What was measured
+
+All diagnostics ran in a private copy of the Development Player `hb-03-dev` with its game assembly recompiled (`tools/`): a
+probe that records the GPU time of every HDRP pass marker each frame (`PolarPassProbe.cs`), and a lab that holds fixed views
+and switches one thing at a time (`PondLab.cs`). Host load was read once a second beside every run (`data/host-load.txt`).
+
+### 1. Pass by pass over the benchmark route (host quiet)
+
+Means over every frame of each part ([full table](data/route-02-pond-vs-snow.md), [frames](data/route-02-passes.csv.gz)). The
+probe itself costs about 0.5 ms a frame (open snow 14.32 ms with it, 13.77 without).
+
+| GPU ms a frame | Open snow | Pond | Difference |
+|---|---:|---:|---:|
+| Whole frame | 14.32 | 17.05 | +2.73 |
+| GBuffer | 3.03 | 5.11 | +2.08 |
+| Screen-space global illumination | 4.33 | 4.74 | +0.41 |
+| Deferred lighting | 0.64 | 0.76 | +0.12 |
+| Shadow maps | 0.42 | 0.53 | +0.10 |
+| Screen-space reflections | 0.16 | 0.22 | +0.05 |
+| Every other pass | | | within 0.05 each |
+| Triangles a frame | 6.2 million | 12.0 million | |
+| Draw calls a frame | 1,144 | 3,267 | |
+
+Occasional work is small: the sky's environment update ran in 5% of frames in both parts (0.06 to 0.07 ms a frame averaged).
+
+### 2. It is the direction, not the pond (host quiet)
+
+The same spot looking eight ways round, 90 frames each ([paired tables](data/lab-02-paired.txt)):
+
+| | GBuffer ms | Whole GPU ms | Triangles a frame |
+|---|---:|---:|---:|
+| Open-snow spot, looking east | 1.50 | 12.27 | 3.1 million |
+| Open-snow spot, looking north (about the walk's heading) | 2.02 | 13.18 | 4.5 million |
+| Open-snow spot, looking west | 4.26 | 15.89 | 12.1 million |
+| Pond bank, looking south-east | 1.83 | 13.74 | 3.9 million |
+| Pond bank, looking west (the benchmark's view) | 4.80 | 16.55 | 12.4 million |
+
+What is in view ([pond](data/lab-02-census-pond.csv), [open snow](data/lab-02-census-snow.csv)): the world holds 672 distant
+terrain blocks, 10.3 million triangles. At the pond 645 are in view; on the walk 131. The pond's own 55 plates are 9,018
+triangles. Switched off in turn at the pond view, the refined blocks and the near window save 2.10 ms of GBuffer and the coarse
+blocks 0.87 ms ([captures](data/lab-02-pond-groups-off.jpg)). The "everything else" group is not usable: switching it off
+turned the scene to night.
+
+### 3. Two candidate fixes at the fixed views (host quiet, four pairs each)
+
+| Switch | Open snow, whole GPU | Pond, whole GPU | Notes |
+|---|---:|---:|---|
+| Full depth prepass | +0.85 ms | +1.04 ms | GBuffer falls 0.11 and 1.01 ms, but the prepass costs 0.92 and 2.04 ms: a net loss |
+| Every renderer near first | +0.20 ms | +0.24 ms | A loss |
+| Every renderer far first | +1.44 ms | +1.25 ms | Shows the order matters |
+| Terrain near first | -0.03 ms | -0.44 ms | The candidate |
+
+HDRP leaves front-to-back sorting out of its opaque order (`HDUtils.k_OpaqueSortingCriteria`) and the game has no full depth
+prepass, so the order terrain is drawn in decides how much hidden ground is shaded. The prepass's own cost, 2.04 ms for 10.2
+million triangles with the simplest pixel shader, sizes the geometry cost: about 0.2 ms a million triangles in view.
+
+### 4. The change over the route in the Development Player (background load)
+
+The route five times in one session, the change off, on, on, off after a warm-up pass ([paired table](data/order-01-paired.txt)).
+The desktop apps' git diffs ran through this run, so the levels are inflated; the pairs are adjacent.
+
+| Part | GPU saved a frame | Range of the two pairs |
+|---|---:|---:|
+| Open snow | -0.03 ms | -0.10 to +0.04 |
+| Hut at night | +0.12 ms | -0.08 to +0.32 |
+| Pond | +0.85 ms | +0.81 to +0.89 |
+| Coast | +0.32 ms | +0.26 to +0.37 |
+| Into a blizzard | -0.10 ms | -0.12 to -0.08 |
+
+The variant in this run also ordered the gap walls and measured from the camera; the applied change is the simpler one below.
+
+### 5. The built-in benchmark on the release packages
+
+`to-01` (the change) and `hb-02` (0.6.153-test) in turn tonight, and `hb-02`'s two runs of November 13 on a quiet machine. Tonight
+the apps kept starting git diffs, which a guard stopped as they appeared (280 in 42 minutes); 0.8 to 2.5 GB of memory was
+available and other processes used 2.5 to 3.7 cores, most in the last two runs. Results: `data/release-*.json`.
+
+| Run | Open snow GPU | Hut GPU | Pond GPU | Pond P95 | Coast GPU | Blizzard GPU | Route P95 | Average fps |
+|---|---:|---:|---:|---:|---:|---:|---:|---:|
+| `hb-02`, November 13, quiet | 13.87 | 16.12 | 16.25 | 17.42 | 12.37 | 12.99 | 16.59 | 70.7 |
+| `hb-02`, November 13, quiet | 13.83 | 16.13 | 16.08 | 17.13 | 12.38 | 12.91 | 16.51 | 70.9 |
+| `to-01`, run 1 | 13.78 | 16.10 | 15.76 | 17.03 | 12.03 | 12.93 | 16.38 | 71.4 |
+| `hb-02`, tonight, run 1 | 14.21 | 15.93 | 16.79 | 17.70 | 12.61 | 13.15 | 17.03 | 69.7 |
+| `to-01`, run 2 | 14.22 | 16.39 | 16.12 | 17.06 | 11.90 | 13.42 | 16.71 | 69.7 |
+| `hb-02`, tonight, run 2 | 14.59 | 17.01 | 17.36 | 18.72 | 13.34 | 13.92 | 17.70 | 66.5 |
+
+Reading it:
+- `to-01` run 1 had the least host load. Against the quiet `hb-02` runs the pond's GPU time is 0.32 to 0.49 ms lower and the
+  coast's 0.34 ms lower; open snow, the hut and the blizzard are within 0.1 ms.
+- The pond-minus-snow gap, which cancels most of the host's load, is 1.98 and 1.90 ms on `to-01` against 2.38, 2.25, 2.58 and
+  2.77 ms on `hb-02`.
+- Tonight's `hb-02` runs are slower in every part than its quiet runs, so tonight's pairs alone (pond 1.1 ms saved) overstate it.
+- The pond's P95 is 17.03 and 17.06 ms: over 16.67 ms. The hut's is 16.82 and 17.02 ms, also over, as before.
+
+## What changed
+
+`Assets/Scripts/Polar/PolarWorldStreamer.cs`: each terrain renderer's sorting order is 1 plus its metres from the player, set
+when the chunk is made and again once the player has moved 8 m (`Rank`, `OrderTerrain`). Opaque draws sort by sorting order
+before material, so terrain is drawn near to far; everything else keeps order 0 and is drawn before it, so a hut's walls still
+hide the ground behind them. `PolarPackage.cs` and `ProjectSettings.asset` carry the label 0.6.154-test. Nothing else.
+
+## What the player sees
+
+No change. At five views with the clock stopped (open snow, the same spot looking west, the pond, the hut at night, the coast)
+the change off, on and off again: the share of pixels that differ by more than 8 levels between off and on is 0.28, 0.02,
+0.02, 0.06 and 0.22%, and between the two captures with it off 0.17, 0.02, 0.02, 0.10 and 0.15%. The registered pairs are the
+`*-before.png`, `*-after.png` and `*-comparison.png` files here. They come from the private Development Player with the change
+switched off and on in one session, not from two packages.
+
+## What remains
+
+- The pond's P95 is still over 16.67 ms by about 0.4 ms, and the hut at night is over it too.
+- Geometry: looking inland, about 2 ms of the GBuffer is vertex work on distant terrain. The blocks' resolution rings (256
+  within 6 km of the player, 128 within 16 km) date from larger worlds, and today's island lies almost wholly inside the first.
+  Fewer triangles there means coarser distant ridges, which is a visible trade-off: not changed, and its options not yet
+  measured.
+- Screen-space global illumination is 4.3 to 4.7 ms in every outdoor view, the largest single pass.
+- About 0.5 ms of GBuffer at the pond beyond the same heading on open snow (4.80 against 4.26 ms) is not attributed; the
+  earlier cap test accounts for 0.19 ms of it.
+- The release gain at the pond (0.3 to 0.5 ms) is smaller than the Development Player's paired 0.85 ms. That run had background
+  load and a slightly fuller variant; the quiet fixed-view test of the terrain-only order read 0.44 ms.
+
+## Not run
+
+The Player suite (gameplay, performance and the other modes) was not run on `to-01`, at the user's request for speed. The change
+alters only the order of opaque terrain draws.
+
+## Reproduction
+
+`tools/make_rsp.py` writes the compile response file from Unity's own, `tools/run.py <run-id> [-polarPondLab <stages>]` runs
+the private Player with the probe, `tools/analyze.py` and `tools/labstats.py` write the tables, `tools/bench.py <stage> <run-id>`
+runs the release benchmark and removes the entry it adds to the player's history, and `tools/diffguard.py` stops the apps'
+merge-base git diffs while runs are timed.

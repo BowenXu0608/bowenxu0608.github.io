@@ -1,0 +1,20 @@
+docs/engineering/logs/2026-07-11.md
+
+# 2026-07-11 Engineering log
+
+> Historical recovery recorded October 29, 2026. This is a concise account of surviving records, not a contemporaneous new entry or tests rerun during recovery. Reported results and open items retain their original scope; historical rules do not replace the current GDD.
+
+Source: `dated-log-2026-07-11`; see the [recovery record](evidence/2026-10-29/english-log-backfill/recovery.json).
+
+## Layered tile WFC prototype
+
+- Replaced the lightweight radial map with macro island, mountain, directed river, lake and tidal-shallow planning; 128 demand-driven candidates; composite edge contracts; weighted-entropy Simple Tiled WFC with propagation, limits and bounded backtracking; and continuous fine terrain. Added shared-vertex meshes, A* movement, tides, camera/HUD diagnostics and batch previews. Kept `LegacyRadial` for comparison.
+- Reported checks: clean Unity compilation, Quick10 10/10 and Full100 100/100, no determinism or remote-path failures. Slowest map was approximately 586 ms. Seed 12345 took 614.3 ms for data and 0.78 s for the scene, with 24 MeshFilters, 366,773 vertices and 312,070 triangles.
+- Limits: those checks did not measure height seams directly or prove the fine flow field acyclic. The plan stood at 6/7. Production assets, streaming/LOD, persistence, final scale and exploration calibration remained open. Resource placement was not implemented; rivers were wadeable and early acts had no fixed camp.
+
+## NPC design and independent recruitment prototype
+
+- Removed numerical trust, threat and weakness matrices from the design. The historical population was 20 people including the player; reputation depended on observable, communicable evidence, with private witness memories and speaker-scoped model input.
+- Separated constrained model proposals from authoritative arithmetic, legality and state changes. The independent Act III recruitment prototype used eight fixed archetypes and 168 parameters, seven knowledge slots, declarations, alliance records and a determination process. The navigation chart's recruitment credibility was fixed at 100.
+- Implemented a UI Toolkit scene, llama.cpp health/startup, Qwen3 non-thinking requests, JSON schema validation and rule fallbacks. Core checks passed. On an RTX 4070 Laptop, Qwen3-8B Q4_K_M loaded in 6.13 s; the cold first turn took 17.885 s. After a 15.15 s warmup, all eight archetypes returned valid responses in 2.338-3.890 s, mean 3.047 s, within the historical 10 s target.
+- The prototype used llama.cpp b9964 with loopback-only transport. At that checkpoint Unity Editor validation and Play Mode were still unavailable, and Word exports had only structural checks because the rendering tool was unavailable. Later entries record the follow-up; these gaps were not passes on this date.

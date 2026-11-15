@@ -1,0 +1,500 @@
+docs/engineering/systems/polar-world.md
+
+# Polar world generation and streaming
+
+## World v23: ponds 20 m deep, November 2, 2026 (0.6.98-test)
+
+The deep-water plan, M1 (`docs/engineering/plans/polar-thin-ice-deep-water.md`; [design decisions](../../design-decisions.md#deep-pond-water-november-2-2026-0698-test)).
+- `PolarCompactWorld.CurrentVersion` is 23. `IceSettings(version>=23)` is v22's profile with `poolDepth` 20 (it was 3). Only the hash changes: ponds, plates and routes are v22's, since only the runtime reads `poolDepth` (the basin's floor and colliders). The front page deletes v22 saves and world caches by the existing rule.
+- `PolarThinIceValidation.ClearPoolColumn` casts 25 m and still needs more than 3 m clear (it cast 5 m).
+- Seed 777's v23 hash is `31EF26C297603BC8`; its v22 hash is still `400A24C75317AD11` (`Logs/PolarCompactWorld/v22-hashcheck-v23`). Twenty v23 seeds pass with the physical route proof (`Logs/PolarCompactWorld/v23-twenty`).
+
+## World v22: pond water 3 cm under the ice: November 2, 2026 (0.6.95-test)
+
+The user chose water at the ice for the rules too (thin ice upgrade M1, `docs/engineering/plans/polar-thin-ice-upgrade.md`; [design decisions](../../design-decisions.md#thin-ice-floats-november-2-2026-0695-test)).
+- `PolarCompactWorld.CurrentVersion` is 22. `IceSettings` for version 22 or later is v20's settings (profile 3, 17-24 ponds of 8-50 m) with `waterDepthBelowIce` 0.03 m instead of 0.65 m. Land, huts, sites and pond layout are v21's.
+- The depth is part of `PolarThinIce.WorldSignature`, so the world hash changes while v21 and earlier keep theirs. Seed 777's v21 hash is still `DB096612FFE320A7` (`Logs/PolarCompactWorld/v21-check-777`); its v22 hash is `400A24C75317AD11`.
+- Twenty v22 seeds pass with the physical route proof and the save round trip (`Logs/PolarCompactWorld/v22-twenty`, libraries from `v21-twenty`).
+
+## Supply-walk trial switches: November 1, 2026
+
+The user asked whether shorter supply walks would let explorers reach supplies; the explorer runs are in [polar-cloud-npcs](polar-cloud-npcs.md). Three switches make trial worlds without a new world version (`PolarCompactWorld.AreaShare` and `HutPull`, both 1 and off by default, and `Huts`, 0 and off). A world made with any of them has its own hash.
+- **AreaShare** keeps that share of v20's area. The scale (`LinearFor`, `SelectHalf`), the macro land (`MacroFor`) and the least supply walk (`PolarWorldSettings.Validate`) take its square root, as v20 halved v19's.
+- **HutPull** (`Pull`, in `GenerateCompact` for districts) moves every hut but the home hut that share of the way toward it on the template, nearest first, so every distance between two of them is that share.
+  - Each takes the cell nearest its aim, searched outward up to 60 cells, that meets four tests: its 9x9 footprint is walkable inside the border; its door cells are reachable from the home hut's door on the template; it is at least 54 x share - 2 cells from every hut placed; and it is clear of gap boundaries by 24 cells.
+  - Old footprints open, new ones close and rock obstacles are applied again; the spacing floor scales by the share.
+  - A pulled hut whose door the later landforms cut off ("Detached critical hut entrance") is placed again at least 12 cells from there (`PullAvoid`, up to 12 tries). The list lasts the process, so a world read back without the navigation proof matches.
+- **Huts**, when above 0, keeps that many of v19's 10 huts in each district except Pole Station's, instead of 7 (`HutsFor`, so `SelectHalf` thins to it and the site count follows: 206 sites at 10). It cannot add huts beyond v19's 10.
+- In a trial world a district keeps the cracks that found room instead of failing (`AddCracks`): in the game's AreaShare .5, 10-hut world for seed 777 the full count did not fit round one district's huts and doors.
+- With AreaShare or HutPull on, a district may hold 11 ponds, never more than the settings' own minimum (`PolarThinIce.ValidateWorld`; the library's reference world keeps its own).
+- **Tools.** `Tools/PolarWorldCheck --compact --area <share> --hut-pull <share> --huts <n>`, and `PolarNpcDayDiagnostic -npcDiagnosticArea`, `-npcDiagnosticHutPull` and `-npcDiagnosticHuts`.
+- **Seed 777** (`Logs/PolarCompactWorld/supply-trials`):
+
+  | World | Area | Median nearest site | Home to nearest hut by walk | Hut to nearest by walk | All walks |
+  |---|---|---|---|---|---|
+  | v21 | 293 km² | 795 m | 852 m (max 1921) | 927 m | 1403 m |
+  | HutPull .5 | 293 km² | 522 m | 421 m (max 1234) | 508 m | 724 m |
+  | AreaShare .7 | 205 km² | 665 m | 712 m (max 1504) | 758 m | 1186 m |
+  | Both | 205 km² | 437 m | 352 m (max 1034) | 434 m | 602 m |
+  | AreaShare .5, Huts 10 | 146 km² | 412 m | 527 m (max 1289) | 419 m | 605 m |
+
+  All four pass the route proofs (no person or wide failures). HutPull .5 passes all 1109 checks (`pull50-e`). With AreaShare .7 only calibration checks fail: half of v19's area, the walks' 500 m relief and small and large ponds together (`area70-c`, `both-c`, `both-lib`, the last building its own library). AreaShare .5 with 10 huts fails the same three of 1216 (`a50-h10`). Its home huts' nearest hut is farther than with Both, since v19's huts keep their spacing round the home hut, but the 232 walks between neighbouring huts are as short. The checker's worlds are not the game's: it seeds the library and sets the day length differently, so the game's hash for Both is F54CE40D82D83FCC, not B6D2421113547584, and the crack shortfall above showed only in the game. The v21 world keeps its hash. Adopting either would need a new world version and the twenty-seed sweep.
+
+## World v21: Pole Station's own district and the rescue cell: October 31, 2026 (0.6.89-test)
+
+The user removed one explorer and put Pole Station and three huts in that person's district, with a rescue point at its edge (plan `docs/engineering/plans/polar-pole-station-rescue.md`; gameplay in [polar-gameplay](polar-gameplay.md)). v21 is v20 at v20's scale with these changes (`PolarCompactWorld.CurrentVersion` 21):
+- **Station district** (`StationRegion`). Region 2 or 19, two along the ring from the player's region 0, by a seed bit (`PolarMath.Hash(seed,21,0x5747)`). It is the world's `rescueSector`; its hut 0 is Pole Station (`PoleStation`).
+- **Huts** (`SelectStation`, `Thin`, `StationHuts` 4, `DistrictHutsFor`, `SiteCountFor`). v20's choice (`SelectHalf`), then the hub's 7 CentralStation buildings go and the station district keeps 4 of its 7 by v20's own rule (the later hut of the closest pair goes, never hut 0). The 2 Migration depots stay: 146 sites (20 x 7, 4 and 2). `CopyV11` opens a removed hub building's footprint row where the plaza is open on both sides of it.
+- **People** (`Person`). Sector `personId` stays the region for every district (thin-ice and fractured checks read it); gameplay maps districts to people past the station district, so the player keeps region 0 and nobody lives in the station's.
+- **Rescue cell** (`Rescue`, `PolarWorldData.RescueCell`). The walkable cell nearest the station district's coast edge near its middle: rows from lattice z 508 inward, x 176-336, the one nearest x 256. Every walkable cell of a district is reachable from its huts (`PolarWorldGenerator.Validate`). Generation computes it after the fractured audit and fails if there is none; worlds before v21 keep the fixed `(256, 495)` of `rescueSector`.
+- **Validation.** `PolarWorldGenerator.Validate` and `Tools/PolarWorldCheck` expect 4 huts in Pole Station's sector; the settings cap is `CurrentVersion`.
+- **Results.** Twenty v21 seeds pass (`Logs/PolarCompactWorld/v21-twenty`; seed 777's hash DB096612FFE320A7, the same scale and ponds as v20); twenty v20 seeds keep their hashes (`Logs/PolarCompactWorld/v20-hashcheck-v21`, 0 differences).
+
+## World v20: half the area, seven huts a district, land round a middle level: October 30, 2026 (0.6.86-test)
+
+The user's playtest of 0.6.84-test: halve the area so people meet more often, keeping 7 supply points a district with the same food, fuel and cartridges; too much flat ground, so the plains should lie between land below and land above; tundra bare on flat ground in a blizzard; and snow and cliff lines along straight edges. Earlier saves and worlds are deleted, not carried over (the user, October 30). `PolarCompactWorld.CurrentVersion` 20, `PolarLandforms.RecipeFor` 9; v10-v19 generate as before (seed 777's v19 hash is still F97AA1DD8C24A8F1).
+- **Area and huts** (`PolarCompactWorld.SelectHalf`, `HutsFor`, `SiteCountFor`).
+  - *Half the area.* v19's huts are chosen for the seed, then placed at 0.707 of v19's metres per cell (`ScaleFor19`), so the world is exactly half of v19's: 9.9-12.0 m a lattice unit over twenty seeds (v19 13.9-17.0). `LinearFor` and `MacroFor` are 0.289 of v12's.
+  - *Seven huts.* Each district then drops its 3 most crowded huts: the later hut of the closest pair goes, never the home hut (0). A world has 156 sites (21 x 7 and the 9 public ones; 219 before). The spacing floor and least walk shrink with the scale, to 184 m and 36.7 s (`PolarWorldTypes`).
+  - *Supplies* (`PolarSupplyStock.Initial`). The world's totals are unchanged (1428 food days, 987 fuel days, 105 cartridges), so each hut holds about 1.4 times as much. A district's 6 ranked huts spread over the 14 ranks, so each keeps low, medium and high sites.
+  - *Hazards.* A district has 17-24 ponds (`IceSettings`, profile 3 from 16) and 7-11 wide and 6-8 narrow cracks (was 10-16 and 8-12): at v19's counts a walk met a median of 5 hazards, up to 25. Hut pads span 17 cells (cells under 1.8 m wide; `PolarFracturedWorld`).
+- **Relief, recipe 9** (`PolarLandforms.Height`).
+  - *Plains roll.* Flat land keeps .65 of the hills (`FlatFactor20`, was .15), the walks' hills rise to 1.6 times v11's (`WalkHillCap20`), and a hut's calm reaches 520 m instead of 306 m (`CalmFull20`).
+  - *Fine hills* (`FineGain20`, `PolarHills.Height` `fine`). The 500 and 250 m octaves stand 3.5 times as high (41 and 12 m), half that more along the walks (`FineWalk20` .5 of the gain at open 0). This is the relief a walker sees within a few hundred metres. The first draft measured flatter than v19 (local relief 35 m against 39), because its calm round huts and passes covers far more of a half-size district. Raising the land instead failed in these ways:
+    - every wave under 2 km raised walled a hut into a trough: a hut at -158 m, with a massif at +200 m 175 m away (seed 548164728);
+    - raised ridges stood up as straight walls across a district;
+    - the full gain on the walks dropped a pass's lane 140 m into a trough (seeds 12345, 361541325);
+    - at 4.5 times, a route's 23 m cell curved past what people walk (seeds 1158469945, 1549916642).
+  - *Below and above.* Away from huts, passes and walks the flat land sinks into basins 90-240 m deep in v12's metres (`Basin`: depth on a 9 km field, an uneven floor on a 1.1 km one, the weight's power 1.3, with gentle rims), and massifs stand 1.9 times v19's height (`MassifLift20`).
+  - *Moraine hummocks* (`Hummocks`). Two warped octaves of value noise 160 and 70 m across, 6-16 m by a 1.4 km field, so most stand 2-5 m above or below the land round them, with slopes under 0.4. They roll over all land at .7 of their height along the walks, calm within `HummockCalm` 100 m of a hut, 24-84 m of a pond's shore and 10-70 m past a river's or lake's reach (`PolarRivers.CutShare`; ponds, rivers and lakes are placed on the land without them).
+  - *Huts in a cone.* Within a cone, the ground keeps within 1 m plus .25 a metre past the hut's pad, plus 3e-6 times the cube, of the hut's level, eased by tanh (`ConeSlope`, `ConeCurve`). The narrower calm had squeezed a hut's fall into a 0.7 ring 109 m out, at a door (seed 1356747697).
+  - *Passes.* The hills calm from 400 to 1800 m round a border pass (`PortHold20`, `PortReach20`; v12 100 to 1200): a 0.45 hill climbing at the end of a pass's lane cut it off (seed 548164728).
+  - *Clearance ramps.* Massifs, basins and cliff faces ease in beside huts, passes and walks over 1.3 times v19's width (`ClearRamp20`). At v19's width, a massif rose 38 m within 40 m beside a walk (seed 2106235867), steeper than navigation's cells could see. At 1.9 times, as high as massifs stand, open was 0 on 32% of seed 777's land.
+  - *Curving edges* (P4). Every clearance distance shrinks by 0 to 100 v12 metres on value noise 400 m across (`EdgeWobble`), so massifs and cliff faces end along a curving line, not parallel to a straight piece of walk. It only widens a clearance. A second octave 120 m across made 0.9-1.1 slopes a few metres long and failed the route proof on six of twenty seeds.
+- **Snow cover** (P3, `PolarLandscape.GroundCover` v20). No rocky patches on flat land. A crest keeps only the share of its height the hut calm leaves it (`HutKept`, on a 400 m hut grid), so ground levelled round a hut is never bare. A crest is measured on the hills before the fine gain, so the bare share stays where it was calibrated: 2.5-6.2% of land (median 4.8%). Measured on a draft's raised hills, it rose to 10-19%.
+- **Rivers and lakes** (`PolarRivers.ValleyVersion` 20).
+  - *Wander* (P4). A course wanders by up to its amplitude over about 70 m, so a river on an even slope, or a tributary heading for its join, bends instead of running ruler-straight.
+  - *Valley sides.* A cut fades over 16 m (`ValleyFade`), and its reach changes by at most 4 m a step (`ReachChange`). On higher land a valley side often rises about as steeply as a gentle bank, and the reach jumped by 100 m between centreline points, leaving a 3 m step 175 m out (seed 777).
+  - *Blended pieces.* A river's floor, width, bank, depth and reach blend its centreline pieces within 16 m plus half the nearest one's distance. The nearest point alone jumps on the inside of a tight bend (seed 12345: 7 m over 4 m). The depth that carves the bed under open water stays the nearest point's, as `Water` reads it.
+  - *Banks.* The bank meets the land only where the land then stays under it across the fade (a hummock's hollow let a cut fade over the next rise in a 0.9 slope, seed 1549916642).
+  - *Lakes.* Lakes are .71 as long and wide (`LakeSize20`, 106-213 m) and need 10 centreline points, as tributaries do. At 15, a third of their tries failed and two of twenty seeds kept a district without a lake.
+  - *Hummocks per piece.* `CutShare` takes the least share over every nearby centreline piece. The nearest point alone stepped a hummock 3.4 m where a point was as far from two bends 11 steps apart, whose reaches differed by 44 m (seed 1148237582).
+- **Checks.**
+  - *Lees.* The lee audit (`PolarFracturedAudit`) looks 10 steps out from each ridge and takes a shelter of .4: v20's land is 0.71 of v16's. In 8 steps, seed 865209320's district 7 found fewer than two lees. The points serve only the audit and runtime validation.
+  - *Ponds.* A v20 district aims for 17-24 ponds and accepts 11 (16 before, `PolarThinIceData`): the rougher land left a district of seed 305107986 short of 16.
+  - *Cracks.* Routes keep 5.5 m from cracks (`PolarFracturedLibrary.Navigation`, 4.3 m before): v20's cells under 1.8 m let the wide capsule pass within 4 m of one (seed 1148237582).
+  - *New measures* (`Tools/PolarWorldCheck`, summary `land` and `walkSlope`):
+    - flat ground, land under 3 degrees over 10 m outside hut pads, water and the hub;
+    - local relief, the median range within 150 m;
+    - the walks' slope.
+- **Twenty seeds, v20** (`Logs/PolarCompactWorld/v20-twenty-fine3`): 20 of 20 pass. Medians over the seeds, against v19 on the same measures (`v19-baseline-measures`) and v20's first draft (`v20-twenty-f`):
+
+  | Measure | v19 | v20 draft | v20 |
+  |---|---|---|---|
+  | Flat ground | 7.6% (6.7-9.1) | 7.3% | 6.3% (5.6-7.3) |
+  | Local relief within 150 m | 39.4 m (34.6-42.9) | 34.8 m | 39.0 m (35.6-46.3) |
+  | A walk's climb | 27.0 m | 26.5 m | 29.1 m (26.2-30.5) |
+  | 500 m relief on routes | 28.6 m | 28.5 m | 30.4 m |
+  | Heights 5%, 50%, 95% | -16, 102, 276 m | -35, 69, 222 m | -37, 69, 226 m |
+  | Highest point | 309 m | 355 m | 368 m (303-456) |
+  | Walk slope, 95th percentile | .21 | .22 | .24 (.22-.26) |
+  | Walk slope, steepest | .52 | .49 | .53 (.47-.69, under the explorers' 0.7) |
+  | Bare ground | 5.3% | 4.6% | 4.8% |
+
+  - *Relief limits.* Half the area with the same climbs makes every slope steeper, and the explorers' 0.7 walking limit and the route proofs then cap the relief. Every stronger variant cut off a pass, a door, a district's lees or ponds, or failed a route's capsule. More relief needs a steeper limit or finer cells along the walks.
+  - *Huts and walks.* A median 834 m to the nearest hut (730-948 m), a median walk of 3.3 minutes, and a median of 4 hazards a walk.
+  - *Water.* 399-449 ponds, and a lake in every district.
+  - *Seed 777's v20 world:* tool hash 8D3C6A5DCB7DDF6A, 1114 checks; the game's 7CA96BC354EB7F59.
+
+## A tenth of the route flags, low rock islands: October 23, 2026 (0.6.47-test)
+
+The user's playtest of 0.6.46-test.
+- **Route flags.** `PolarLandforms.FlagSpacing` is 600 m (was 60), and the count carries on from one walk to the next instead of restarting at each walk's start, so walks shorter than 600 m still get some. Seed 777's world v19 has 8074 flags at 60 m over 564 km of walks.
+- **Rock islands.** `PolarWorldStreamer.RockIsland` places the near rock island and its distant silhouette alike (the silhouette used to take another IceRock at 7 times): 2.5, 3.25 or 4 times across and 0.7 of that high, tilted up to 5 degrees about each level axis, and sunk 0.25 m plus half its scale below the lowest neighbouring cell. Before, 5, 7 or 9 times, upright and sunk 0.25 m: seed 777's nearest one (IceRock3, Rock_12) was 31 by 34 m and 15 m tall on an overhanging base, and the 0.6.40 capture's IceRock at 9 times a 23 m tower. Navigation's rock obstacle discs are unchanged.
+
+## World v19: a lake in every district, October 23, 2026 (0.6.45-test)
+
+The user's choice for the two of twenty test seeds where one district had no lake (`PolarRivers.LakeVersion` 19, `PolarCompactWorld.CurrentVersion` 19, recipe 8 as v18; v10-v18 saves keep their world).
+- **Cause.** Seed 1335335949's district 11 is crowded and steep: of its 30 tries, 14 found no site flat and clear enough of walks, huts and rivers, the rest failed on their banks, contour or reach. Seed 548164728's district 9 holds a basin 16-63 m below the sea's datum, where a lake floor (never below -3 m) cannot be cut: 12 tries came out 0 m deep.
+- **More tries.** A district still without a lake after its 30 tries tries again, up to 300 times at the 0.12 gradient limit, until one is placed (34 and 81 more tries placed one before ends were measured); a district with a lake never enters the loop. Generation time is unchanged.
+- **Ends hold too.** `Holds` also measures past each end of a lake, on the axis and at both corners, half-width + 2 m out, where its water sheet ends: on seed 777's v18 world 15 of 80 lake ends opened onto lower land (lake 4 by 22 m). A v19 lake is placed only where its ends hold: seed 777 and 1335335949 have none open; fewer lakes pass in the first 30 tries (36 a world on both, instead of 40 and 37).
+- **Checks.** Twenty seeds, v19: 20 of 20 pass, with a new check that every district has a lake of open water (`Logs/PolarCompactWorld/v19-twenty-b`): 49-56 medium rivers and 31-48 lakes a world (median 38), a lake in all 21 districts on every seed, no lake breach. v18 keeps its hashes (the tool's for 1335335949 and 548164728, the game's 6C0B30E32B1B4EAF for seed 777). One genuine pair (`lake19` capture group: seed 1335335949's district 11 from above, v18 then v19).
+
+## World v18: open rivers and lakes: October 22, 2026 (0.6.41-test)
+
+The user saw one small river on their district chart and asked for more rivers and lakes, as open water (`PolarRivers.OpenVersion` 18, `PolarCompactWorld.CurrentVersion` 18, recipe 8; v10-v17 saves keep their world).
+- **More water.** Each district plans two or three medium rivers (40 attempts) and one to three lakes (30 attempts, sited on ground with a gradient under 0.06 for the first 15 and under 0.12 after: a lake holds its water only where the land rises less than its depth across it). A lake is a short, wide river record (150-300 m long, 50-120 m across) laid along the contour with basin ends and a level floor, kept clear of walks, huts and gaps as rivers are.
+- **Open water.** On medium rivers and lakes the old ice floor is the water level wherever the floor lies at least `WaterDepth` (1.5 m) below the land; under it the bed is carved `Bed` (3 m) deeper, shallowing over 4 m at the banks. Shallower stretches, ramp ends and tributaries stay frozen and are walked as in v17; open rivers get no thin-ice windows and no coastal mouths. `PolarRivers.Water` gives the level; `WaterLevel` includes it, so the player falls in, swims and climbs out with E. Explorers' cells touching open water close (`SteepInCell`), so they walk round it.
+- **Water stands only where its banks hold it.** A lake whose land 2 m past either edge lies below its water (a lake laid across a slope) is dropped and placed again; along a river the floor stays ice at such points (`HoldWater`, on the final land after every district's rivers and tributaries are cut: a tributary's mouth running beside a river had lowered its bank by up to 5.8 m). On seed 777 the first draft had 452 such points of 4171; now 3 of 3562, 0.16-0.25 m at 1 m past the edge.
+- **Clean cut ends.** `Reach` also measures across a lake's end caps, and a reach whose cut never meets the land within 250 m is dropped: a cut that fades out while still metres below the land leaves a step that failed the physical route proof (13 of 20 seeds in the first draft). Open rivers keep v17's ends (ramps at heads and fords, basins only at low tails).
+- **Chart.** Open water is drawn darker blue; frozen stretches keep the ice colour.
+- **Checks.** Twenty seeds, v18: 20 of 20 pass (`Logs/PolarCompactWorld/v18-twenty-d`): 49-56 medium rivers a world in all 21 districts, river width median 33-44 m; 32-49 lakes (median 40), 85 m median width, in 20 or 21 districts (on two seeds one district has no ground flat enough for a lake); 0-8 points of a river's water above a bank, none on lakes. v17: 20 of 20 pass with unchanged hashes (`v17-twenty-g`). Seed 548164728 once failed the 4 m route capsule by a crack 4.03 m from a route edge, far from any water; a later draft passed it, so that near miss stays possible on other worlds (a crack, not water).
+
+## Water is never solid; route flags: October 22, 2026 (0.6.40-test)
+
+The user's playtest of 0.6.39-test found the player standing on the sea, unable to move (a copy of their save stood on the coast's shelf, 0.97 m under the sea plane).
+- **Cause.** The sea was never water: `PolarSurveyPlayer.Move` set `inWater` only for thin ice and leads, the coast's last 70 rows blend to -8, 1 m under the plane at -7, and the step rule tested only the target, so a body over a refused cell (a bay floor, past z = 1024) was refused in every direction.
+- **One water query.** `PolarWorldController.WaterLevel(position, out ground)` returns the level of a lead (at least sea level), a coastal bay, or the sea over the shelf (ground below sea level in the coast's last 70 rows only: inland ground may lie below the sea's datum, and package fx-01 counted a home hut there as sea) and up to `SeaEdge` (64 rows past the coast), NaN elsewhere, with the land's height; `Open` is ground or water. The player swims in any of them (cold-water rules unchanged), `FindLeadClimb` climbs out onto any bank at most 10 m above the water, `PlaceAt` and Continue accept water, and a step is refused only into a place that is neither, and only from one that is (`!Open(step) && Open(here)`).
+- **Depth.** `RawHeight` draws and collides the coast's shelf below sea level `SeaDeepen` (12) times deeper, in the last 70 rows only; generation, navigation and world hashes read `PolarFracturedWorld.Height` and are unchanged. Bay floors lie at sea level - 12; lead floors at least 10 m under their water (`BuildGapWalls`).
+- **Also.** The streamer clamps its window row as `UpdateWindow` does (past the map end the window was rebuilt every frame).
+- **Route flags.** (600 m since 0.6.47-test.) `PolarLandforms.Flags` puts a flag every 60 m along each district walk, counted from its start, none within 25 m of a hut's centre or 20 m of another flag; cached on the sector (`flags`, not serialized). The streamer places those in each near chunk (`BuildObjects`, v12+ worlds, off thin ice), a 2.3 m pole and red pennant in one mesh, downwind, no collider. The district chart marks them as red dots.
+- **Checked.** Copy of the user's save: 4.5 m in 3 s toward land and out to sea, swimming. Explorers never enter the sea or leads (their grids are unchanged).
+
+## World v17: frozen rivers, October 17-18, 2026 (0.6.24-test)
+
+Plan: [world v17](../plans/polar-rivers-v17.md), built on Codex's terrain handoff and concepts. New expeditions use world v17: v16's scale, huts and walks with frozen rivers cut into the land. v10-v16 worlds generate exactly as before (twenty v16 seeds keep their hashes, `Logs/PolarCompactWorld/v16-identity-v17code`); the user chose to keep the existing coastal chasms and leads.
+- **Data** (`PolarRivers.cs`). A river reach is a centreline every 10 m in projected metres with, at each point, the floor's half-width, its absolute height, the bank slope, the depth below the land and the reach (where the banks meet the land). Reaches and their thin-ice windows live on `world.shape.rivers` (a 256 m index), which the explorers' navigation view and the checker's copies share. `CurrentVersion` 17, `RecipeFor(17)` 7, version caps 17; the river signature joins the world hash; the world file keeps format 2 and Continue rebuilds the rivers from the seed.
+- **Planning** (`PolarRivers.Plan`, in `GenerateCompact` after the walks and before the ponds; districts in parallel, seeded per district, on the land without knolls). Each district aims at 0-2 medium rivers. A trace starts in open land (`Clearance` open 0.9, 26 cells and 30 m from the seams, outside the coast fade, 80 m from gaps, slope at most 0.25) and steps 20 m downhill with momentum and a meander (no radial term). It stops near huts (110 m beyond the river's edge, the birth hut 170 m), doors (90 m), passes (160 m), other rivers, interior leads (30 m short, so lead water and climb-outs are unchanged), basins, district margins and its length (600-2,000 m); at a coastal chasm it runs on to the bank (a hanging ice front). At a walk it may cross at 50 degrees or more (at most 3 times): the river stops and goes on beyond the walk, which keeps its ground. Medium rivers shorter than 400 m in all are dropped. Tributaries (1-3 per river and up to 2 alone) are traced toward their river or downhill, never cross a walk, and end on the river's floor or in snow.
+- **Profiles** (`Build`). Smoothed (Chaikin) and resampled every 10 m. Half-width 10-30 m (sometimes 30-50), with noise over 220 m and 45 m, tapering at ramp ends; depth 4-10 m; bank slope blended between gentle (0.32-0.40) and steep (1.3-2.4) by a 280 m noise, gentle near ramp ends, and a steep run longer than 300 m gets a 70 m gentle stretch in its middle. The floor is the land less the depth, smoothed and never rising downstream (at most 16 m deep, never below -3 m); ramp ends rise back to the land. Tributaries (half 0.75-3 m, 0.3-1.2 m deep, gentle banks) follow the land, at most 1.5 m deep, and drop to their river's floor over their last 40 m. The bank slope and half-width change along the river at a limited rate, scaled by how high the cut climbs: a steep bank turning gentle within one step left a 3.5 step where the gentle bank's long cut began (seed 1919803738).
+- **Windows.** 0-2 per medium river: an ordinary pond on a level stretch of floor (floor flattened 15 m beyond it), its long axis along the river so both exits land on ice, with diameter at most 2 x (half-width - 3 m - its offset) within the pond caps, and only where the land all round stands 0.5 m above its ice. They count among the district's 24-34 ponds (`RouteRecipes` places the rest off the rivers); river ponds skip the shore pad, the `RawHeight` blend and `GentleShore`.
+- **Height.** `PolarLandscape.Rolling` adds `PolarRivers.Delta`: `min(0, carve - ground)` with ground = template base + v9 relief + rolling, carve = floor + bank x (distance - half-width), faded over the last 4 m of the reach. Steep banks (from 0.6) are roughened by up to 2.5 m over about 14 m. The mesh, collider, Segment, `RawHeight`, NPC grounding, pond ice heights and navigation corners all see it; the regional audit subtracts Rolling and is unchanged.
+- **Navigation.** `PolarRivers.SteepInCell` closes a cell a bank steeper than 0.6 of the walking limit passes through (beside a widening floor or a ramp the surface is steeper than the bank alone: 0.8 by a 0.62 bank, seed 2122134385). Floors are walkable ground; windows are reserved in the route grid like ponds.
+- **Clearances.** Independent ponds, cracks, knolls, boulders, scatter, escarpment rock and the streamer's local props keep off the rivers (`PolarRivers.Near`, `Clearance`).
+- **Rendering.** `SurfaceColor` writes a river-ice weight into vertex blue .12-.2 (recipe tiles give .2-.8), widened on coarse meshes like `CliffBand` for medium rivers; the HDRP ground shader (`PolarRiverIce` in `PolarData.hlsl`) blends grey-blue glaze with frost, faint crack lines and drifted snow. Drifting snow crosses river ice like pond ice. The paper chart draws the district's medium rivers.
+- **Checks** (`Tools/PolarWorldCheck`, `--version 17`): river summary per seed, dry-land connectivity (every hut entrance reached on the route grid with every river floor closed), per-walk taut lengths (`walkMetres`) compared with v16 by `Tools/polar_walk_compare.py`, `--diagnose-rivers` hillshades and `--diagnose-river-point`.
+  - Twenty seeds (`Logs/PolarCompactWorld/v17-twenty-e`): all pass (1,479-1,600 checks each, both capsule proofs, dry-land connectivity). 21-32 medium rivers a world (median 28) in 16-21 districts, median length 580-800 m (longest 1.1-2.0 km), median width 33-47 m, median depth 5.1-8.2 m; 46-67 tributaries; 9-23 windows; 0-8 walk crossings; 30-53% of medium-river length runs within 30 degrees of the radius.
+  - Walking: every seed's median and 90th-percentile nearest-neighbour walk is 1.00 of v16's (worst single walk 1.20), the birth hut at most 32 s longer.
+  - Explorer routes on seed 777 (`v17-explorer-777`): 478 routes, 695 km (v16 694 km), no terrain failure, no leg into an unwalkable cell, no unavoidable boulder; straightening median 105 ms (v16 76 ms).
+  - NPC day on seed 777 (Editor window, `Logs/NpcDayDiagnostic/rivers-v17`): all 20 explorers alive at 06:00 on day 2, none below 32 C (median 37.0 C), 18 sheltered, 2 in tents.
+
+## Flatness floor: October 17, 2026 (0.6.20-test)
+
+The regional audit's relief floor for v16 is 35 x `MacroFor(16)`, 14.3 m. It was 45 x, 18.4 m (`PolarFracturedAudit.Validate`).
+- **Why.** A random new game whose world fails the audit restarts with another seed, about 40 s each time.
+- **Measured** on 24 random v16 worlds (`Logs/PolarCompactWorld/v16-flatness`):
+  - 3 failed at the old floor: relief twice at 18.3 m, and wind shelters once;
+  - each world's flattest district measured 18.3-26.3 m;
+  - the user's ld-07 game failed at 14.7 m.
+- **At the new floor** only the shelter failure remains, about one random world in 24.
+- **Unchanged.** Worlds that passed before pass unchanged. Saves are unaffected, since a Continue from world file version 2 runs no audit.
+- **Checks.** The v16 twenty-seed sweep passes 20 of 20 with every world hash unchanged (`Logs/PolarCompactWorld/v16-floor35`).
+
+## World file version 2: October 17, 2026 (0.6.19-test)
+
+Continue now reads the saved route grids instead of rebuilding them and comparing them bit by bit. This was the user's choice for a Continue of 30 s or less, and it replaces October 16's decision 2A ([plan](../plans/polar-loading-0619.md), [design decisions](../../design-decisions.md#tent-help-oil-back-from-a-fire-and-loading-time-october-17-2026-0619-test)).
+
+- **Format.** `PolarWorldArchive` version 2 (header `0x50575245`) appends the player's grid (`baseTraversal` bits and costs, per district) after the ponds of a v11 or later world.
+  - Everything before the ponds is unchanged, so the offline `--world-folder` replay still reads it.
+  - v10 worlds keep version 1.
+- **Reading version 2.**
+  - `PolarCompactWorld.Generate(settings, library, seed, navigation: false)` generates the world without the routes. Instead of navigation, its validation and the audit (`fracturedAudit` stays null), `GenerateCompact` runs only the per-district part of `PolarFracturedLibrary.Prepare` (`regions: false`). The shape's points and surface cells, 5.5 million of each, are read only by navigation, and computing them on one thread had cost 7 s.
+  - The world hash is computed as before; it covers no route data.
+  - The hash, layout and hut positions are then compared.
+  - Both grids are read, and their walkable counts are recounted from the bits.
+  - The ponds are restored and `Validate` runs.
+- **Reading version 1.** Today's full path: navigation is rebuilt and every bit and cost compared.
+  - The Continue then rewrites the cache. The manifest gains `archive = 2`, and `WriteCache` returns early only for an archive-2 cache.
+  - The rewrite happens once per existing save.
+- **New games** are unchanged: same worlds, hashes and checks.
+- **Parallel steps**, for new games and Continue alike:
+  - the 21 special districts in `compact.sources` are baked in parallel, with `Special`'s cache locked;
+  - each region's shape points and surface cells are computed in parallel, in `PlanWalks` and in `Prepare`;
+  - all twenty v16 seeds keep their world hashes (`Logs/PolarCompactWorld/v16-archive3`).
+- **Checks.** The v16 twenty-seed sweep with archive round trips passes 20 of 20 (`Logs/PolarCompactWorld/v16-archive2`), with every world hash equal to 0.6.17's sweep. The Continue timings are in [rendering and streaming](rendering-streaming.md#loading-in-2-minutes-continue-in-30-seconds-october-17-2026-0619-test).
+
+## World v16: October 16, 2026 (0.6.17-test)
+
+Plan: [playtest fixes for 0.6.17](../plans/polar-playtest-0617.md). The user found journeys between supplies still too long and asked for two thirds of the map's area; a screenshot showed an enormous, flat, straight-edged wall.
+- **Scale.** `CurrentVersion=16`. `LinearFor`, `MacroFor` and `PolarLandforms.Scale` for v16 are v14/v15's times the square root of two thirds (`TwoThirdsArea`, 0.8165): 0.289 of v11's scale, landforms at 0.408 of v12's. The same 219 huts are chosen the same way; the spacing floor is 260 m (52 s, the `Validate` minimum 51 s). Recipe 6. Seed 777: 13.95 m per lattice unit (v15 17.08); the twenty seeds stay above the ~12 m streaming limit. Expeditions begun on v10 to v15 keep their world; the front page says every earlier world is larger (`FrontEarlierLand` is gone).
+- **Rough cliff lines (v16 only).** `PolarLandforms.Rough(world)` passes a flag through `Field`, `CliffField`, `CliffHeight` and `Cliffs`, and to every caller (`Height`, `CliffInCell`, `PolarKnolls.Measure`, `PolarArtOutcrops`, the distant band). `Field` adds a local warp of 20 m either way over 200 m (v12 metres; slope below 0.3, so a line never folds), and `CliffHeight` is multiplied by 0.65-1.35 from a 380 m noise. v10-v15 worlds are bit-identical.
+- **Audit floors for v16.** `PolarFracturedAudit`: regional relief at least 45 x `MacroFor` (18.4 m; three regions measured 19.3-20.2 m against the scaled 20.4 m), lee spots at shelter 0.45 (the fixed 1.4 m eye takes a little more of each angle on lower land), searched up to six steps from each ridge instead of four. Earlier versions keep their rules and lee points.
+- **Cliff props removed (all versions).** Near chunks no longer place the 17 CoastDunes cliff wall prefabs at three times their 28 m size (84 m) on flat closed ground; those cells get the ordinary 1.5x rocks. Render and prop colliders only: no world, navigation or save change.
+- **Checks.** `Tools/polar_v11_seeds.py --version 16` on the twenty seeds (`Logs/PolarCompactWorld/v16-twenty-final`) and the seed-777 explorer routes (`v16-explorer-777`). The checker's `leastRelief` and `mostBare` needed no change.
+
+## Loading time: October 16, 2026 (0.6.15-test)
+
+Plan: [loading time](../plans/polar-loading-time.md), approved October 16 with decisions 1A (distant detail unchanged) and 2A (Continue keeps the full check). Worlds, navigation, saves and terrain meshes are unchanged; loading does the same work on more threads and with fewer idle frames.
+
+**Why it had grown.** The lattice is fixed (42 sectors of 512 x 512 cells, 672 distant blocks), so each shrink only changed the metres per cell, while each version added work to every height sample. On seed 777 a new game took 184 s on October 1 (v9) and 575 s on October 16 (v15).
+
+**Generation** (`PolarLoadingParallel` in `PolarLoadingProfile.cs`; workers = processor count minus 2, so the loading screen keeps a core):
+- **Pass 1.** `PolarFracturedLibrary.GeneratePlan` generates the 256 candidates in parallel, each with its own attempt loop, stored by id. The plan's 48 m cell centres and surface cells are made first. If any candidate fails, the lowest failing id raises its error, as the serial loop did, so the planning retry is unchanged. Progress counts finished candidates.
+- **Navigation.** `PolarFracturedLibrary.AttachNavigation` builds each sector's base grid and route grid as separate tasks (84 items), each with the same steps in the same order. A district's hill and base corners are computed once and passed to its grids and to `Reconnect`, which computed the hill corners again for each grid. `Prepare` makes the shared lazy data first (cell centres and surface cells at the world's scale; hut and pass centres, hut levels, walks and relief centres per sector).
+- **Walks.** `PolarLandforms.PlanWalks` plans the 21 districts in parallel.
+- **Height cache.** `PolarHeightCache.Sample` keeps each thread's last 8 decoded chunks in front of the locked LRU: the same arrays, so the same values, without the lock on most lookups.
+- **Knoll scales** live on the world (`PolarWorldData.knollScales`); the `ConditionalWeakTable` used before takes a lock on every lookup in Mono, and every height sample asks. The cache-miss path is a separate method, so a lookup no longer allocates a closure.
+- **Cliff test.** `PolarLandforms.CliffInCell` keeps its samples on the stack and reads the field at its eight rim samples without the gradient it discarded; navigation's surface check no longer allocates per cell. The arithmetic is the same.
+- **Profiler rows.** `compact.*` names each pass-2 step (sources, select_huts, walks, ponds, cracks, geometry, ice, navigation, validate, audit); Continue adds `continue.read_library` and `continue.read_world` (regeneration plus comparison). The `pass2.*` rows inside `load.pass1` belong to the v9 reference world. The report's pass criterion now expects the world's own site count (219 for v10 and later; it expected 324, so every v10+ report said "passed": false).
+
+**Identity.**
+- Offline (.NET, the same sources): serial and parallel runs of seed 777 give the same world hash `1A2F8EBB50C2FD86` and byte-identical navigation bits, costs and walk corridors; a fresh pass 1 gives the same library hash both ways.
+- Twenty seeds (`Tools/polar_v11_seeds.py --version 15` with v15r5-twenty's libraries; `Logs/PolarCompactWorld/v15-loading-twenty-c/` on the final code, `-twenty` and `-twenty-b` on the two steps before it): all pass with the same world hashes and check counts as `v15r5-twenty`. A seed's check run took 175 s on average instead of 476 s.
+- Seed 777 on v14, v13, v12, v11 and v10 gives the recorded hashes (`1FB282F15426A682`, `E68149563C8E931F`, `5D3477D78BBF7D6A`, `21BDF5E05E2FAB35`, `EFB9748A1A7A4B67`).
+- In the game (Mono, release builds): the new game has the same world hash `8F4519B88D0E12A5` and library hash `C3E62CE376E95E77` as 0.6.14-test. Continue of a save made by 0.6.14-test passes the full archive comparison (world hash, layout, every navigation bit and cost, every ice plate). The terrain-mesh digest (`-polarMeshDigest`) is `D291B70698FF4523` for the parallel build, for the same build in the serial order (`-polarSerialLoading`, one worker) and for both Continues.
+
+**Measured** (release builds, seed 777, i7-13700H, RTX 4070 Laptop, `-polarLoadingProfile`; `Logs/PolarLoadingProfile/2026-10-16/`):
+
+| Seed 777 (seconds) | 0.6.14-test (`s6-02`) | 0.6.15-test (`lt-03`) |
+|---|---:|---:|
+| Pass 1 (`load.pass1`) | 127.4 | 15.8 |
+| Pass 2 (`load.pass2`) | 177.5 | 26.3 (navigation 16.5, walks 5.1) |
+| Distant blocks (`load.proxies`) | 268.4 | 63.6 |
+| Near window and final window | 22.2 | 1.7 |
+| **New game ready** | **592.1** | **107.9** |
+| All distant blocks settled | 693.6 | 189.9 |
+| Continue: regeneration and archive check (`continue.read_world`) | about 190 | 26.5 |
+| **Continue ready** | **483.4** | **95.7** |
+| Continue of a 0.6.14-test save | - | 94.4 |
+
+The package build `lt-06` adds a 13 ms garbage collection at the end of loading and one test fix: a new game is ready after 106.6 s and Continue of a 0.6.14-test save after 91.3 s, with the same hashes and mesh digest. The October 16 morning sample of 0.6.14-test (the parent session's) was 575.4 s and 451.7 s. Both builds were measured the same afternoon, one run at a time, with `-polarWaitDistant`; frames during the background refinement after play stay at a p95 of 16.67 ms in both. In the serial order (one worker) the new build is ready after 412.1 s.
+
+**Remaining.** The distant build scales least: its blocks take 846 s of summed worker time in parallel against 164 s in the serial order, so the 18 workers give only 2.6 times the serial speed there (navigation and pass 1 scale better). The per-sample garbage found offline (a knoll lookup closure, the cliff test's arrays) is removed; the rest is to be traced with a Development build's profiler (garbage collection, memory bandwidth or laptop clock limits).
+
+## World v15: October 15, 2026 (0.6.13-test)
+
+New expeditions use world/cache version 15; v10-v14 expeditions continue on their own world (save version 7 accepts a v10-v15 cache, and a v14 save's front-page note reads "Made on the earlier map"). User decision: new terrain relief, so the land reads like the concepts' rocky ground instead of open snow plain. Area, sites and their placement are v14's (`LinearFor`, `MacroFor` and `Scale` are unchanged).
+
+**`PolarKnolls`** (`PolarCompactWorld.cs`, part of `PolarLandforms.Height`, recipe 5). Rocky knolls between the walks, in real metres:
+- **Shape.** Elliptical cos² domes, one chance per 110 m cell. The chance runs 0.23-0.90 by a 700 m field, so knolls gather in fields with open snow between. The short radius is 26-46 m, up to 1.6 times longer along a seeded ice-flow heading. Height is 4-11 m, capped so no knoll is steeper than 0.30 (17°). Overlapping knolls take the taller one, so slopes never add.
+- **One scale per knoll** (`Scale`, measured once per world on the land without knolls and cached). The whole footprint (the long radius) must lie inside its district, clear of the 24-cell seam fade. A knoll's centre keeps 22 m from a walk (full 30 m further), so its gentle flank may reach over a walk. Its footprint keeps 32 m from a hut (full 45 m further), 150 m of a border pass (full 170 m further), 20 m of a chosen pond (full 30 m further) and 15 m of a cliff line (full 30 m further). It fades with the massif weight. It is 0 where the land under the footprint is steeper than 0.40, and full below 0.25 (steepest of 3 × 3 samples 0.6 reach apart).
+- **Why one scale.** The first version faded the height point by point and added ±1.4 m hummocks. The first sweep failed 8 of 20 seeds, each on one route edge: a fade across a footprint, or across a moraine crest where the hills' analytic slope jumps, made steps of up to 4.3 m in 4 m. A knoll scaled as a whole stays a smooth dome no steeper than 0.30. The hummocks were dropped.
+- **What sees it.** The mesh, collision, navigation corners, Segment checks, and the hut and pond pads. Walks are planned without it (`asWalk`), and ponds are chosen without it (`PolarKnolls.Without`), so both keep their v14 ground.
+- **Rock and outcrops.** `crest` (the knoll's shape times its scale) drives knoll-top rock (`PolarKnolls.Rock`, vertex red, render only). Every knoll with a scale of at least 0.6 carries one outcrop at its top: a `PolarBoulderField` boulder 3-5 m across, set 22% into the ground, with collision, which explorers steer round like any boulder (`outcrop`, its own key space). See [rendering-streaming](rendering-streaming.md#series-5-world-composition-october-15-2026).
+- **More boulders.** v15 grid boulders: base chance 0.16 (was 0.035) and field chance 0.45 (was 0.30); they keep 4 m clear of an outcrop's reach. `MaximumReach` now covers a 5 m outcrop (search radius only).
+- v14 and earlier worlds generate exactly as before; every change is gated on version 15.
+
+**Twenty seeds** (`Tools/polar_v11_seeds.py --version 15`, `Logs/PolarCompactWorld/v15r5-twenty/`, the final rules): all pass (1,480-1,600 checks each, no failing step in either capsule proof, no boulder violation).
+- Knolls cover 2.9-3.5% of district land and knoll rock 1.4-1.7%.
+- Boulders: 117-127 per km² round the huts (v14: 42-48), 2.6-2.8 times v14's, outcrops included.
+- Explorer routes on seed 777 (`--explorer-routes`, `Logs/PolarCompactWorld/v15-777-explorers-c`): 411 boulder passes on the 478 walks, none unavoidable, no step touching rock, no terrain failure.
+- Ponds are unchanged (same count and places), and so are the walks.
+- The share of land closed to explorers rises by at most 0.06 points, and to the player by at most 0.01.
+- Seed 777: 1,578 checks; offline hash `1A2F8EBB50C2FD86`.
+- A check run takes about 30-40% longer than v14's (seed 777: 378 s against 273 s), mostly the knoll lookups in every height sample.
+- Earlier rounds: `v15r1-twenty` (point-wise fades and hummocks) passed 9 of 20. `v15r2` was stopped for a density change. `v15r3-twenty` (knolls without outcrops) passed all 20, with boulders up 9-12%.
+- The first `v15r4` attempt failed every seed on the checker's own boulder-size rule (1.4-2.8 m), which now allows 3-5 m outcrops.
+
+**Checker**: `PolarWorldCheck` reports `land.knolls` (land on a knoll, crest above 0.2) and `land.knollRock` (knoll rock); `--diagnose-knolls <region> <hut>` writes hillshade maps of 1.2 km round three huts (rock red, walks magenta, boulders black).
+
+## World v14: October 11, 2026 (0.6.11-test)
+
+New expeditions use world/cache version 14; v10-v13 expeditions continue on their own world (save version 7 accepts a v10-v14 cache). Plan: [playtest fixes for 0.6.11](../plans/polar-playtest-0611.md).
+
+**Scale (user decision: "halve the area again").** v14 is half of v13's area with the same huts chosen the same way: `LinearFor` 0.354 (walk ratio 0.177, spacing floor 318 m, `supplyWalkSeconds` 63.6). The macro land shrinks with it (`MacroFor` 0.5 of v12's size; `PolarLandforms` recipe 4, `Scale` 0.5), so slopes stay v12's. The hills, ponds, cracks, boulders and hut pads keep their metres.
+
+| Seed 777 | v13 | v14 |
+|---|---|---|
+| Metres per lattice unit | 24.15 | 17.08 |
+| Nearest site, median | 1.41 km (5.5 min) | 0.99 km (3.9 min) |
+| Birth hut to nearest site | 1.79 km (7.0 min; 4.7 running) | 1.26 km (5.0 min; 3.3 running) |
+| Closest pair | 0.51 km | 0.36 km |
+| Map area (0.5.20 = 1) | 0.035 | 0.018 |
+
+**Twenty seeds** (`Tools/polar_v11_seeds.py --version 14`, `Logs/PolarCompactWorld/v14r2-twenty/`): all pass (1,480-1,600 checks each, no failing step in either capsule proof).
+- 17.1-20.8 m per lattice unit; map area 0.018-0.026 of 0.5.20.
+- Nearest site: median 951-1,189 m (a typical hut 3.7-4.7 minutes away); birth hut 1.04-2.00 km (4.1-7.9 minutes, 2.7-5.2 running); 90th percentile 6.3-7.8 minutes; the worst hut 9.0-13.2 minutes.
+- Closest pair 318-460 m (floor 318 m); 561-633 ponds; walk relief medians 24.7-30.4 m; bare land 4.8-7.2%.
+- Seed 777: 1,578 checks; offline hash `1FB282F15426A682`.
+
+**What v14 needed** (the first sweep passed 11 of 20 seeds):
+- **Relief audit** (`PolarFracturedAudit.Validate`): the regional relief range scales with the land for v14, 25-90 m (was 50-180; a region of seed 777 had 44 m). Earlier versions keep 50-180 m.
+- **Crack clearance** (`PolarCompactWorld`, crack placement): metres become cells with the size of the cells at the crack, not the lattice mean, since in a district's inner rows v14 cells are under 3 m. A 47 m crack on seed 777 ended beside another, leaving no walk round its end.
+- **Route clearance** (`PolarFracturedLibrary.Navigation`): where cells are under 4.3 m, a cell is walkable for explorers only 4.3 m from every gap (`SurfaceCells` keeps one cell). Routes passed within 4 m of cracks on 7 of 20 seeds.
+- **Check limits** (`PolarWorldCheck`): v14 walk relief at least 23 m (24 m earlier) and bare land at most 7.5% (7%); one seed had 23.8 m and one 7.2% in the first sweep.
+- v13 and earlier worlds generate exactly as before; every change is gated on version 14.
+
+**Remaining.** A typical hut is about 4 minutes from its nearest site, the birth hut 4-8 minutes, and the worst hut 9-13 minutes. The user's 3-minute aim needs a different placement of huts.
+
+## World v13: October 11, 2026 (0.6.10-test)
+
+New expeditions use world/cache version 13; v10, v11 and v12 expeditions continue on their own world (save version 7 accepts a v10-v13 cache). Plan: [playtest fixes](../plans/polar-playtest-0610.md).
+
+**Scale (user decision: half of v12's area, the same way of placing supply points).** The user's measure was the walk from a supply point to its nearest, at most 3 minutes; they chose halving with the same placement after being told it would not reach that. v13 multiplies v12's walk ratio and spacing floor by the square root of a half again (`LinearFor`: ratio 0.25, limit 0.275, floor 450 m, `supplyWalkSeconds` 90), so `SelectHuts` picks the same huts at 0.707 of v12's scale.
+
+| Seed 777 | v12 | v13 |
+|---|---|---|
+| Metres per lattice unit | 34.16 | 24.15 |
+| District hut to nearest site, median | 1.99 km | 1.41 km (5.5 min) |
+| Birth hut to nearest site | 2.53 km | 1.79 km (7.0 min; 4.7 running) |
+| Closest pair | 0.72 km | 0.51 km |
+| Map area (0.5.20 = 1) | 0.071 | 0.035 |
+
+**Walking time to the nearest site** (`PolarWorldCheck` `walkMinutes`: straight line times 1.04, at the 4.42 m/s the Player hut walk measured on 0.6.9-test). Over the twenty seeds: a typical district hut 5.3-6.6 minutes from its nearest site, the birth hut 5.8-11.1 minutes (3.8-7.4 running), the 90th percentile 8.9-11.1 and the worst hut 12.8-18.6 minutes; seed 777: 5.5, 7.0 (4.7 running), 9.7 and 15.8.
+
+**The macro land shrinks with the map** (`PolarCompactWorld.MacroFor`, `PolarLandforms.Scale`; recipe 3 in the hash):
+- the template's baked heights (`PolarFracturedWorld.Height`, its hut pads and `PolarFracturedLibrary.BaseCorners`) and the old ridges and valleys (width, amplitude, field; pass spacing halves again) are multiplied by √½. Unscaled, the steeper baked slopes cut a hut door off on seed 777;
+- every `PolarLandforms` length and height is too: the regional field, massifs (about 105-300 m), cliffs (about 10-28 m, face 6.4 m, ramp 424 m), the walk, hut and pass clearances, the hut calm (530 m) and the district edge fade (1.06 km). The static landform functions take this factor as k and work in v12's metres (position divided by k, height times k), so every slope is v12's;
+- the hills (`PolarHills`), the hill calm at border passes, ponds, cracks, boulders and hut pads keep their metres. The hut-pad search window is 12 cells (inner-row cells can be under 4.2 m across).
+- **Ponds** (v13): the shore pad blends into the land over 22 m, so the land there must stand within 6 m of the pond, tested at 16 points round it (`GentleShore`); the one-cell hill test now covers only a few metres across the ring. On seed 777 a pond on a rising slope made a 0.73 step on one route edge.
+- The audit's difficult-relief height scales with the land (15 m times √½).
+
+**Pure-data acceptance** (`Tools/polar_v11_seeds.py --version 13`, `Logs/PolarCompactWorld/v13r2-twenty/summary.json`). All 20 seeds pass every check (1,485-1,601 each) with archive round trips and no failing step in either capsule proof (v12: 19 of 20): 24.15-29.42 m per lattice unit, nearest-site medians 1.35-1.68 km, birth hut to nearest 1.47-2.83 km, closest pair 450-651 m (floor 450 m), area 0.035-0.052 of 0.5.20, 561-633 ponds, walk relief medians 25.3-30.0 m. Seed 777: 1,581 checks; 65,715 route edges; bare land 5.3%; highest point 467 m; offline hash `E68149563C8E931F` (the game gives `1F73E369116FF466`). The first v13 recipe (landforms scaled, baked land not) cut a hut door off on seed 777; with the macro land scaled, seed 777 failed one step through a pond shore before `GentleShore`.
+
+**Remaining.** Halving alone leaves the walk to the nearest hut at about 6 minutes for a typical hut and 6-10 minutes from a birth hut; the worst huts are 14-16 minutes away. Reaching 3 minutes everywhere needs a different placement of huts or a much smaller world with a reworked terrain stream (cells around the ring become too narrow below about 12 m per lattice unit).
+
+## World v12: October 10, 2026 (0.6.9-test)
+
+New expeditions use world/cache version 12; v10 and v11 expeditions continue on their own world (save version 7 accepts a v10, v11 or v12 cache). Plan: [playtest fixes](../plans/polar-playtest-069.md), mission P1.
+
+**Scale (user decision: half the area, same 219 sites).** `PolarCompactWorld.GenerateCompact(…, version)` serves v11 and v12; v11 generates as before. v12 multiplies v11's nearest-walk ratio and spacing floor by the square root of a half: ratio 0.354 (limit 0.389), floor 636 m (`SpacingFloorFor`), `supplyWalkSeconds` 127.3. With 636 m the same huts are selected as in v11, at 0.707 of the scale.
+
+| Seed 777 | v11 | v12 |
+|---|---|---|
+| Metres per lattice cell | 48.31 | 34.16 |
+| District hut to nearest site, median | 2.81 km | 1.99 km |
+| Birth hut to nearest site | 3.57 km | 2.53 km |
+| Closest pair | 1.02 km | 0.72 km |
+| Map area (0.5.20 = 1) | 0.141 | 0.071 |
+
+**Landforms** (`PolarLandforms`, inside `PolarLandscape.Rolling` for v12, so mesh, collision, navigation, ponds and seams all see them). Recipe 2 is part of the world hash.
+- A seeded regional field (about 3.6 and 1.5 km, warped) splits the land into flat snowfields (hills at 0.15), v11 hills, uplands (1.7) and snow mountain massifs: a dome 150-420 m high with three octaves of ridges, crests rounded over tens of metres. Shares on seed 777: flat 25%, hills 30%, upland 21%, massif 24%; highest point 572 m.
+- Cliff lines: four level lines of a smooth field (about 1.7 km), each 15-40 m high. Each line blends a sheer face 9 m wide with a slope 609 m wide of the same rise, by its sheerness (`CliffPresence`, about 1.1 km noise, times open): sheer along stretches of several hundred metres and walkable between them, so the land on either side always joins, and the plateau above keeps its level whatever the blend.
+- Walk corridors (`PlanWalks`): each hut to its two nearest plus a spanning tree over huts and passes, laid with Dijkstra along the land a walk gets (hills at most v11's, cliff ramps, no massif) and simplified within 30 m. Within 200 m of a walk, 300 m of a hut and 300 m of a pass the land is "closed" (open 0): no massif, cliff faces widened to 609 m ramps, hills capped at v11's. Districts fade massifs and cliffs over their last 1.5 km.
+- Round each hut the hills ease toward their own level at the hut (`HutLevels`), keeping 15% of the difference there and all of it 750 m away; neighbouring huts share the pull. v11 calmed toward zero (45%, full at 500 m), which beside a deep hollow made a steep ring at the door. A hut's door lies 5 cells (170-240 m) from its cell.
+- Hut pads (`PolarFracturedWorld.Height`) look for huts within 8 cells in v12 (3 before): near the inner rows v12 cells can be under 6 m across, and 3 cells cut a 28 m pad short with a 1 m step at the door.
+- Open-water leads (`PolarLeads`): the interior holes become water 6 m below the lowest rim with drifting floes, also in coastal bays; walked round.
+- Cracks keep 150 m from every door; ponds 4 cells.
+
+**Navigation.** Dense slope samples for every v12 cell. A cell holds a cliff face when a level line crosses it (field at centre, edges and corners) or passes within 1.3 times the cell's radius plus the face width, and the sheerest blend found at five samples makes it steeper than half the walking limit (it sits on a hillside whose slope adds to it). The route grid (explorers) also blocks open cells whose corner slope passes 0.6 of the limit; the player's grid keeps the v11 rule. Fixed on the way: the cliff test centred on the cell's far corner instead of its centre.
+- Ponds: v12 districts aim for 24-34 but accept 16 (one rugged district found too few level hollows).
+
+**Pure-data acceptance (`Tools/polar_v11_seeds.py --version 12`, 20 seeds, `Logs/PolarCompactWorld/v12r7-twenty/summary.json`).** 19 of 20 seeds pass all their checks (1,486-1,603 each) with archive round trips: nearest-site medians 1.90-2.38 km, birth hut to nearest 2.07-4.01 km, closest pair 637-921 m (floor 636 m), area 0.070-0.103 of 0.5.20, 561-633 ponds, walk relief medians 25.7-29.4 m (the bar for v12 is 24 m: the walks keep passes and level toward huts, so they climb about as much as v11's while the landforms rise beside them). Seed 305107986 fails only the route capsule proof, on one step of 66,911 (0.718 against the 0.70 limit: a mountain slope over one of the base template's relief crests); its world generates and plays. Seed 777: 1,586 checks; 65,665 route edges pass both capsule proofs; bare land 5.7%; highest point 521 m; offline hash `5D3477D78BBF7D6A` (the game's float rounding gives `2024DE2351A052FA` with the same layout and navigation). Thin-ice step roll (`--ice-roll`, 100,000 steps): 2.97% walking, 24.84% running. Explorer routes on the game's seed-777 world (`--explorer-routes`): no failing step.
+
+Recipe 1 (the first attempt) passed the three tuning seeds but failed 8 of the first 14 sweep seeds: closed cliff rings walled off up to a third of a district, doors on steep flanks, a crack beside a door, and cliff faces the cell test missed. Two intermediate fixes (lowering a line's rise where it was not sheer; varying one face's width) tilted plateaus or sharpened steps beside the line and were replaced by the blend above. The explorer route check on the game's own seed-777 world first found 92 failing steps at hut doors (the pad window), now none. Remaining: rocky patches show stair-stepped edges where the terrain mesh's per-vertex cover meets snow.
+
+## World v11: October 9, 2026
+
+New expeditions use world/cache version 11; v10 expeditions continue on their own world (save version 7 accepts a v10 or v11 cache). Plan: [finishing v7](../plans/polar-experience-v7-finish.md), mission M2.
+
+**Scale (user decision, October 9: halve the walks).** Item 11 asked for a smaller map, fewer huts and half the walk between huts; with 219 huts kept, only the walk can halve. `PolarCompactWorld.GenerateV11` keeps v10's selection of 10 of each district's 15 v9 candidates and sets the metres per lattice cell so that the median straight walk from a district hut to its nearest other site is 0.50 of the same-seed six-minute (0.5.20) world's. A pair under the 900 m floor swaps its later district hut for the unused candidate nearest it that keeps the floor; only if none can does the scale widen, up to a 0.55 ratio. `PolarCompactWorld.NearestMedian` measures the contract; the Player acceptance checks it on a new world (the generation reference is not saved, so a restored world only reports it).
+
+| Seed 777 | 0.5.20 (v9) | v10 | v11 |
+|---|---|---|---|
+| Metres per lattice cell | 128.55 | 104.96 | 48.31 |
+| District hut to nearest site, median | 5.62 km | 6.21 km | 2.81 km |
+| Birth hut to nearest site | 9.51 km | 7.77 km | 3.57 km |
+| Closest pair | 1.80 km | 1.79 km | 1.02 km |
+| Map area | 1 | 2/3 | 0.141 |
+| Birth hut to Pole Station | 119.5 km | about 98 km | about 45 km |
+
+**Hills.** `PolarHills` replaces v10's three fixed sine waves: seeded value noise in metres (four rotated octaves from 2,000 to 250 m), moraine ridges at 900 m and a regional hilliness field (0.70–1.40 across about 6 km), with an analytic gradient. Hills keep 45% of their height at a hut, full height from about 500 m (`HutCalm`), and fade to nothing at border passes (full again 1.2 km inside). The v9 ridges and valleys return to full height and width. Ponds sit on level shore pads that blend into the hills over 22 m.
+
+**Hazards on the walks.** Each district has 24–34 ponds of 8–50 m, placed mostly within 2 cells of the walks between neighbouring huts (each hut to its two nearest), on flat ground clear of huts (260 m from the birth hut, 160 m from others). Each district has 10–16 wide cracks (0.8–3 m wide, 8–60 m long, a physical gap with a walk round its end) and 8–12 narrow ones (0.25–0.8 m, 4–30 m), 95% of them laid across walks. Crack outlines wander and taper. A coverage pass then lays one narrow crack across any walk that still passes no pond or crack within 150 m (a narrow crack is a surface mark, so it may lie within 24 cells of a district edge). Narrow cracks are stepped across: no gap, no collision, no navigation change.
+
+**Navigation.** Cell slope adds the hills' steepest cell edge to the relief slope. Two v11 rules protect walking: a cell is also unwalkable when the template base and the hills together exceed 85% of the walking limit across any cell edge (the route proof samples between cell centres, where corner differences run a little low); and when the hills strand more than 0.25% of a district, `Reconnect` reopens the shortest runs of hill-steepened cells that rejoin ground reachable without the hills, never a physically steep cell. Up to 1% may stay unreachable (behind a crest whose saddle the hills steepened), excluded like coast slivers; v10 keeps 0.25%. A new game whose random seed still fails generation tries up to two more random seeds; a fixed seed reports the failure.
+
+**Pure-data acceptance (`Tools/polar_v11_seeds.py`, all 20 original seeds, `Logs/PolarCompactWorld/v11-twenty-4/summary.json`).** All 20 pass 1,489–1,607 assertions each, with archive round trips, and the same world hashes as before the gap check (`v11-twenty-3`). That check, one per gap (268–304 per world), proves each outline is simple and that its triangles cover it exactly, so the streamed cut and `PolarFracturedWorld.Surface` agree; it was added after the Player fractured check (see [found by the 0.6.4-test suite](polar-gameplay.md#found-by-the-064-test-suite-october-9-2026)). Results: 219 sites, nearest-walk ratio 0.500, 48.3–58.8 m per cell, median nearest walk 2.69–3.36 km, closest pair 900–1,302 m, area 0.140–0.206 of the reference. Physical 0.4 m and 4 m capsule checks over every key-route edge: zero failures. Walk relief per 500 m: median 25.3–28.5 m (p10 8.6–9.9, p90 62–72 m; v10 had about 12). Ponds 561–629 per world, wide cracks 257–292, narrow 227–260. Hazards per walk (door to door, ponds within 150 m plus radius, cracks within 150 m): median 3 in every seed, 4–24 of 235–243 walks with none. Boulders 49.5–52.3 per square kilometre near the huts, none within the clearances below. Seed 777's world hash is `21BDF5E05E2FAB35`; v10 seed 777 still replays as `EFB9748A1A7A4B67`.
+
+**Rendering.**
+- *Thin ice* (`PolarThinIce.shader`, `ThinIce` runtime material): grey-blue glaze with drifted snow towards the shore; weak plates are darker and grow fine cracks under load (`_Stress`). Plates are irregular jittered polygons. The snow overlay never covers ice.
+- *Narrow cracks* (`PolarSurfaceCracks`, `SurfaceCrack` material): within 500 m, one combined mesh of a dark crevice between wind-packed lips, laid on the rendered near triangles.
+- *Bare ground* (`PolarLandscape.GroundCover`, `PolarTerrain.shader`): organic patches from three octaves of value noise on a warped domain, about 40% of the outermost land at least partly bare, none near the pole. The vertex cover carries the shape; per-pixel noise makes the edges ragged; the ground (thin snow over grass at the rim, olive and rust tundra grass, soil and gravel from the Winter Ground Pack) stays out of the cold terrain tint. The terrain's own snow is kept near the overlay's white.
+- *Snow overlay mask*: 4096 texels (about 30 m each on v11), built in parallel; the overlay fades out over cover 0–0.22, on the snow side of a patch, so the terrain shader draws the edge and bare ground, plants and stones are not repainted white.
+- *Dressing* (`PolarLandscapeScatter`, `PolarTundraArtBuilder`): GPU-instanced clumps cached per 64 m chunk, one candidate per 5.3 m within 320 m in type patches (tussock meadow, dwarf-shrub heath, moss and lichen, scree), larger plants and stones to 600 m. Only chunks in view are drawn, stones within 120 m cast shadows, and draws go to the game camera just before it culls, on the Ignore Raycast layer (outside Global Snow's roof test). Plants use the owned `PolarTundraPlant` shader; scree and moss are owned meshes; lichen stones and boulders come from the polar pack rocks.
+- *Boulders* (`PolarBoulderField`, pure data): 1.4–2.8 m, at most one per 42 m square, gathered in seeded fields; at least 60 m from huts, 30 m from the walks and entrance walks, 150 m from border passes, clear of ponds, cracks (20 m) and gaps (12 m of firm ground round them), on slopes up to 22 degrees, none at Pole Station. Within 600 m they are pooled GameObjects with collision on layer 18, never placed over the player. The player collides with them; item drops and standing-point checks avoid them. Explorers walk round them by the same data ([October 10](polar-cloud-npcs.md#explorers-walk-round-boulders-october-10-2026)); NPC path checks (layer 14) still ignore their colliders.
+
+Rendering findings on the way (diagnostic captures `Logs/ProjectUpdateCapture/v7-finish/diag-*`):
+- The dark bands on v11 hills were bare-ground stripes from the old sine cover function, not shadows.
+- The game's ambient light is a flat dark blue: the atmosphere's trilight colours never reach the ambient probe (and `DynamicGI.UpdateEnvironment` does not refresh it). Everything is tuned under it, so the dressing's albedo is set to read there; changing the ambient is a separate decision.
+- Both the imported grass shader and the first plant shader mirrored normals on back faces; with random yaw, most visible faces then pointed away from the sun and plants drew black (also in the v10 scatter). The plant shader keeps upward-leaning normals on both faces. The imported plant cards are black where transparent and their mips preserve coverage, so the builder turns on alpha-is-transparency for them.
+
+## Compact world v10: October 7, 2026
+
+The approved experience-v7 update gives each of the 21 personal territories 10 huts, retaining the seven station sites and two migration sites: 219 in total. New games use world/cache version 10. The 900 m ordinary-site minimum is a floor independent of map area; it does not promise that every journey is half as long. The same-seed v9 six-minute world is the reference for area. `PolarCompactWorld` derives its physical scale as the reference scale times `sqrt(2/3)`, preserves that reference's accepted placement/shape, and measures the projected macro-land area with the same Jacobian quadrature in both worlds. Added small fissures are local gameplay cuts, excluded from this macro-area accounting. The library header persists the reference hash, area, physical scale and selected recipes so continuing does not need to regenerate the reference. Candidate bodies remain the validated v9 backbone; production derives ten-hut templates, releases deleted hut footprints and rebuilds final physical navigation.
+
+The final generation attaches a non-null 21-region physical audit, and the Player terrain runner now checks that attachment before consuming it. v9's added-difficulty diagnostic uses a 15 m structure contribution; v10 uses `15 * sqrt(2/3)` (12.247 m) to measure the same proportionally contracted macro approach footprint. This is a versioned diagnostic, not a change to the walking slope, capsule clearance or route gates. Both retain 50–180 m regional relief, 20–35% difficult coverage and two reachable lee witnesses. Seeds 777/12345/494993 pass those unchanged bounds (height ranges 52.9–171.0 m overall, difficult coverage 24.3–27.9%). Final candidate-06 passes all 30 checks in its actual Player fractured-terrain mode, including the attached v10 regional audit, within the complete 3,120-check acceptance.
+
+Route terrain adds three low-frequency physical-metre rolling components (6/4/2 m amplitudes at 420/610/270 m wavelengths), faded at region seams. Small 8 m level hut pads blend back into terrain over 20 m. Existing macro ridges retain their accepted base bake and shrink their physical crest/saddle dimensions proportionally with the world. Dense final crest sampling also includes the analytic rolling gradient. This keeps a modest walking landscape around supply routes while preserving larger ridge and valley structure.
+
+Each territory now has 12–18 snow-covered ponds. Diameter bands are 8–16 m (50%), 16–30 m (35%) and 30–50 m (15%); the smallest use roughly one-metre ice cells. Stable collars and route validation still apply, and ordinary navigation avoids hidden ice strength. Each territory also adds 4–8 finite fissures, 8–60 m long and 0.6–3 m wide, with 5–15 m depth, away from huts and ponds. Some candidates lie between huts. Surface caches are invalidated after these cuts, before attaching navigation, so physical gaps and graph routes agree.
+
+**Verified pure-data acceptance:** seeds 777, 12345 and 494993 pass 469, 461 and 479 assertions respectively, including archive replay. Area ratios are 0.66666663–0.66666669, with 219 sites each. The actual nearest pairs are 1,789–2,103 m apart, above the 900 m floor. The worlds contain 303–309 ponds and 116–125 small fissures. All sites remain reachable from the birth hut. Across 65,774–66,395 unique route edges per seed, physical 0.4 m and 4 m capsule checks both report zero failures. Every added fissure blocks a cross-centre segment and admits a clear bypass past its finite end. Median elevation range over sampled 500 m hut-route windows is 11.9–12.2 m. Reports are `Logs/PolarCompactWorld/physical-{seed}-r6/summary.json`; these checks do not establish final Player performance, visual quality or long-term travel balance. Three seeds are a regression sample, not an all-seed proof.
+
+The repeated seed-777 Unity world fixture (`after/world-v2`) has seven inspected views: home, hut-route terrain, route overview, intact/broken nearest ice and two outer mixed-ground locations. It confirms the rolling route terrain is visible, repaired terrain boundaries are continuous in these views and broken water is no longer covered by the snow overlay. Wide ecology views show exposed ground. Six inspected supplementary close-ups in `after/grounding-weather-v2` resolve the actual seeded grass, shrub and stone meshes. A confirmed pebble-burial defect is repaired by grounding scatter on the existing near triangles; the repeated specimen count remains 342, and the two stone clusters extend 6.00/10.66 cm above their native terrain collider. Eight separately inspected ground-level weather frames show the shared MediumSnow-to-Blizzard transition and a Snowstorm endpoint. Original high-camera weather pairs retain their limited fog/sky scope. These scoped visual results complement the final source/package-bound acceptance; they do not establish every seed or viewpoint. See [rendering diagnostics](rendering-streaming.md#mixed-landscape-and-shared-weather-phase-october-7-2026) for exact terrain buffer counts and measurement limitations.
+
+Candidate-06 supersedes candidate-05 for the latest scoped outdoor acceptance. Its actual performance mode passes all 52 checks and completes a 199.1949 m ordinary player walk through the seeded ecology area: Blizzard samples 1,622 moving frames over 99.6766 m at P95 16.6716 ms, and Snowstorm samples 1,586 frames over 99.5183 m at P95 16.7016 ms. The externally monitored process peak is 4,147,851,264 bytes (4.148 GB). All five original 1600x900 outdoor images were inspected; every moving frame passes native terrain-support and normal-eye checks. The outward leg gains 5.1523 m elevation, with actual mixed ground, sparse plants/stones and snowfall visible. Severe fog limits distant scenery. This is one seed-777 route on the recorded RTX 4070 Laptop/i7-13700H system at a 60 FPS cap, not an all-route or hardware proof. The [candidate-06 inspection](../../../Logs/ProjectUpdateCapture/experience-v7/inspection/candidate06-outdoor-performance-review.md) records the exact source/assembly binding, image hashes and support telemetry; see also the [rendering results](rendering-streaming.md#mixed-landscape-and-shared-weather-phase-october-7-2026).
+
+Candidate-05's historical outdoor pass remains preserved: 199.0699 m walked, Blizzard/Snowstorm P95 16.6875/16.7589 ms and a 4.146 GB performance-process peak. Its separate NPC route-height bug and weather-continuation text-comparison failure led to the subsequent corrections. Candidate-06 passes the new actual NPC route checks within gameplay 354/354 and all twelve final modes (3,120 checks). The [full acceptance](../logs/evidence/2026-10-07/polar-experience-v7/acceptance.md) also records handbook, weather/continuation and UI results. Terrain graph reachability and the scoped outdoor walk remain distinct from full-expedition balance.
+
+The historical v9 sections below describe their original versions. The v7 product uses a fresh-save gate; this update does not migrate old expeditions.
+
+## Six-minute hut spacing: October 7, 2026
+
+User decision: new expeditions keep huts at least six minutes of straight walking apart (360 s at 5 m/s, 1,800 m), not three (900 m). Evidence: [hut-spacing-six-minutes](../logs/evidence/2026-10-07/hut-spacing-six-minutes/).
+
+The minimum is not a placement rule; it sets the world's scale. `PolarGeometry.Configure` makes the closest pair of district huts exactly the minimum apart, and everything else in metres follows, so the whole map doubles. Seed 777:
+
+| | 3 minutes | 6 minutes |
+|---|---|---|
+| World | 20B5F61112A350BA | 0D8EDDDE2BCF33F2 |
+| Metres per lattice unit | 66.97 | 128.55 |
+| Birth hut to Pole Station | 59.2 km | 119.5 km |
+| Birth hut to its nearest site | 3.8 km | 9.5 km |
+| District hut to its nearest other: min / median / max | 0.9 / 3.0 / 6.8 km | 1.8 / 5.6 / 14.5 km |
+| Coast on the line through the birth hut | 73.7 km | 146.5 km |
+
+- **Settings.** `PolarWorldSettings` keeps 180 s as its default, so every older world, fixture, tool and archived recipe replays unchanged. `PolarWorldController.SupplyWalkSeconds` gives 360 s to new v9 worlds (gameplay and the survey scene) and 180 s to v8.
+- **Continuing.** The world cache manifest records the spacing (`supplyWalkSeconds`), and continuing rebuilds the world with it; a manifest without it means 180 s, so earlier expeditions continue on their 900 m world. A cache is rewritten when its recorded spacing differs.
+- **Candidate libraries are unchanged.** `PolarTerrain.ValidateTemplate`'s nominal 28 m-per-cell check now compares with a fixed 900 m, which the 54-cell placement floor guarantees; the physical minimum is still enforced by `PolarGeometry.Validate`.
+- **Key routes stay walkable.** At the larger scale a lattice cell is about 225 m across radially, and final navigation's five slope samples per crest cell left a 45 m band where a narrow crest could hide: on seed 777, 4 key-route edges (of about 93,700) failed both the 4 m and the 0.4 m capsule. Final navigation now takes 33 samples to the cell edge when the scale exceeds 48 m and the spacing exceeds 180 s. Older worlds and the pass-1 preview keep five, so their traversal proofs replay bit for bit (the world hash does not include navigation bits).
+- **Sea.** The ocean plane reaches 1,280 lattice units from the centre at the new spacing (a 160 km square stays for older worlds), so the coast and floes, now about 130-170 km out, still meet the sea.
+- **Scale effects.** Near terrain and collision are built per lattice cell, so their spacing per metre halves; base slopes are gentler and rock and pebble scatter is about a quarter as dense per square metre. Pond reservations, house footprints and the five-cell hut entrance offset double in metres. The minimap's 1.6 km radius will rarely show a neighbouring hut.
+
+Verification:
+- **Captures** (`PolarHutSpacingCapture`, a new seed-777 expedition each phase, huts marked): from above, 12 km from the centre to the top and bottom edges, the birth hut has about ten other huts in view before and three after; from its door the nearest hut is 3.8 km away before and 9.5 km after; Pole Station's buildings stand twice as far apart. The coast view shows snow to the horizon in both phases, so it does not show the sea plane itself.
+- **Offline** (`Tools/PolarWorldCheck`, new `--supply-seconds` option; the route audit now also tests the 0.4 m capsule people walk with). On seed 777's library, the 3-minute world is unchanged (same hash, 93,969 key-route edges, 0 failures) and the 6-minute world has 0 failures in both capsules (4 before denser sampling). Geometry checks pass at 6 minutes. A 22-seed sweep generated every world within 2 of the 12 allowed attempts.
+- **Acceptance.** Every built-game mode that loads an expedition checks "Huts stand at least six minutes of straight walking apart".
+
+## v9 fractured terrain
+
+The approved [fractured-world plan](../plans/polar-fractured-world.md) is complete for this acceptance scope. Production new-game code selects v9; historical pure-data settings default to v8. All twenty original seeds, 420 regional audits, 6,500 physically clear key routes and the final non-Development Player checks pass. Fresh startup is 140.573s versus 166.635s for the hardware/quality-matched 0.3.2 sample (0.844 ratio). Highest sampled active P95 is 16.727ms; highest independently observed Windows lifetime Player private commit is 4.731GB. The 25% / 20ms / 5GB gates pass. These are the documented serial fixture samples, not a universal hardware or cold-disk guarantee. See [final acceptance](../logs/evidence/2026-10-01/polar-fractured-world/acceptance.md); older acceptance below belongs to its historical package.
+
+`PolarFracturedWorld.Plan` keeps the reversible projection and separately plans surface coverage. It chooses 2-4 coastal cuts with jagged banks and 35-70% radial depth, one finite side branch per cut, plus 3-8 interior holes. Side branches return through narrow mouths and preserve space around the existing boundary shoulders. Projected Jacobian area, including the central station footprint, must lose 8-18%. Planning has a twelve-attempt layout budget and a bounded hole placement budget. A layout that cannot supply its 256 candidates is replaced within that budget, with its accepted planning attempt stored in the v9 cache. Wrapped cut polygons cover the angular seam. The central plaza stays whole. The rescue region is selected on an intact coast rather than assuming the old fixed coast survives every seed.
+
+The plan fixes matching lateral/inward contracts before allocating all 256 candidates to the 21 personal regions. Some inward links close, allowing travel through neighbours. Existing CSP backtracking, unique candidate placement, eight-family coverage, stable entrances, graph cycles and dead-end constraints remain authoritative. Local terrain WFC now permits neighbouring crevasse tiles. A second WFC collapses six structure states in four directional orientations; collapsed spine orientations and pass states drive physical relief recipes. Shared edge fades keep existing contracts and height seams.
+
+Each candidate plans 2-4 ridge spines and 1-2 valley structures. Compact steep crests, continuous broad shoulders and periodic saddles use physical metres after projection. A saddle has a 160 m plateau and 500 m approaches; crest widths are 90-144 m. A density planning pass adjusts broad footprint before huts, baking or navigation; crest width and amplitude remain intact. Navigation conservatively samples crest cells and shared edge fades, excludes slopes over the walk threshold (approximately 35 degrees), reserves thin ice separately and rejects substantial disconnected terrain. Raster slivers up to 0.25% of otherwise walkable cells may be excluded from normal navigation only after proving that every hut entrance and required port belongs to the retained component. Their surface and collision geometry remain intact. The earlier 0.1% internal limit rejected a branch-bank sliver of 177 out of 131,048 cells despite preserving the key network; the explicit entrance/port checks protect the gameplay contract.
+
+Hut placement first samples a broad outer strip, then spreads remaining huts with a maximin search on safe interior land. Shape bank clearance and low local gradients are required before the existing 54-cell and final spacing checks (900 m; 1,800 m for new expeditions since October 7). The full five-cell entrance approach stays outside every narrow ridge envelope at minimum scale, with 60 m additional clearance for navigation corner samples. This is conservative but not a guarantee at larger scales (seed 777's first world attempt fails at six minutes and the retry succeeds); a minimum-scale saddle alone cannot guarantee safety because its cadence stays fixed in metres. Cached projected cell centres avoid repeating projection work during placement. Physical hut pads blend relief to a flat eight-metre centre over a 22 m radius. Failed layouts still reject the candidate rather than changing the gap or ridge.
+
+The local CSP uses queued arc propagation with the same deterministic domain order and bounded rollback; the world CSP retains its global checks. Eighty scanning/queued equivalence cases include four rollback cases. Shared shape clearance masks and projected navigation points are cached once per region rather than recomputed for all 256 candidates. Analytic ridge gradients and conservative crest bounds avoid full height sampling on gentle shoulders. These optimizations preserve v8's same-runtime fixture identity; the final serial v9 startup sample passes the approved increase gate.
+
+The interior audit samples the region 100-412 cell square, outside the existing boundary shoulders. Height range must be 50-180 m. Added difficult coverage is projected area with a structure contribution of at least 15 m, which adds at least 0.45 traversal cost; this includes slower mountain approaches as well as blocked steep crests. It must be 20-35%. Two distinct walkable lee points must reach shelter coefficient 0.5 for a tested direction. These are validation witnesses; NPCs never receive this global catalogue. The final world repeats these audits at its actual supply-spacing scale and rejects failing combinations instead of repairing them.
+
+v9 library caches include shape seed, regional contracts, directional structure cells, physical ridge/valley and saddle recipes, packed heights, traversal proof and ponds. v9 world replay repeats the actual navigation/terrain validation before identity comparison: omitting it could choose an earlier invalid combination. v8 readers, signatures, generation and terrain remain separate. New save state is v3; old v2 caches are read from their original directory. Bitwise equality remains a same-runtime contract.
+
+Movement first checks the complete horizontal capsule segment against projected gap banks, with the same fixed bank tessellation used by terrain LODs. Segment-to-segment distance handles crossings and circular clearance at acute tips, including slits smaller than the four-metre slope sampling interval. Cached projected banks depend on the actual final world scale and do not require collision meshes. Height/slope and navigation checks then cover the route samples. Player and NPC movement share this rule. The physical key-route audit uses a four-metre radius, proving an eight-metre clear terrain corridor; building doors retain their own collision dimensions. Regression fixtures exercise a five-centimetre slit, a tip grazing the capsule and a nearby clear path.
+
+Accepted 0.3.1: every new game performs full two-pass generation with 512 accepted candidates followed by placement. Twenty-one personal regions surround the station; each has fifteen ordinary huts. 315 ordinary, seven central, and two migration sites total 324. Minimum ordinary-site horizontal straight-line spacing is 900 m. See [huts](polar-huts.md) and [gameplay](polar-gameplay.md).
+
+World seed derives candidate seeds. Terrain, local WFC, sites, and navigation are validated. Fixed seeds reproduce within the same version/runtime; earlier .NET/Unity comparisons showed centimeter differences, so bitwise cross-runtime equality is not guaranteed. Historical cache cannot replace a new game's first pass.
+
+The independent survey remains separate. Production baseline retains 25/9 local terrain/collision windows and distant presentation. Continuous asynchronous terrain streaming, staged upload/collision and bidirectional distant LOD morphing pass the October 3 diagnostic acceptance; see [rendering](rendering-streaming.md). Final scale, long traversal and wider hardware calibration remain incomplete. State owns stock and ice, not views. Keep source fingerprints and runtime hashes distinct from tool comparisons.
+
+## Thin ice
+
+Personal regions have 6-8 snow-covered water areas; station/migration regions have none. Candidates preserve stable surrounding terrain. Ice cells are about 4-6 m with seeded strength and stable routes to declared shores. Actual actor load creates stress; fracture persists. Leaving reduces stress without repair.
+
+`baseTraversal` describes terrain; conservative safe navigation avoids ice windows. Ordinary maps do not reveal hidden strength. Near/distant terrain use the same physical convex cuts. Near ice has support/water; distant ice has no collision and rebuilds from fracture state. Water IDs avoid duplication across chunks. Entry waits for required local support. Gameplay owns wetness, body outcomes, and saves. Climbing requires a sampled capsule route to a reachable stable edge.
+
+## Loading diagnosis: October 1, 2026
+
+One local independent non-Development 0.3.1 sample: seed 777, 1600x900, D3D11.
+
+| Stage | Seconds |
+|---|---:|
+| First pass | 274.734 |
+| Second pass | 3.303 |
+| Object setup | 0.179 |
+| Distant world | 141.360 |
+| Initial local window | 12.827 |
+| World.Ready total | 432.423 |
+| Cache | 10.967 |
+| Final positioning | 0.950 |
+| Playable total | 444.709 |
+
+First pass/distance are 93.57%. Heights cost 169.968 seconds, navigation 43.471, local WFC 38.306. 567 attempts yielded 512 accepted candidates. Computing 672 distant chunks cost 121.663 seconds, uploading 0.860. Serial mesh creation and frame yielding happened before entry. Second pass was not the principal bottleneck.
+
+`PolarLoadingProfile` uses explicit `-polarLoadingProfile <report-path>` and `-polarProfileSeed` (default 777). Parent timings include children. Cache costs: 8.465 library compression/serialization/write, 0.209 world, 2.287 SHA256/manifest. Bind/save cost 0.033. The older 427.394-second figure ended at World.Ready. A single diagnostic is not a general benchmark or published optimization.
+
+## Published progressive loading
+
+The [progressive loading plan](../plans/polar-progressive-loading.md) implements 0.3.2 with 256 production candidates and distance-based presentation. `PolarWorldController` and the production scene explicitly default to 256; pure-data historical settings remain 512. Stored counts remain authoritative for continuation; v8/v2 formats are unchanged.
+
+All 672 distant blocks exist at resolution 32 before play, with 128/256 targets around the spawn prepared before local collision and Ready. Targets depend on distance to nine-sample projected block bounds: 256 within 6km, 128 within 16km, 64 within 28km, otherwise 32. Background refinement handles remaining targets and later movement. Single-worker batches avoid shared-height LRU contention; main-thread uploads yield at a 2ms budget. Movement recuts only affected local-window holes at their current resolution. Old generation tasks finish before the world is replaced; obsolete background results are discarded. Terrain sampling, navigation, 900m spacing, ice polygon cuts and skirts retain their existing rules. See [streaming](rendering-streaming.md) and [implementation](../logs/evidence/2026-10-01/polar-progressive-loading/implementation.md).
+
+Final candidate loading sample: seed 777 becomes playable in 184.323s; first pass is 138.610s, World.Ready 174.347s, and all distance targets settle at 187.283s. A copied old 512 save continues in 36.095s with unchanged world/library identities. All 672 blocks exist at activation; 25 resolution-64 targets finish afterwards. Initial resolutions 32/64/128/256 are 652/0/11/9, settling to 627/25/11/9. Local support and shared-normal seam checks pass.
+
+Six genuine frozen-world visual pairs and twenty independently regenerated survey maps are complete. All twenty seed/library/world identities are unique, every 324-site/21-territory/900m contract passes, and no pair shares the same macro-tile assignments after cyclic territory rotation. Fixed central/radial structure is intentional; these samples do not prove uniform randomness or equal difficulty. See the [map gallery](../logs/evidence/2026-10-01/polar-progressive-loading/maps/README.md).
+
+Actual world frames now render during hidden acceptance by launching at 1366x768 and explicitly resizing to 1600x900. The old baseline had black world captures, so loading ratios are hardware-specific single samples with differing graphics contexts. Background diagnostic P95 is 16.732ms, but its 518.020ms maximum includes pause/report transition overhead and does not establish hitch-free movement. All 906 final Player checks and 301 inspected frames pass. Highest five-case active-gameplay P95 is 16.692ms and private memory peak 4.432GB; the full source/package gate passed and Windows 0.3.2 is published. [Measurement method](../logs/evidence/2026-10-01/polar-progressive-loading/loading-analysis.md).

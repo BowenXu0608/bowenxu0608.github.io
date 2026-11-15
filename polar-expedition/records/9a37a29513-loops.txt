@@ -1,0 +1,391 @@
+docs/engineering/logs/evidence/2026-11-14/frame-budget/loops.md
+
+# Frame budget (16.67 ms): experiment log
+
+One entry per experiment, kept or not. Baseline: 0.6.154-test, `Builds/HdrpMilestones/to-01`, source `d71fc2e6e`.
+Plan: the Benchmark's segments first (stage 1), then walked routes of actual play (stage 2).
+
+## Conditions for every number here
+
+- **Machine.** Intel i7-13700H (14 cores, 20 threads), NVIDIA GeForce RTX 4070 Laptop GPU (driver 32.0.16.1074), 15.8 GB of memory,
+  panel 2560 by 1440 at 240 Hz, on mains, Windows power plan "Balanced".
+- **Settings.** High preset, TAA, 100% render scale, Direct3D 11; the game's own borderless window at 2560 by 1440, kept in
+  front (`Tools/polar_window_front.ps1`); vertical sync off and no frame cap while a part is timed, as the Benchmark sets them.
+- **Timing.** Acceptance: the release Player's own whole-frame interval (`Time.unscaledDeltaTime`), per Benchmark segment.
+  Diagnosis: a private copy of the Development Player with one-variable switches at fixed views, each timed A B B A A B B A in
+  120-frame blocks after 40 unmeasured frames (`tools/PondLab.cs`), GPU time of each HDRP pass through `PolarPassProbe`.
+  A lab number is the median of the four adjacent pair differences.
+- **Host.** `Tools/polar_machine_monitor.py` beside every run. Other programs closed by the user. The desktop app that hosts
+  this work starts a large `git diff` after some commands; a guard stops each as it appears (`tools/diffguard.py`).
+- **Builds.** `to-01` (baseline, release). `fb-00` and `fb-00-dev`: the baseline's source plus the test options only (route
+  recorder, pass probe); they draw as `to-01`. `fb-01` and `fb-01-dev`: the stage 1 candidate, 0.6.155-test.
+
+## Loop 0: baseline on to-01 (no change)
+
+| Run | Open snow P95 | Hut at night P95 | Pond P95 | Coast P95 | Blizzard P95 | Route P95 | Average fps |
+|---|---:|---:|---:|---:|---:|---:|---:|
+| base-1 | 14.56 | 16.44 | 16.57 | 12.47 | 14.12 | 16.17 | 72.3 |
+| base-2 | 14.60 | 16.40 | 16.67 | 12.52 | 14.31 | 16.04 | 72.1 |
+| base-3 | 14.24 | 16.24 | 16.60 | 12.38 | 14.02 | 15.95 | 73.1 |
+
+Segment GPU means: open snow 13.39 to 13.68 ms, hut 15.66 to 15.89, pond 15.51 to 15.62, coast 11.90 to 11.97, blizzard 12.69
+to 12.85. The pond and the hut sit at the budget with no margin (the earlier runs of to-01, with its window not in front, read
+17.0 and 16.8 to 17.0 ms). Raw: `data/bench-base-*.json`. In these three runs the window keeper ran under Windows PowerShell,
+whose process listing kept the WMI host at 0.9 of a core; later runs use PowerShell 7 (0.6 of a core of other CPU in all).
+
+## Loops 1 to 8: one lab session at three fixed views (`fb-00-dev`, run `s1-lab-01`)
+
+Views: the open-snow walk's midpoint looking along the route (14:00), the Benchmark's pond bank looking across (14:00), the home
+hut's floor at midnight with the stove lit, looking at the room. Whole-GPU change with the candidate on (negative is a saving);
+control (nothing switched) reads -0.01 to +0.05 ms. Raw: `data/s1-lab-01-lab.csv.gz`, table `data/s1-lab-01-paired.txt`.
+
+| Loop | Hypothesis | Switch | Open snow | Pond | Hut | Pass that moved | Decision |
+|---|---|---|---:|---:|---:|---|---|
+| 1 | Distortion and rough distortion are on in the frame settings and no material distorts, so HDRP runs the distortion passes and a second colour pyramid for nothing | both frame settings off | -0.34 | -0.33 | -0.37 | Distortion -0.14 to -0.16, ColorPyramid -0.17 to -0.19 | **kept** |
+| 2 | Low-resolution transparents are on and no material is in that queue | frame setting off | -0.09 | -0.08 | -0.10 | CombineAndUpsampleTransparent -0.08 to -0.09 | **kept** |
+| 3 | Indoors the sky's lighting stays OnChanged and is redrawn every frame by a lit stove | on demand indoors, as outdoors | | | -1.05 | UpdateEnvironment -1.11 | **kept**, with the hut probe asking for its own sky |
+| 4 | The basin's floor and walls are drawn (and cast sun shadows) under intact ice | their renderers off | | -0.09 | | GBuffer -0.08 | not applied: small; held in reserve for pond margin |
+| 5 | The stove lamp's cube shadow is redrawn every frame | shadow on demand | | | -0.10 | RenderShadowMaps -0.08 | not applied: a moving body's shadow would freeze |
+| 6 | The fill and window lamps light the volumetric fog | out of the fog | | | -0.08 | | not applied: changes the fog's light by the lamps |
+| 7 | Each distant pond's water renderer is hidden under its far ice | those renderers off | | +0.03 | | 361 fewer draws, render thread -0.15 | not applied: no GPU gain; a CPU saving only |
+| 8 | The pond's mesh in the HDRP pond water surface is drawn under intact ice | the surface off | | 0.00 | | | dropped: no cost |
+
+Also measured for scale, not a candidate (it is visible): the distant ponds' far ice, 361 draws, -0.09 ms.
+
+Captures with the clock stopped (off, on, off) at each view: the share of pixels differing by more than 8 levels between off
+and on, against the two captures with it off: distortion 0.42 / 0.06% (snow), 0.03 / 0.02% (pond), 0.07 / 0.17% (hut);
+low-resolution transparents 0.29 / 0.09%, 0.05 / 0.02%, 0.14 / 0.19%; sky on demand 0.21 / 0.21% (hut); basin 0.05 / 0.03% (pond).
+On open snow every middle capture differs more than the last one whatever is switched (the earlier draw-order test read 0.28 /
+0.17% there): the differences lie in the far rock band at the horizon, the capture's own noise.
+
+## Stage 1 candidate (0.6.155-test, `fb-01`): loops 1, 2 and 3 applied
+
+`Assets/Scripts/Polar/PolarHdrpPresentation.cs`:
+- `ConfigureCamera`: Distortion, RoughDistortion and LowResTransparent off in every game camera's frame settings.
+- `LateUpdate`: the sky's update mode is on demand indoors too (it stays OnChanged on the front page, while loading and with
+  the handbook open).
+- `BeforeWorldCamera`: a reflection camera (the hut's probe) asks for the sky update itself, since HDRP gives a request to the
+  next camera it draws and the probe keeps its own sky lighting.
+
+The final binary is `fb-02` (`fb-01` plus the finished route recorder; the game's drawing code is the same).
+
+### Benchmark, release, window in front (P95 ms of each segment)
+
+| Run | Build | Open snow | Hut at night | Pond | Coast | Blizzard | Route | Average fps |
+|---|---|---:|---:|---:|---:|---:|---:|---:|
+| base-1 to base-3 | to-01 | 14.24 to 14.60 | 16.24 to 16.44 | 16.57 to 16.67 | 12.38 to 12.52 | 14.02 to 14.31 | 15.95 to 16.17 | 72.1 to 73.1 |
+| base-4 (same session as c1 to c3) | to-01 | 14.40 | 16.23 | 16.48 | 12.37 | 14.27 | 15.86 | 72.9 |
+| c1 | fb-01 | 14.15 | 15.29 | 16.25 | 12.04 | 13.71 | 15.32 | 75.2 |
+| c2 | fb-01 | 14.14 | 15.22 | 16.10 | 11.94 | 13.73 | 15.30 | 75.3 |
+| c3 | fb-01 | 13.98 | 14.99 | 16.01 | 11.94 | 13.57 | 15.18 | 76.0 |
+| d1 | fb-02 | 14.23 | 15.43 | 16.14 | 12.01 | 13.83 | 15.49 | 74.6 |
+| d4 | fb-02 | 14.16 | 15.32 | 16.07 | 12.13 | 13.71 | 15.29 | 75.2 |
+| d5 | fb-02 | 14.21 | 15.18 | 16.04 | 12.13 | 13.74 | 15.31 | 75.2 |
+
+Every segment is at or under 16.67 ms in every candidate run. Segment GPU means on the candidate: open snow 13.13 to 13.39 ms,
+hut 14.23 to 14.55, pond 15.07 to 15.38, coast 11.45 to 11.60, blizzard 12.29 to 12.53.
+
+**Excluded: d2 and d3** (fb-02; every segment about 1 ms slower alike: pond 17.18 and 17.28, hut 16.66 and 16.41, open snow
+15.48 and 15.35). A Windows Security firewall prompt (PickerHost, "Windows 安全中心") took the foreground at about 07:39 and
+Windows refused the game window the front (d3's keeper: raised 0 times, refused 615). These match the runs of November 14
+made with the window shown but not in front (to-01: pond 17.03 and 17.06). The prompt was the user's to answer; once it was
+gone, d4 and d5 ran with the window in front (keeper: refused 0 and 1 times).
+
+### The light indoors (`PolarSkySteps` on `fb-00-dev` and `fb-01-dev`)
+
+Dawn inside the lit hut, 05:30 to 07:00: frames with a sky render 3,096 of 3,096 before and 1,929 of 3,083 after (at dawn the
+light moves nearly every frame; at night almost none); the screen's mean brightness 39.20 and 39.26; its largest frame-to-frame
+step 62.2 and 62.7% (one frame in each run) and its 99.9th percentile 0.68 and 0.73%. The still at 06:15 differs in 0.03% of
+pixels (`data/sky-dawn-hut-before-after.jpg`): the hut is lit as before, not white. The four outdoor stretches read as before
+(`data/sky-steps.txt`).
+
+### Walked routes, release, three passes each (frame interval, ms)
+
+Baseline: `fb-00` with to-01's `PolarHdrpPresentation.cs` and the finished recorder (run `routes-base-1`). Candidate: `fb-02`
+(run `routes-fb02-1`). Reports and every frame: `data/routes-*-report.md`, `data/routes-*-frames.csv.gz`.
+
+| Scenario | Baseline P50 / P95 / P99 | Over 16.67 | Candidate P50 / P95 / P99 | Over 16.67 |
+|---|---:|---:|---:|---:|
+| A pond (in from open snow, look across, cross, leave) | 13.89 / 14.78 / 15.41 | 0.1% | 13.48 / 14.37 / 15.01 | 0.1% |
+| C streaming (240 m out, turn, back; 85 chunks made a pass) | 13.26 / 14.71 / 16.37 | 0.7% | 12.86 / 14.27 / 15.91 | 0.5% |
+| D explorers (by a hut at dusk, clear turning to heavy snow) | 13.69 / 15.81 / 17.46 | 2.5% | 13.26 / 15.38 / 17.03 | 1.6% |
+| B hut at night (approach, door, in, look round, out, leave) | 15.68 / 18.05 / 18.59 | 15.0% | 14.56 / 16.61 / 17.09 | 4.4% |
+| B look round | 16.31 / 18.44 / 18.73 | 36.1% | 14.75 / 16.92 / 17.59 | 11.3% |
+| B go out | 16.92 / 18.33 / 18.58 | 60.2% | 15.60 / 16.72 / 17.61 | 7.5% |
+| B leave | 15.90 / 16.69 / 17.27 | 5.1% | 15.52 / 16.34 / 16.88 | 2.3% |
+
+Frames of 25 ms or more: 5 of 85,269 on the baseline and 3 of 88,089 on the candidate, none at the same step in every pass
+(the first frames of a step after a placement, two in the first look round of the first pass). The streaming route's walk back
+stops by time each pass (200 s, 490 m walked): gusts and slopes slow and turn the walker.
+
+## Loop 9: where the hut's look round goes (kept as a finding; no change yet)
+
+Route B on the candidate's code in the Development copy with the pass probe (`routes/probe-b`), and the release frames by the
+eye's heading:
+
+| Heading inside the hut | Release frame mean / P95 | Frames over 16.67 | GBuffer (Development) | Triangles a frame |
+|---|---:|---:|---:|---:|
+| 0 to 210 degrees | 14.1 to 14.9 / 14.7 to 15.7 | 0% | 0.9 to 1.7 ms | 2.6 to 5.9 million |
+| 210 to 240 | 15.82 / 16.65 | 5% | 2.36 ms | 8.8 million |
+| 240 to 270 | 16.87 / 17.74 | 70% | 3.29 ms | 12.5 million |
+| 270 to 300 | 16.79 / 17.27 | 65% | 3.40 ms | 12.9 million |
+| 300 to 330 | 16.05 / 16.84 | 8% | 2.72 ms | 9.9 million |
+
+Facing west inside the hut the whole island's terrain is submitted behind the wall (12.9 million triangles), and the GBuffer
+rises by about 2.4 ms for ground no pixel shows. The same holds walking out and leaving (GBuffer 3.7 and 4.2 ms). Inside,
+screen-space global illumination is 6.4 ms (trace 2.7, spatial filter 2.8, temporal filter 0.9) against 4.2 ms outdoors at
+night, and deferred lighting 1.2 ms against 0.6: those are the picture's own cost at High.
+
+### Stage 1 test on `fb-02`
+
+- Benchmark: d1, d4 and d5 above; every segment at or under 16.67 ms.
+- Routes: `routes-fb02-1` above.
+- Player suite: 12 modes, 6,439 checks pass (`Logs/PolarV7/0.6.155-test/fb-02`): gameplay 392, physical 3959, physical-resume 18,
+  continue 36, performance 79, buildings 395, fractured 31, handbook 353, weather 84, weather-resume 10, ui 463,
+  handbook-revision 619.
+- Front page 173, startup 4 and screen-args 3 pass (`Logs/PolarFront/0.6.155-test/fb-02`).
+
+## Loop 10: distant terrain's resolution rings (measured for a decision; not applied)
+
+The rings (`PolarStreamingPolicy`: 256 within 6 km of the player, 128 within 16 km, 64 within 28 km) scaled by a lab factor in the
+Development copy, one session each (`rings-100`, `rings-050`, `rings-025`; candidate code otherwise), five fixed views, 360 frames
+each after 120 unmeasured. Sessions are separate worlds of the same seed, so these are level comparisons, not pairs.
+
+| View | Terrain triangles in view (millions) | Whole GPU ms | GBuffer ms |
+|---|---|---|---|
+| | 1 / 0.5 / 0.25 | 1 / 0.5 / 0.25 | 1 / 0.5 / 0.25 |
+| Open snow, the route's heading | 4.0 / 2.6 / 1.8 | 13.23 / 12.99 / 12.86 | 2.42 / 2.17 / 2.03 |
+| Open snow, looking west | 9.5 / 6.0 / 4.0 | 15.09 / 14.49 / 14.14 | 3.86 / 3.27 / 2.89 |
+| Pond bank (the Benchmark's view) | 9.3 / 5.9 / 4.0 | 15.18 / 14.61 / 14.29 | 3.90 / 3.32 / 2.98 |
+| Hut at night (the Benchmark's view) | 2.0 / 1.6 / 1.4 | 14.57 / 14.38 / 14.44 | 1.13 / 1.05 / 1.00 |
+| Inside the hut, facing west | 9.4 / 5.9 / 4.0 | 16.60 / 15.92 / 15.66 | 3.04 / 2.42 / 2.08 |
+
+Halving the rings saves 0.6 to 0.7 ms looking inland and 0.24 ms on the walk; quartering saves 0.9 ms. The hut route's look
+round (16.92 ms P95) would come to about 16.2 or 16.0 ms.
+
+Captures with the clock stopped (`data/rings-*-captures.jpg`: two of today's rings, then halved and quartered; crops of the far
+ground at full size in `data/rings-west-crop.png` and `data/rings-pond-crop.png`). Pixels differing by more than 8 levels from
+today's: looking west 3.5% (halved) and 5.2% (quartered) against 0.03% between two captures of one session; pond 1.1% and 0.1%
+against 0.02%; open snow 0.15% and 0.00% against 0.12%. Separate sessions also differ in cloud and shadow position, so these
+overstate the terrain's own change; in the crops the slopes, bare patches and drift shadows read the same.
+
+This lowers what is drawn, so it is the user's decision. The alternative that keeps the picture, culling terrain hidden behind
+nearer ground, is a new subsystem with a risk of far ground appearing late, and does not help inside a hut, where the wall hides
+the terrain.
+
+**Decision (the user, November 14): "Leave it as is."** The rings stay at 6, 16 and 28 km and hidden terrain is not culled. The
+hut route's look round and go out stay at their measured shortfall (16.92 and 16.72 ms P95, 0.25 and 0.05 ms over), and
+0.6.155-test (`fb-02`) is the final candidate.
+
+## Stage 2 result
+
+- Routes A, C and D pass on the candidate (P95 14.37, 14.27 and 15.38 ms). Route B passes as a whole (16.61) with two steps
+  over (look round 16.92, go out 16.72), both from distant terrain behind the hut or in view on leaving (loop 9); left at the
+  user's decision above.
+- Hitches: 3 frames of 25 ms or more in 88,089, none recurring at a step.
+- No game change entered Stage 2, so `fb-02` is also Stage 2's candidate and Stage 1's test on it (Benchmark, routes, the
+  Player suite, the front page) stands as the stage test. What Stage 2 adds is the live game day below.
+
+## Loop 11: one live game day on the final candidate (no change)
+
+- **Identity.** `fb-02-dev`, the Development build of 0.6.155-test's source (`137bc708b`; no file under `Assets`,
+  `ProjectSettings` or `Tools` differs from `fb-02`'s commit `7ff890a89`). Run `fb-day-live`:
+  `python Tools/polar_save_rate.py --stage fb-02-dev --run-id fb-day-live --live --profile`. The one paid run of this work.
+- **Reproduction.** A new seed-777 expedition, the player standing at the start, 900 real seconds (06:00 to 06:00), the
+  explorers on the model (DeepSeek), High at 1600 by 900 in a window, 60 fps pacing, Unity Profiler logs from minute 2 on:
+  the conditions of the earlier live days, the last of them `wd-day-live` on 0.6.140-test. The run is paced, so it shows
+  stalls, not the 16.67 ms budget; the budget with explorers at work is route D above.
+- **Hypothesis.** Nothing model-driven stalls a frame, the night-fall burst of 0.6.140-test included (the work of 0.6.141-test
+  to 0.6.150-test had no live day yet).
+- **Evidence.**
+
+| | 0.6.140-test (`wd-day-live`) | 0.6.155-test (`fb-day-live`) |
+|---|---:|---:|
+| Frames | 53,760 | 53,828 |
+| Frames over 25 ms that start a profiler log (the profiler's own) | 48 | 48 |
+| The game's own over 25 ms, as the expedition appears (first 0.3 s) | 9 | 4 (895, 69, 101 and 54 ms) |
+| The game's own over 25 ms, in play | 20, 15 of them at night fall | 1 (30.8 ms at 463 s) |
+| 99th percentile of the frame interval (paced at 16.67) | 16.92 ms | 16.84 ms |
+| Longest profiled frame apart from those | | 21.3 ms |
+| Loads from disk of 0.5 ms or more in play | 6 (the last frame) | 0 in 45,601 frames |
+| Model requests, cost | 541, 4.51 yuan | 574, 4.77 yuan |
+| Saves (a minute), shortest gap | 172 (11.5) | 177 (11.8), 5.00 s |
+| Explorers alive at the end | 19 | 19 |
+| Peak private memory | 5.02 GB | 5.08 GB |
+
+  - The one frame in play (463.4 s, about 18:20 in the game) is an explorer's decision carried out for the first time:
+    `Polar.Npc.Execute` 18.1 ms with what it calls, 7.7 ms of it code compiled on first use (`Mono.JIT`), in the stretch
+    that records a call stack on every allocation (4.4 ms of the frame is that capture). It happens once.
+  - Night fall (22:00, 600 s) has no slow frame of the game's own (12 in that minute on 0.6.140-test).
+  - Largest times in the stretches without call stacks: starting requests (`Polar.Npc.Pump`) 4.1 ms, the explorers' step
+    3.4 ms, an autosave 4.4 to 4.7 ms, a collection 5.6 to 5.9 ms.
+  - One log could not be read (`live-times-9.raw`, about 1,000 frames of minute 4); the game's own count covers those
+    frames and has none over 25 ms there but a log start.
+  - Host: free memory 2.5 to 8.5 GB; the guard stopped 15 of the app's git diffs during the build and the run.
+  - Raw: `Logs/SaveRate/fb-day-live`; copies in `data/live-day-*`.
+- **Decision.** Nothing model-driven stalls a frame on the final candidate. No change.
+
+## Loop 12: the slow frames as an expedition appears (profiled; no game change)
+
+At the user's "Yes, profile them" (November 14).
+
+- **Identity.** Release `fb-02` (runs `fb-entry-rel-1` to `-3`). `fb-03-dev`: a Development build of the same game source
+  plus one test option, `-polarSaveRateEntry` (run `fb-entry-prof-1`).
+- **Reproduction.** `python Tools/polar_save_rate.py --stage fb-02 --run-id <id> --seconds 20` (no model): a new seed-777
+  expedition, High at 1600 by 900, 60 fps pacing; the report lists the frames over 25 ms from the moment loading ends.
+  Profile: `--stage fb-03-dev --seconds 30 --profile --entry`, whose Unity Profiler logs start once the world is made
+  (`entry-<n>.raw`), read by `PolarFrameTimeReport -top 45` and the new `PolarJitReport` (`Tools/PolarMemoryReport`).
+- **Evidence.**
+
+| Run | Loading's last frame | First frame of play | Second | Later |
+|---|---:|---:|---:|---|
+| `fb-entry-rel-1` (release) | 631 ms | 66.5 | 65.5 | |
+| `fb-entry-rel-2` | 428 | 65.2 | 71.7 | 31.3 ms at 3.0 s, once |
+| `fb-entry-rel-3` | 415 | 63.6 | 64.6 | |
+| `fb-entry-prof-1` (Development, profiled) | 773 | 70.3 | 71.1 | |
+| `fb-day-live` (Development, explorers on the model) | 895 | 69.2 | 100.7 | 54.4, a third frame |
+
+- **What the profile shows.**
+  - *The long frame is loading's last frame* (frame 438 of `entry-0.raw`): `StartWorld`'s last step, which collects garbage,
+    binds the rules (`BindRules`, `Preload`) and writes the first save. 448 of its 773 ms is code compiled on first use
+    (`Mono.JIT`, 2,203 methods, 400 ms of it under `StartWorld`); then what `Preload` reads (file reads 40 ms, objects woken
+    35 ms, sounds 28 ms), the first save's text 13 ms and the collection 10 ms. The loading page is on screen throughout: the
+    page changes in `PolarMvpUi.LateUpdate` of this same frame. It is the end of loading (0.4 to 0.6 s of 61 s), not a stall
+    of play.
+  - *The two frames after it are the first two of play.* 44 of each one's 70 ms is code compiled on first use (320 and 396
+    methods): in the first, the player's update, the rules step, the explorers' step and senses, the weapon and body views
+    and the breath; in the second, the explorers' director's first pump (43.8 ms compiled, 14.7 ms of its own work).
+  - With the model (the live day) the second frame is 30 ms longer and a third of 54 ms follows. By the difference from the
+    runs without a model this is the director's first requests; it is not profiled (that would be a second paid run).
+  - No frame's cause is rendering, a load from disk in play or the collector. From the third frame on, frames are 16.7 ms.
+  - The logs do not name the methods compiled (`Mono.JIT` samples carry no metadata here); `PolarJitReport` names the code
+    whose first run asked for them.
+- **What the player sees.** The loading page stays up through the long frame. The picture then appears and its first two
+  frames (three with the model) last 55 to 100 ms each, within the first quarter of a second, while the loading page's
+  0.12 s fade has at most two steps. Nothing later in play repeats it.
+- **What a fix would take (not done).** Keep the loading page up for the first three frames of play
+  (`PolarMvpUi.PageKey`), so the play loop's first run is compiled behind it: a few lines and no rule or picture change in
+  play, but a new package and the Player suite (the UI modes read the page right after loading). The long frame cannot go:
+  the code is compiled once either way; compiling it on a worker during world generation would take about 0.4 s off a 61 s
+  load.
+- **Decision (the user, November 14): "Leave it."** No game change; the loading page is not held.
+- Raw: `Logs/SaveRate/fb-entry-rel-*`, `fb-entry-prof-1`; copies in `data/entry-*`.
+
+## Loop 13: the same start with explorers on the model (profiled; no game change)
+
+At the user's "just finish this first" (November 14), on loop 12's open point. Three short paid runs, about 0.7 yuan in all.
+
+- **Identity.** Release `fb-02` (run `fb-entry-live-rel-1`). `fb-04-dev`: the Development build of loop 12's source, rebuilt
+  because `fb-03-dev` had been deleted (run `fb-entry-live-1`). A private copy of `fb-04-dev` with six profiler markers in
+  `PolarNpcDirector.Start` and `ArkNpcClient.CompleteAsync` (`tools/patch_lab3.py`, `tools/entry_lab.py`; run
+  `entry-live-lab-1`). `fb-04-dev` and the copy were deleted afterwards.
+- **Reproduction.** As loop 12 with `--live` (20 s; the explorers on DeepSeek).
+- **Evidence.**
+
+| Run | Loading's last frame | First frame of play | Second | Third | Later |
+|---|---:|---:|---:|---:|---|
+| `fb-entry-live-rel-1` (release, model) | 628 ms | 68.0 | 101.4 | 62.0 | 26.8 ms at 0.79 s, once |
+| `fb-entry-live-1` (Development, profiled) | 517 | 72.7 | 106.4 | 54.8 | |
+| `entry-live-lab-1` (Development, with markers) | 479 | 68.6 | 101.8 | 52.5 | |
+| `fb-day-live` (the live day) | 895 | 69.2 | 100.7 | 54.4 | |
+
+- **What the profile shows.**
+  - *The first frame* is as without the model: 44.6 to 44.8 ms of compiling.
+  - *The second frame is the director's first request*: 68 to 71 ms of code compiled on first use, all under
+    `Polar.Npc.Pump` (745 methods; 396 without the model), the first prompt 11.0 ms (`NpcModelPrompts.Decision`; later
+    prompts at most 0.25 ms), the send call 4.9 ms and the snapshot 3.6 ms.
+  - *The third frame is the director's second request*: 31.8 ms inside `HttpClient.SendAsync` before it returns, with only
+    2.2 ms of compiling in the frame, and 4.8 ms reading a sound set at its first use (the player's footsteps, left to
+    first use at the user's earlier choice). Later sends on the main thread take at most 0.36 ms and a whole request start
+    at most 0.63 ms, so it happens once. What the call waits for is not measured; it fits the second request waiting on the
+    HTTP stack's start-up, which the first request began on a worker (an inference).
+- **What a fix would take (not done).** Start each request on a worker (`Task.Run` round `client.CompleteAsync` in
+  `PolarNpcDirector.Ask`), so the send call, the payload and the client's compiling leave the main thread: one line, but in
+  the model-request path, so it needs the gameplay mode, the live mode (paid) and a package. The second frame's prompt and
+  director code would still compile on the main thread unless the loading page is held (loop 12, declined).
+- **Decision.** Recorded; no game change.
+- Raw: `Logs/SaveRate/fb-entry-live-rel-1`, `fb-entry-live-1`; copies in `data/entry-live-*`.
+
+## Loop 14: a model request's start runs on a worker (kept: 0.6.156-test, `mr-02`)
+
+At the user's "Yes, move them" (November 14).
+
+- **Identity.** Before: `fb-02` (0.6.155-test). After: `mr-02` and `mr-02-dev` (0.6.156-test; `Assembly-CSharp.dll`
+  SHA-256 `b08a456f...86c8a94d`).
+- **Reproduction.** As loop 13: `python Tools/polar_save_rate.py --stage <build> --run-id <id> --seconds 20 --live`, and
+  `--profile --entry` on the Development build.
+- **Hypothesis and change.** The third frame's 32 ms is the synchronous part of `HttpClient.SendAsync`, which ran on the
+  game's main thread. `ArkNpcClient.CompleteAsync` now only takes its lane's slot on the caller's thread and runs the rest
+  (`Send`: the budget's reservation, the payload, the send) through `Task.Run`.
+  - *A first version was wrong and was replaced before shipping* (`mr-01`): the whole method ran through `Task.Run`, so the
+    slot was taken on a worker. The player's talk makes two requests on the one foreground slot, the answer and then the
+    topic gate, and relied on the answer taking the slot first; on workers the two would race. Taking the slot before the
+    hop keeps the order. `Tools/CloudNpcCheck` has a check for it (a request holds its slot when `CompleteAsync` returns,
+    and the next on that lane is sent after it); the first version fails it.
+  - `ClaudeNpcClient` is unchanged: it was not measured, and no Anthropic key is on this machine to test it with.
+- **Evidence** (the first frames of play with the model, ms).
+
+| Build | Run | First | Second | Third |
+|---|---|---:|---:|---:|
+| `fb-02` (before, release) | `fb-entry-live-rel-1` | 68.0 | 101.4 | 62.0 |
+| `mr-02` (after, release) | `mr2-entry-live-rel-1` | 69.0 | 65.5 | under 25 |
+| `mr-02` (after, release) | `mr2-entry-live-rel-2` | 70.1 | 74.6 | under 25 |
+| `fb-04-dev` (before, profiled) | `fb-entry-live-1` | 72.7 | 106.4 | 54.8 |
+| `mr-02-dev` (after, profiled) | `mr2-entry-live-1` | 73.1 | 74.8 | 21.5 |
+
+  - Profiled, the second frame's compiling under `Polar.Npc.Pump` falls from 70.5 ms in 735 methods to 42.0 ms in 375 (the
+    client's code now compiles on the worker), and the third frame keeps only the footsteps' first read (5 ms).
+  - With the model the start now reads as it does without one (two frames of 64 to 72 ms, loop 12).
+  - `mr2-entry-live-rel-1` also has 22 frames of 25 to 67 ms between 9 and 15 s: the machine, not the game. In those
+    seconds the CPU was at 99.5 to 100% with Windows Defender at 8.4 to 9.2 cores and `rg.exe`, `ffmpeg.exe` and the
+    Codex desktop app at work (`data/entry-live-after-rel-1-machine-at-slow-frames.csv`); the second release run, without
+    them, has none.
+- **Checks.** `Tools/CloudNpcCheck` 212 (the new check among them; the first version fails it). Gameplay 392 and continue
+  36 on `mr-02` (`Logs/PolarV7/0.6.156-test/mr-02`). The Player suite's live mode could not run at first: it asked for
+  `ANTHROPIC_API_KEY` in the runner and in the game's own check, and only the Ark key is set here (the mode predates the
+  explorers' move to DeepSeek); loop 15 brings it up to date and it passes 108. The other suite modes, the Benchmark and the routes were not rerun: none makes a model
+  request (the Benchmark has no director, and the modes run with the keys withheld).
+- **Decision.** Kept. Six short paid runs for this loop, about 1.5 yuan.
+- Raw: `Logs/SaveRate/mr2-entry-live-*`; copies in `data/entry-live-after-*`.
+
+## Loop 15: the suite's live mode runs with the Ark key (test code; `mr-04`)
+
+At the user's "Yes, update it" (November 14): loop 14 left the player's conversation untested against the live model.
+
+- **Identity.** `mr-03`: `mr-02` plus the key check. `mr-04`: `mr-03` plus the physics sync. The game's own code is `mr-02`'s.
+- **Reproduction.** `python Tools/polar_v7_player_run.py gameplay live --live --hdrp --nonactivated-window --run-id <id>`;
+  the live mode alone from a fresh run id whose `player/save` is copied from a gameplay run's.
+- **Evidence before.** The runner would not start the mode, and with its check lifted the game itself (`mr-01`) stopped at its 13th check,
+  "ANTHROPIC_API_KEY is available to the live-cloud mode". The mode had last run on 0.6.84-test, when explorers were on Claude.
+- **Change 1.** The runner and `PolarCloudRuntimeValidation` take `ARK_API_KEY` or `ANTHROPIC_API_KEY`, and the mode's stops
+  and retries hold Ark's failure phrases. On `mr-03` gameplay passes 392 and the live mode reaches its first scene and stops
+  at check 16 in two runs alike: "E opens the conversation", with the note "aim nothing; visible True; near True".
+- **Change 2.** The scene puts an explorer 2.5 m ahead with time frozen (`Time.timeScale` 0) and presses E. With time frozen
+  no physics step runs, so the body just placed is not where the aim ray looks. `Physics.SyncTransforms()` before the press,
+  as the gameplay mode's door check does.
+- **Evidence after** (`mr-04`, run `mr-04a`, the live mode alone from `mr-03`'s gameplay save): 108 checks pass in 384 s.
+  E opens the talk with all three explorers; names and homes are given; promises are answered; the unrelated request turns
+  the stranger hostile and nobody else. 149 requests, all within the size bound: 28 for the player's talk (first words after a
+  median 4.6 s) and 121 in the background; 143 completed and 6 past their deadline; $0.154, about 1.1 yuan.
+- **Decision.** Kept. The player's conversation is now checked against the live model with loop 14's change in place.
+  Gameplay was not run again on `mr-04` (it differs from `mr-03` in one line of the live scene).
+- Raw: `Logs/PolarV7/0.6.156-test/mr-03`, `mr-03b`, `mr-04a`; the checks in `data/live-mode-checks.txt`.
+
+## Loop 16: the detail rings halved and the loading page held (kept: 0.6.157-test, `dr-01`)
+
+At the user's word (November 14), reversing the two "leave it" decisions of loops 10 and 12; the rings on condition of
+comparison pictures. The whole record, the 27 pictures and the tools: [distant-detail-entry/results.md](../distant-detail-entry/results.md).
+
+- **Identity.** Before: `mr-04` (0.6.156-test). After: `dr-01` (0.6.157-test).
+- **Evidence before the change.** Loop 10's rings comparison was across sessions and read 3.5% of pixels changed looking
+  west; that was cloud and shadow position. In one session with the clock stopped the same view differs in 0.06% of pixels
+  (0.02% between two captures of one setting), and no view of 27 in more than 0.31%.
+- **Change.** `PolarStreamingPolicy`: 3, 8 and 14 km where 6, 16 and 28; loading's 128 fill stays at 6 km.
+  `PolarMvpController.Entering` and `PolarMvpUi.PageKey`: the loading page over the frame loading ends in and the two after.
+- **Evidence after.** Benchmark pond 15.10, 15.27 and 15.80 ms P95 (16.04 to 16.14); hut route go out 15.64 and 16.49 ms
+  (16.72), look round 16.55 and 16.73 ms (16.92). The world's first frame 19 ms, behind which the two compiling frames
+  (80 and 77 ms) now pass under the loading page. The machine was in use for these runs (about 2 cores of other work).
+- **Decision.** Kept. Look round is at the edge of the budget, not clear of it.
+
+Final report: [final-report.md](final-report.md).
+

@@ -1,0 +1,26 @@
+docs/engineering/logs/2026-09-06.md
+
+# 2026-09-06 Engineering log
+
+> Historical recovery recorded October 29, 2026. This is a concise account of surviving records, not a contemporaneous new entry or tests rerun during recovery. Reported results and open items retain their original scope; historical rules do not replace the current GDD.
+
+Source: `dated-log-2026-09-06`; see the [recovery record](evidence/2026-10-29/english-log-backfill/recovery.json).
+
+## Atomic item contracts and natural-survival completion
+
+- Fixed airborne recovery, duplicate durability spending, capacity and instance-identity faults. Added atomic transfers retaining acquisition time/durability, bounded actor ID namespaces and a real crafted-wooden-spear interface. Focused item checks initially passed 14/14, realtime rules 14/14 and MVP 87/87; static compilation and four current production baseline captures passed.
+- Closed timed player/NPC actions, commit-time revalidation, shared facilities, fuel/rest/drop/recovery, need crossing, water quality, food batches/spoilage and monotonic IDs. Save v10 corrected ghost actions, excessive resource snapshots and interrupted-action recovery.
+- Survival checks passed 23/23 and MVP 87/87. Actual Unity player and NPC entry points completed 78 and 53 actions; agent-owned observation/pathfinding, competing collection, seawater rejection, thirty-day non-regeneration, 1575 nutrition and save/action recovery were covered. Three genuine paired scene cases were compared and inspected. These compact fixtures did not establish long-island balance or retrospectively repair September 4's missing baseline.
+
+## Satellite-phone rescue
+
+- D48 removed the chart and earlier human relics from the uninhabited-island story. Added a carried satellite phone, elevated/open signal conditions, T/E contact, recorded coordinates and a seeded safe outer-coast pickup. First successful contact entered Act III and began fourteen nights; repeat calls could not reset it. Kept first-night base creation and the 8 m rescue arrival rule.
+- MVP 87/87, recruitment core and static compilation passed. Actual seed-777 Unity state checks covered contact completion, rescue timing, no immediate base, JSON round trip, repeat rejection and no old paper object. The probe called the completion callback directly, so it did not validate the full ten-second interaction.
+- Design exports were rendered and inspected at 24/26 pages. Licence initialization had blocked a real before image; the after screenshot also failed to write and the batch exited one. The evidence remained unfinished, with no fabricated pair. Timed GUI/route interaction, four-direction seeds, Windows approval, held-phone animation and signal expansion after felling remained open.
+
+## Realtime combat acceptance and colour correction
+
+- D49 explicitly restored world-space melee/projectiles with no free weapons, preserving survival and rescue v10. Fixed legacy entry isolation, tutorial recovery, factions, item landing/identity, injury refresh, pause/death and derived STP first-person materials/animations.
+- Item/faction checks passed 18/18, realtime 14/14 and MVP 87/87. Real seed-777 Play Mode exited zero with 42 observable assertions; batch OS cursor lock remained unobservable. Four genuine paired cases were inspected. Human feel, distant spear calibration, complex terrain, simultaneous deaths and full-night continuation remained open; developer loadouts did not establish every production acquisition route.
+- Restored the historical Gamma/Built-in contract only after capturing the actual Linear baseline; added a build guard and corrected outdated resource-renderer checks. Four same-fixture colour pairs were verified and inspected.
+- The final non-Development Gamma validation package was 2,135,181,459 bytes and passed independent Player world/environment/pause/restart smoke with 477,318 placements and 4,685,170 effective plants. It was a validation package, not formal publication; GPU budgets and manual first-person approval were still open. Earlier Linear evidence was retained as history.

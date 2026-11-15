@@ -1,0 +1,43 @@
+docs/engineering/logs/evidence/2026-11-14/frame-budget/loops.md#loop-14
+
+## Loop 14: a model request's start runs on a worker (kept: 0.6.156-test, `mr-02`)
+
+At the user's "Yes, move them" (November 14).
+
+- **Identity.** Before: `fb-02` (0.6.155-test). After: `mr-02` and `mr-02-dev` (0.6.156-test; `Assembly-CSharp.dll`
+  SHA-256 `b08a456f...86c8a94d`).
+- **Reproduction.** As loop 13: `python Tools/polar_save_rate.py --stage <build> --run-id <id> --seconds 20 --live`, and
+  `--profile --entry` on the Development build.
+- **Hypothesis and change.** The third frame's 32 ms is the synchronous part of `HttpClient.SendAsync`, which ran on the
+  game's main thread. `ArkNpcClient.CompleteAsync` now only takes its lane's slot on the caller's thread and runs the rest
+  (`Send`: the budget's reservation, the payload, the send) through `Task.Run`.
+  - *A first version was wrong and was replaced before shipping* (`mr-01`): the whole method ran through `Task.Run`, so the
+    slot was taken on a worker. The player's talk makes two requests on the one foreground slot, the answer and then the
+    topic gate, and relied on the answer taking the slot first; on workers the two would race. Taking the slot before the
+    hop keeps the order. `Tools/CloudNpcCheck` has a check for it (a request holds its slot when `CompleteAsync` returns,
+    and the next on that lane is sent after it); the first version fails it.
+  - `ClaudeNpcClient` is unchanged: it was not measured, and no Anthropic key is on this machine to test it with.
+- **Evidence** (the first frames of play with the model, ms).
+
+| Build | Run | First | Second | Third |
+|---|---|---:|---:|---:|
+| `fb-02` (before, release) | `fb-entry-live-rel-1` | 68.0 | 101.4 | 62.0 |
+| `mr-02` (after, release) | `mr2-entry-live-rel-1` | 69.0 | 65.5 | under 25 |
+| `mr-02` (after, release) | `mr2-entry-live-rel-2` | 70.1 | 74.6 | under 25 |
+| `fb-04-dev` (before, profiled) | `fb-entry-live-1` | 72.7 | 106.4 | 54.8 |
+| `mr-02-dev` (after, profiled) | `mr2-entry-live-1` | 73.1 | 74.8 | 21.5 |
+
+  - Profiled, the second frame's compiling under `Polar.Npc.Pump` falls from 70.5 ms in 735 methods to 42.0 ms in 375 (the
+    client's code now compiles on the worker), and the third frame keeps only the footsteps' first read (5 ms).
+  - With the model the start now reads as it does without one (two frames of 64 to 72 ms, loop 12).
+  - `mr2-entry-live-rel-1` also has 22 frames of 25 to 67 ms between 9 and 15 s: the machine, not the game. In those
+    seconds the CPU was at 99.5 to 100% with Windows Defender at 8.4 to 9.2 cores and `rg.exe`, `ffmpeg.exe` and the
+    Codex desktop app at work (`data/entry-live-after-rel-1-machine-at-slow-frames.csv`); the second release run, without
+    them, has none.
+- **Checks.** `Tools/CloudNpcCheck` 212 (the new check among them; the first version fails it). Gameplay 392 and continue
+  36 on `mr-02` (`Logs/PolarV7/0.6.156-test/mr-02`). The Player suite's live mode could not run at first: it asked for
+  `ANTHROPIC_API_KEY` in the runner and in the game's own check, and only the Ark key is set here (the mode predates the
+  explorers' move to DeepSeek); loop 15 brings it up to date and it passes 108. The other suite modes, the Benchmark and the routes were not rerun: none makes a model
+  request (the Benchmark has no director, and the modes run with the keys withheld).
+- **Decision.** Kept. Six short paid runs for this loop, about 1.5 yuan.
+- Raw: `Logs/SaveRate/mr2-entry-live-*`; copies in `data/entry-live-after-*`.

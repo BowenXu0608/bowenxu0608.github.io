@@ -1,0 +1,203 @@
+docs/engineering/logs/evidence/2026-11-12/explorer-step-spread/data/walk-day.json
+
+{
+  "before": {
+    "run": "Logs/SaveRate/dawn-wrap-after",
+    "build": "dn-01-dev",
+    "version": "0.6.144-test",
+    "frames": 57099,
+    "framesOver25": 233,
+    "framesOver25AtLogStart": 52,
+    "frameP99Ms": 21.12230110168457,
+    "saves": 191,
+    "explorersAlive": 19,
+    "legs": 543,
+    "allocatedBytesPerSecond": 2450445.9146133177,
+    "ownFramesOver25": 181,
+    "ownFramesOver25AfterTwoSeconds": 176,
+    "profiled": {
+      "live-times": {
+        "summary": "live-times: 15241 frames in 16 logs, 35 over 25 ms",
+        "frameTime": "frame time: mean 16.76 ms, 99th percentile 20.51 ms, longest 31.04 ms; slow frames mean 27.12 ms, the others 16.73 ms",
+        "markersWithChildrenMs": {
+          "Polar.Npc.Step": {
+            "slowFrames": 17.93,
+            "otherFrames": 0.18,
+            "largest": 23.32
+          },
+          "Polar.Npc.Execute": {
+            "slowFrames": 16.19,
+            "otherFrames": 0.16,
+            "largest": 20.0
+          },
+          "Polar.Simulation.Advance": {
+            "slowFrames": 18.42,
+            "otherFrames": 0.67,
+            "largest": 23.73
+          },
+          "Polar.Npc.Door": {
+            "slowFrames": 4.67,
+            "otherFrames": 0.03,
+            "largest": 8.39
+          }
+        }
+      },
+      "live-stacks": {
+        "summary": "live-stacks: 14122 frames in 16 logs, 70 over 25 ms",
+        "frameTime": "frame time: mean 16.80 ms, 99th percentile 22.07 ms, longest 48.38 ms; slow frames mean 29.74 ms, the others 16.74 ms",
+        "markersWithChildrenMs": {
+          "Polar.Npc.Step": {
+            "slowFrames": 20.84,
+            "otherFrames": 0.16,
+            "largest": 40.06
+          },
+          "Polar.Npc.Execute": {
+            "slowFrames": 18.52,
+            "otherFrames": 0.14,
+            "largest": 27.65
+          },
+          "Polar.Simulation.Advance": {
+            "slowFrames": 21.6,
+            "otherFrames": 0.65,
+            "largest": 40.51
+          },
+          "Polar.Npc.Door": {
+            "slowFrames": 5.52,
+            "otherFrames": 0.01,
+            "largest": 10.21
+          }
+        }
+      },
+      "live-late": {
+        "summary": "live-late: 18065 frames in 20 logs, 38 over 25 ms",
+        "frameTime": "frame time: mean 16.75 ms, 99th percentile 19.69 ms, longest 32.80 ms; slow frames mean 27.08 ms, the others 16.73 ms",
+        "markersWithChildrenMs": {
+          "Polar.Npc.Step": {
+            "slowFrames": 17.29,
+            "otherFrames": 0.17,
+            "largest": 21.27
+          },
+          "Polar.Npc.Execute": {
+            "slowFrames": 15.88,
+            "otherFrames": 0.15,
+            "largest": 20.08
+          },
+          "Polar.Simulation.Advance": {
+            "slowFrames": 17.89,
+            "otherFrames": 0.66,
+            "largest": 21.74
+          },
+          "Polar.Npc.Door": {
+            "slowFrames": 5.3,
+            "otherFrames": 0.03,
+            "largest": 8.24
+          }
+        }
+      }
+    }
+  },
+  "after": {
+    "run": "Logs/SaveRate/steps-after",
+    "build": "es-01-dev",
+    "version": "0.6.145-test",
+    "frames": 57412,
+    "framesOver25": 58,
+    "framesOver25AtLogStart": 52,
+    "frameP99Ms": 16.87290382385254,
+    "saves": 191,
+    "explorersAlive": 19,
+    "legs": 549,
+    "allocatedBytesPerSecond": 2456570.8151569506,
+    "ownFramesOver25": 6,
+    "ownFramesOver25AfterTwoSeconds": [
+      {
+        "seconds": 441.446,
+        "ms": 26.09
+      },
+      {
+        "seconds": 610.618,
+        "ms": 26.28
+      }
+    ],
+    "profiled": {
+      "live-times": {
+        "summary": "live-times: 15319 frames in 16 logs, 0 over 25 ms",
+        "frameTime": "frame time: mean 16.67 ms, 99th percentile 16.90 ms, longest 23.09 ms; slow frames mean 0.00 ms, the others 16.67 ms",
+        "markersWithChildrenMs": {
+          "Polar.Npc.Step": {
+            "slowFrames": 0.0,
+            "otherFrames": 0.24,
+            "largest": 9.19
+          },
+          "Polar.Npc.Execute": {
+            "slowFrames": 0.0,
+            "otherFrames": 0.21,
+            "largest": 8.95
+          },
+          "Polar.Simulation.Advance": {
+            "slowFrames": 0.0,
+            "otherFrames": 0.73,
+            "largest": 9.7
+          },
+          "Polar.Npc.Door": {
+            "slowFrames": 0.0,
+            "otherFrames": 0.04,
+            "largest": 5.55
+          }
+        }
+      },
+      "live-stacks": {
+        "summary": "live-stacks: 14240 frames in 16 logs, 3 over 25 ms",
+        "frameTime": "frame time: mean 16.68 ms, 99th percentile 16.94 ms, longest 27.14 ms; slow frames mean 26.49 ms, the others 16.67 ms",
+        "markersWithChildrenMs": {
+          "Polar.Npc.Step": {
+            "slowFrames": 6.23,
+            "otherFrames": 0.3,
+            "largest": 18.68
+          },
+          "Polar.Npc.Execute": {
+            "slowFrames": 2.2,
+            "otherFrames": 0.25,
+            "largest": 8.5
+          },
+          "Polar.Simulation.Advance": {
+            "slowFrames": 6.72,
+            "otherFrames": 0.8,
+            "largest": 19.14
+          },
+          "Polar.Npc.Door": {
+            "slowFrames": 0.0,
+            "otherFrames": 0.04,
+            "largest": 3.74
+          }
+        }
+      },
+      "live-late": {
+        "summary": "live-late: 18146 frames in 20 logs, 2 over 25 ms",
+        "frameTime": "frame time: mean 16.68 ms, 99th percentile 16.92 ms, longest 32.48 ms; slow frames mean 30.08 ms, the others 16.67 ms",
+        "markersWithChildrenMs": {
+          "Polar.Npc.Step": {
+            "slowFrames": 0.2,
+            "otherFrames": 0.23,
+            "largest": 7.64
+          },
+          "Polar.Npc.Execute": {
+            "slowFrames": 0.17,
+            "otherFrames": 0.2,
+            "largest": 7.44
+          },
+          "Polar.Simulation.Advance": {
+            "slowFrames": 0.64,
+            "otherFrames": 0.72,
+            "largest": 10.75
+          },
+          "Polar.Npc.Door": {
+            "slowFrames": 0.02,
+            "otherFrames": 0.04,
+            "largest": 3.63
+          }
+        }
+      }
+    }
+  }
+}

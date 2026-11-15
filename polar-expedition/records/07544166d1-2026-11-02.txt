@@ -1,0 +1,486 @@
+docs/engineering/logs/2026-11-02.md
+
+# 2026-11-02 Engineering log
+
+## Objective explorer handbook, and half the area with ten huts, with one explorer
+<!-- project-update-log:2026-11-02:objective-handbook-ten-huts -->
+
+- Reason：The user asked for the explorers' handbook to be objective, with no strategy, then for a world of half the area with 10 supply points in every district, checked with one explorer on DeepSeek.
+- Implementation：PolarNpcManual states rules and facts only: every piece of advice (eat early, reach shelter before night, chains of walks, move on while fed, the cold-walk tent rule, put stoves out, carry the tent and others) is removed, and neutral facts replace what the rules need. New trial switch PolarCompactWorld.Huts keeps that many of v19's 10 huts in each district but Pole Station's (Tools/PolarWorldCheck --huts, PolarNpcDayDiagnostic -npcDiagnosticHuts). Trial worlds keep the cracks that find room. The diagnostic resets the trial switches only after Play Mode ends, so the closing save matches the trial world.
+- Validation：Shared rules 2748 and CloudNpcCheck 204 pass. Seed 777 with AreaShare .5 and Huts 10: 206 sites, the route proofs and save round trip pass, and only the area, walk-relief and pond-size calibration checks fail (as with 70% area). Grant alone (st-a50h10b, $0.13) stayed home five days with Pole Station as his goal, then walked starving to the 421 m hut (4 tins) and died of hunger after 7.5 days, having searched 2 of his 10 huts.
+- Decisions and scope：The handbook change is kept as the user asked. The 10-hut world stays a trial switch; nothing changes the shipped world or its stock.
+- Remaining work：One run cannot separate the handbook change from the world change. The same total food over more huts leaves a district hut a mean 27 food units instead of 40, and the user's request that huts hold resources at the same level is not yet applied. The policy text before the handbook still asks explorers to take what a journey needs before setting out.
+- Visual evidence:The handbook is the explorers' model prompt and the trial switches are off by default and outside the world version; the shipped world, its hash and every screen are unchanged, so no capture applies.
+
+Related documents:[polar-cloud-npcs.md](../systems/polar-cloud-npcs.md) / [polar-world.md](../systems/polar-world.md) / [current-status.md](../current-status.md).
+
+## Faces drawn as skin
+<!-- project-update-log:2026-11-02:face-skin -->
+
+- Reason：The user asked for visual improvements that could start at once and be confirmed; faces in the talk close-up read as flat paint, with a bright painted beard between the hair cards.
+- Implementation：
+  - Tools/polar_face_maps.py writes a normal map (luminance high-passed at 5 px), a mask map (smoothness by region: skin .40, lips .48, hair .22, eyes .88), a shared subsurface mask and, for the nine bearded people, the face with the beard under the cards darkened to 45%.
+  - PolarFaceSkinAuthor binds them on the 18 PersonNFace materials as HDRP Lit subsurface scattering with the HDRP Skin diffusion profile; faces and maps import at 512 px, high-quality compression. The survivors (Frost, Moss, Shaw) keep their body texture.
+  - PolarArtCapture gains an opt-in faces section: each person from 0.7 m in front of the eye, as in the talk close-up.
+- Validation：
+  - 8 close-up pairs (old face assets temporarily restored for vp-face-before, new in vp-face2) change 0.9-2.3% of pixels, on faces and beards; 8 portrait pairs (vp-before, vp-final2).
+  - Package 0.6.92-test (vp-01): gameplay 387, weather 80 and ui 463 pass (Logs/PolarV7/0.6.92-test/vp-01).
+- Decisions and scope：Faces stay 512 px; the survivors are outside this pass.
+- Remaining work：The subsurface pass's cost while a face is on screen was not measured separately.
+
+### Screenshot comparison
+
+| State | Before | After | Difference |
+|---|---|---|---|
+| face-01 | ![face-01 before](evidence/2026-11-02/face-skin/face-01-before.png) | ![face-01 after](evidence/2026-11-02/face-skin/face-01-after.png) | [Comparison](evidence/2026-11-02/face-skin/face-01-comparison.png) |
+| face-02 | ![face-02 before](evidence/2026-11-02/face-skin/face-02-before.png) | ![face-02 after](evidence/2026-11-02/face-skin/face-02-after.png) | [Comparison](evidence/2026-11-02/face-skin/face-02-comparison.png) |
+| face-04 | ![face-04 before](evidence/2026-11-02/face-skin/face-04-before.png) | ![face-04 after](evidence/2026-11-02/face-skin/face-04-after.png) | [Comparison](evidence/2026-11-02/face-skin/face-04-comparison.png) |
+| face-05 | ![face-05 before](evidence/2026-11-02/face-skin/face-05-before.png) | ![face-05 after](evidence/2026-11-02/face-skin/face-05-after.png) | [Comparison](evidence/2026-11-02/face-skin/face-05-comparison.png) |
+| face-07 | ![face-07 before](evidence/2026-11-02/face-skin/face-07-before.png) | ![face-07 after](evidence/2026-11-02/face-skin/face-07-after.png) | [Comparison](evidence/2026-11-02/face-skin/face-07-comparison.png) |
+| face-10 | ![face-10 before](evidence/2026-11-02/face-skin/face-10-before.png) | ![face-10 after](evidence/2026-11-02/face-skin/face-10-after.png) | [Comparison](evidence/2026-11-02/face-skin/face-10-comparison.png) |
+| face-12 | ![face-12 before](evidence/2026-11-02/face-skin/face-12-before.png) | ![face-12 after](evidence/2026-11-02/face-skin/face-12-after.png) | [Comparison](evidence/2026-11-02/face-skin/face-12-comparison.png) |
+| face-18 | ![face-18 before](evidence/2026-11-02/face-skin/face-18-before.png) | ![face-18 after](evidence/2026-11-02/face-skin/face-18-after.png) | [Comparison](evidence/2026-11-02/face-skin/face-18-comparison.png) |
+| portrait-01 | ![portrait-01 before](evidence/2026-11-02/face-skin/portrait-01-before.png) | ![portrait-01 after](evidence/2026-11-02/face-skin/portrait-01-after.png) | [Comparison](evidence/2026-11-02/face-skin/portrait-01-comparison.png) |
+| portrait-02 | ![portrait-02 before](evidence/2026-11-02/face-skin/portrait-02-before.png) | ![portrait-02 after](evidence/2026-11-02/face-skin/portrait-02-after.png) | [Comparison](evidence/2026-11-02/face-skin/portrait-02-comparison.png) |
+| portrait-04 | ![portrait-04 before](evidence/2026-11-02/face-skin/portrait-04-before.png) | ![portrait-04 after](evidence/2026-11-02/face-skin/portrait-04-after.png) | [Comparison](evidence/2026-11-02/face-skin/portrait-04-comparison.png) |
+| portrait-05 | ![portrait-05 before](evidence/2026-11-02/face-skin/portrait-05-before.png) | ![portrait-05 after](evidence/2026-11-02/face-skin/portrait-05-after.png) | [Comparison](evidence/2026-11-02/face-skin/portrait-05-comparison.png) |
+| portrait-07 | ![portrait-07 before](evidence/2026-11-02/face-skin/portrait-07-before.png) | ![portrait-07 after](evidence/2026-11-02/face-skin/portrait-07-after.png) | [Comparison](evidence/2026-11-02/face-skin/portrait-07-comparison.png) |
+| portrait-10 | ![portrait-10 before](evidence/2026-11-02/face-skin/portrait-10-before.png) | ![portrait-10 after](evidence/2026-11-02/face-skin/portrait-10-after.png) | [Comparison](evidence/2026-11-02/face-skin/portrait-10-comparison.png) |
+| portrait-12 | ![portrait-12 before](evidence/2026-11-02/face-skin/portrait-12-before.png) | ![portrait-12 after](evidence/2026-11-02/face-skin/portrait-12-after.png) | [Comparison](evidence/2026-11-02/face-skin/portrait-12-comparison.png) |
+| portrait-18 | ![portrait-18 before](evidence/2026-11-02/face-skin/portrait-18-before.png) | ![portrait-18 after](evidence/2026-11-02/face-skin/portrait-18-after.png) | [Comparison](evidence/2026-11-02/face-skin/portrait-18-comparison.png) |
+
+Difference metrics:
+- face-01 threshold `12` changed pixels `46392/2073600` (`2.2373%`) MAE `0.004424`.
+- face-02 threshold `12` changed pixels `32630/2073600` (`1.5736%`) MAE `0.004074`.
+- face-04 threshold `12` changed pixels `48315/2073600` (`2.3300%`) MAE `0.004146`.
+- face-05 threshold `12` changed pixels `27757/2073600` (`1.3386%`) MAE `0.003257`.
+- face-07 threshold `12` changed pixels `36581/2073600` (`1.7641%`) MAE `0.004774`.
+- face-10 threshold `12` changed pixels `44615/2073600` (`2.1516%`) MAE `0.004075`.
+- face-12 threshold `12` changed pixels `46454/2073600` (`2.2403%`) MAE `0.004761`.
+- face-18 threshold `12` changed pixels `19158/2073600` (`0.9239%`) MAE `0.002600`.
+- portrait-01 threshold `12` changed pixels `10653/2073600` (`0.5137%`) MAE `0.002744`.
+- portrait-02 threshold `12` changed pixels `10858/2073600` (`0.5236%`) MAE `0.002993`.
+- portrait-04 threshold `12` changed pixels `10319/2073600` (`0.4976%`) MAE `0.002808`.
+- portrait-05 threshold `12` changed pixels `6547/2073600` (`0.3157%`) MAE `0.002461`.
+- portrait-07 threshold `12` changed pixels `7166/2073600` (`0.3456%`) MAE `0.003303`.
+- portrait-10 threshold `12` changed pixels `8685/2073600` (`0.4188%`) MAE `0.002699`.
+- portrait-12 threshold `12` changed pixels `7785/2073600` (`0.3754%`) MAE `0.003269`.
+- portrait-18 threshold `12` changed pixels `4437/2073600` (`0.2140%`) MAE `0.002962`.
+
+Related documents:[rendering-streaming.md](../systems/rendering-streaming.md) / [current-status.md](../current-status.md).
+
+## Snow without a repeating grid at distance
+<!-- project-update-log:2026-11-02:snow-distance-tiling -->
+
+- Reason：Open snow from about 20 m showed a grid of converging lines and dashes, plainest at night: repeats of the tiled ground maps and the FreshPowder maps' regular grain, which the broad sample magnified into a 1.7 m dimple grid.
+- Implementation：PolarData.hlsl PolarGroundSurface: each tiled albedo's variation and the packed normal fade to the map's mean (level 12) as a tile shrinks from 64 to 16 px; the FreshPowder normal and the gloss read from its albedo fade out from 5 to 2 px a grain cycle; the broad sample reads no finer than level 8.5. The PolarGround twin includes the file.
+- Validation：
+  - Strongest periodic peak over its band's median (6-60 px) in the grid area: night 4.2 to 2.9, medium snow by day 5.7 and 5.4 to 3.4 and 3.3 (plain snow about 3); other b5-land, b3 and dist frames change at most 0.66% of pixels.
+  - Package 0.6.92-test (vp-01): gameplay 387, weather 80 and ui 463 pass.
+- Decisions and scope：Clear-day cirrus on HDRP's cloud layer was tried and left out: its forward-lit cirrus fed the sky light (up to a quarter more on the snow, nearly double at 07:00 at full weight) and lowered the sun's share the user chose on October 24; measurements in Logs/ProjectUpdateCapture/polar-art/vp-share and vp-share2.
+- Remaining work：Two more texture reads a ground pixel, not measured separately. Cirrus would need a view-only layer kept out of HDRP's sky probes.
+
+### Screenshot comparison
+
+| State | Before | After | Difference |
+|---|---|---|---|
+| b5-land-day-clear | ![b5-land-day-clear before](evidence/2026-11-02/snow-distance-tiling/b5-land-day-clear-before.png) | ![b5-land-day-clear after](evidence/2026-11-02/snow-distance-tiling/b5-land-day-clear-after.png) | [Comparison](evidence/2026-11-02/snow-distance-tiling/b5-land-day-clear-comparison.png) |
+| b5-land-night-clear | ![b5-land-night-clear before](evidence/2026-11-02/snow-distance-tiling/b5-land-night-clear-before.png) | ![b5-land-night-clear after](evidence/2026-11-02/snow-distance-tiling/b5-land-night-clear-after.png) | [Comparison](evidence/2026-11-02/snow-distance-tiling/b5-land-night-clear-comparison.png) |
+| dist-01-coast-night | ![dist-01-coast-night before](evidence/2026-11-02/snow-distance-tiling/dist-01-coast-night-before.png) | ![dist-01-coast-night after](evidence/2026-11-02/snow-distance-tiling/dist-01-coast-night-after.png) | [Comparison](evidence/2026-11-02/snow-distance-tiling/dist-01-coast-night-comparison.png) |
+| dist-06-home-w1 | ![dist-06-home-w1 before](evidence/2026-11-02/snow-distance-tiling/dist-06-home-w1-before.png) | ![dist-06-home-w1 after](evidence/2026-11-02/snow-distance-tiling/dist-06-home-w1-after.png) | [Comparison](evidence/2026-11-02/snow-distance-tiling/dist-06-home-w1-comparison.png) |
+| dist-07-seam-w1-day | ![dist-07-seam-w1-day before](evidence/2026-11-02/snow-distance-tiling/dist-07-seam-w1-day-before.png) | ![dist-07-seam-w1-day after](evidence/2026-11-02/snow-distance-tiling/dist-07-seam-w1-day-after.png) | [Comparison](evidence/2026-11-02/snow-distance-tiling/dist-07-seam-w1-day-comparison.png) |
+| dist-07-seam-w1-day, grid area (crop) | ![dist-07-seam-w1-day, grid area (crop) before](evidence/2026-11-02/snow-distance-tiling/dist-07-seam-w1-day-grid-before.png) | ![dist-07-seam-w1-day, grid area (crop) after](evidence/2026-11-02/snow-distance-tiling/dist-07-seam-w1-day-grid-after.png) | [Comparison](evidence/2026-11-02/snow-distance-tiling/dist-07-seam-w1-day-grid-comparison.png) |
+| dist-11-seam-w1-night | ![dist-11-seam-w1-night before](evidence/2026-11-02/snow-distance-tiling/dist-11-seam-w1-night-before.png) | ![dist-11-seam-w1-night after](evidence/2026-11-02/snow-distance-tiling/dist-11-seam-w1-night-after.png) | [Comparison](evidence/2026-11-02/snow-distance-tiling/dist-11-seam-w1-night-comparison.png) |
+| dist-11-seam-w1-night, grid area (crop) | ![dist-11-seam-w1-night, grid area (crop) before](evidence/2026-11-02/snow-distance-tiling/dist-11-seam-w1-night-grid-before.png) | ![dist-11-seam-w1-night, grid area (crop) after](evidence/2026-11-02/snow-distance-tiling/dist-11-seam-w1-night-grid-after.png) | [Comparison](evidence/2026-11-02/snow-distance-tiling/dist-11-seam-w1-night-grid-comparison.png) |
+
+Difference metrics:
+- b5-land-day-clear threshold `12` changed pixels `561/2073600` (`0.0271%`) MAE `0.002016`.
+- b5-land-night-clear threshold `12` changed pixels `883/2073600` (`0.0426%`) MAE `0.002268`.
+- dist-01-coast-night threshold `12` changed pixels `13745/2073600` (`0.6629%`) MAE `0.003168`.
+- dist-06-home-w1 threshold `12` changed pixels `104/2073600` (`0.0050%`) MAE `0.001738`.
+- dist-07-seam-w1-day threshold `12` changed pixels `78/2073600` (`0.0038%`) MAE `0.001749`.
+- dist-07-seam-w1-day, grid area (crop) threshold `12` changed pixels `0/38400` (`0.0000%`) MAE `0.003495`.
+- dist-11-seam-w1-night threshold `12` changed pixels `301/2073600` (`0.0145%`) MAE `0.001770`.
+- dist-11-seam-w1-night, grid area (crop) threshold `12` changed pixels `5/38400` (`0.0130%`) MAE `0.004954`.
+
+Related documents:[rendering-streaming.md](../systems/rendering-streaming.md) / [current-status.md](../current-status.md).
+
+## Clear-day cirrus drawn only in the visible sky
+<!-- project-update-log:2026-11-02:view-only-cirrus -->
+
+- Reason：The user asked to try clear-day cirrus again as a layer that does not light the snow (HDRP's cloud layer had lowered the sun's share of the snow's light in 0.6.92-test).
+- Implementation：
+  - PolarCirrus.shader: a full-screen custom pass at AfterOpaqueAndSky (after the sky, before fog and clouds), so HDRP's ambient probe and sky reflections never see it; cirrus coloured from the sky behind them (85% whitened to the sun's colour, x2.2), opacity map x3.5, weighted by look and clear visibility (PolarHdrpPresentation).
+  - Cirrus map: the cirrus channel of HDRP's DefaultCloudMap, one uncompressed 2048x1024 channel (Tools/polar_cirrus_map.py); PolarHdrpLensPass copies the camera colour for it; the HDRP build checks the shader.
+- Validation：
+  - Snow luminance (lower 40%, linear) with the pass on, off, on in one b2-hold session: 07:00 .3924/.3918/.3916, 14:00 .5704/.5700/.5698, within noise (the cloud layer had added 26-93%); the sky 12-15% brighter.
+  - 10 clear-day pairs change 6-40% of pixels; medium snow and a clear night change no pixel by more than 8/255.
+  - Package 0.6.93-test (ci-01): gameplay 387, weather 80 and ui 463 pass; gameplay peak 6.90 GB (6.64 GB on vp-01).
+- Decisions and scope：Placed after the fog (BeforePreRefraction) the cirrus read harsher and lay over the volumetric clouds; the before-fog placement was kept.
+- Remaining work：The pass's GPU cost (a full-screen copy and pass by clear day) was not measured separately.
+
+### Screenshot comparison
+
+| State | Before | After | Difference |
+|---|---|---|---|
+| c07-away (cirrus) | ![c07-away (cirrus) before](evidence/2026-11-02/view-only-cirrus/c07-away-before.png) | ![c07-away (cirrus) after](evidence/2026-11-02/view-only-cirrus/c07-away-after.png) | [Comparison](evidence/2026-11-02/view-only-cirrus/c07-away-comparison.png) |
+| c07-sun (cirrus) | ![c07-sun (cirrus) before](evidence/2026-11-02/view-only-cirrus/c07-sun-before.png) | ![c07-sun (cirrus) after](evidence/2026-11-02/view-only-cirrus/c07-sun-after.png) | [Comparison](evidence/2026-11-02/view-only-cirrus/c07-sun-comparison.png) |
+| c14-away (cirrus) | ![c14-away (cirrus) before](evidence/2026-11-02/view-only-cirrus/c14-away-before.png) | ![c14-away (cirrus) after](evidence/2026-11-02/view-only-cirrus/c14-away-after.png) | [Comparison](evidence/2026-11-02/view-only-cirrus/c14-away-comparison.png) |
+| c14-sun (cirrus) | ![c14-sun (cirrus) before](evidence/2026-11-02/view-only-cirrus/c14-sun-before.png) | ![c14-sun (cirrus) after](evidence/2026-11-02/view-only-cirrus/c14-sun-after.png) | [Comparison](evidence/2026-11-02/view-only-cirrus/c14-sun-comparison.png) |
+| c14-upper (cirrus) | ![c14-upper (cirrus) before](evidence/2026-11-02/view-only-cirrus/c14-upper-before.png) | ![c14-upper (cirrus) after](evidence/2026-11-02/view-only-cirrus/c14-upper-after.png) | [Comparison](evidence/2026-11-02/view-only-cirrus/c14-upper-comparison.png) |
+| c14-zenith (cirrus) | ![c14-zenith (cirrus) before](evidence/2026-11-02/view-only-cirrus/c14-zenith-before.png) | ![c14-zenith (cirrus) after](evidence/2026-11-02/view-only-cirrus/c14-zenith-after.png) | [Comparison](evidence/2026-11-02/view-only-cirrus/c14-zenith-comparison.png) |
+| c18-away (cirrus) | ![c18-away (cirrus) before](evidence/2026-11-02/view-only-cirrus/c18-away-before.png) | ![c18-away (cirrus) after](evidence/2026-11-02/view-only-cirrus/c18-away-after.png) | [Comparison](evidence/2026-11-02/view-only-cirrus/c18-away-comparison.png) |
+| c18-sun (cirrus) | ![c18-sun (cirrus) before](evidence/2026-11-02/view-only-cirrus/c18-sun-before.png) | ![c18-sun (cirrus) after](evidence/2026-11-02/view-only-cirrus/c18-sun-after.png) | [Comparison](evidence/2026-11-02/view-only-cirrus/c18-sun-comparison.png) |
+| c20-away (cirrus) | ![c20-away (cirrus) before](evidence/2026-11-02/view-only-cirrus/c20-away-before.png) | ![c20-away (cirrus) after](evidence/2026-11-02/view-only-cirrus/c20-away-after.png) | [Comparison](evidence/2026-11-02/view-only-cirrus/c20-away-comparison.png) |
+| c20-sun (cirrus) | ![c20-sun (cirrus) before](evidence/2026-11-02/view-only-cirrus/c20-sun-before.png) | ![c20-sun (cirrus) after](evidence/2026-11-02/view-only-cirrus/c20-sun-after.png) | [Comparison](evidence/2026-11-02/view-only-cirrus/c20-sun-comparison.png) |
+| m14-upper (cirrus) | ![m14-upper (cirrus) before](evidence/2026-11-02/view-only-cirrus/m14-upper-before.png) | ![m14-upper (cirrus) after](evidence/2026-11-02/view-only-cirrus/m14-upper-after.png) | [Comparison](evidence/2026-11-02/view-only-cirrus/m14-upper-comparison.png) |
+| n00-upper (cirrus) | ![n00-upper (cirrus) before](evidence/2026-11-02/view-only-cirrus/n00-upper-before.png) | ![n00-upper (cirrus) after](evidence/2026-11-02/view-only-cirrus/n00-upper-after.png) | [Comparison](evidence/2026-11-02/view-only-cirrus/n00-upper-comparison.png) |
+
+Difference metrics:
+- c07-away (cirrus) threshold `12` changed pixels `449497/2073600` (`21.6771%`) MAE `0.017578`.
+- c07-sun (cirrus) threshold `12` changed pixels `62499/2073600` (`3.0140%`) MAE `0.006634`.
+- c14-away (cirrus) threshold `12` changed pixels `503097/2073600` (`24.2620%`) MAE `0.019224`.
+- c14-sun (cirrus) threshold `12` changed pixels `101958/2073600` (`4.9170%`) MAE `0.007377`.
+- c14-upper (cirrus) threshold `12` changed pixels `115074/2073600` (`5.5495%`) MAE `0.007143`.
+- c14-zenith (cirrus) threshold `12` changed pixels `112618/2073600` (`5.4310%`) MAE `0.011984`.
+- c18-away (cirrus) threshold `12` changed pixels `338685/2073600` (`16.3332%`) MAE `0.014861`.
+- c18-sun (cirrus) threshold `12` changed pixels `32803/2073600` (`1.5819%`) MAE `0.007800`.
+- c20-away (cirrus) threshold `12` changed pixels `321345/2073600` (`15.4970%`) MAE `0.014155`.
+- c20-sun (cirrus) threshold `12` changed pixels `37941/2073600` (`1.8297%`) MAE `0.006341`.
+- m14-upper (cirrus) threshold `12` changed pixels `22/2073600` (`0.0011%`) MAE `0.000442`.
+- n00-upper (cirrus) threshold `12` changed pixels `396/2073600` (`0.0191%`) MAE `0.000415`.
+
+Related documents:[rendering-streaming.md](../systems/rendering-streaming.md) / [current-status.md](../current-status.md).
+
+## Better weather and the ship from day 12; what everyone knows at the start
+<!-- project-update-log:2026-11-02:day12-start-knowledge -->
+
+- Reason：The user asked for better weather from day 12, the radio on the first clear day from day 12, and for people to know Pole Station's place without thinking to go there, since in Acts I and II nobody knows they can be rescued (GDD 2.2, 3.3).
+- Implementation：Weather: PolarWeather.Better steps from 0 to 1 at day 12 (period 66), no ramp. Ship: PolarRescue.FirstDay 12. Knowledge: PolarNpcManual drops the forecast and Pole Station's 'base and assembly point' and 'stocked beyond any hut'; the explorer's view gives Pole Station's distance, bearing and hours only; the rescue command and its words reach an explorer only after hearing the broadcast (HeardSchema); two handbook captions no longer give the weather's turn or a radio rescue point, and a quick-bar caption over the ten-word limit since 0.6.90-test was shortened. Package 0.6.94-test, build kd-02.
+- Validation：Shared rules 2748/2748 and CloudNpcCheck 204 pass. Player modes on kd-01: gameplay 387, weather 80, ui 463 pass; handbook-revision failed on the 13-word quick-bar caption and passes 619 on kd-02, which differs only in that caption (Logs/PolarV7/0.6.94-test).
+- Decisions and scope：Step the weather at day 12 rather than ramp; hide rescue from the shared instructions and schema rather than rename the command; keep Pole Station on everyone's chart as GDD 2.2 says.
+- Remaining work：No live explorer run was made to see how explorers now start. Hut stock is still uneven (offered after the ten-hut trial, unanswered).
+- Visual evidence:Only the weather schedule, the message's first day and what explorers are told change; each weather and the radio scene draw as before. The one on-screen change is the words of two handbook captions (same pages, layout and ten-word limit), checked by the handbook's caption validation; no capture was taken.
+
+Related documents:[GDD.md](../../GDD.md) / [design-decisions.md](../../design-decisions.md) / [polar-gameplay.md](../systems/polar-gameplay.md) / [polar-cloud-npcs.md](../systems/polar-cloud-npcs.md) / [polar-ui.md](../systems/polar-ui.md) / [current-status.md](../current-status.md).
+
+## Thin ice floats: water at the ice, a ragged hole with the sheet's own pieces
+<!-- project-update-log:2026-11-02:thin-ice-floating -->
+
+- Reason：The user said thin ice looks really unnatural and approved a five-milestone plan; M1 (water at the ice, for the rules too, the user's choice) and M2 (the hole) ship first, since a broken plate left a 0.65 m pit with vertical walls and hovering glassy tiles.
+- Implementation：World v22 puts pond water 3 cm under the ice (IceSettings waterDepthBelowIce .03; v21 keeps its hashes); explorers swim at WaterLevel(pond) - 1.15. PolarArtIcePondView draws a broken plate as a rounded hole ragged by 1D fBm, a strip of surviving ice to it with a cut face into the water (one triangle a corner closes the slivers between edges), the plate's own Voronoi pieces (12-30, 6 cm, 5 mm proud, tipped, rafted or pushed under, bobbing) and slush flakes. Loaded ponds draw HDRP pool water (PolarArtWater.Pond); the pool floor is drawn no lower than sea + 0.6 m so the dry land's water exclusion does not hide it, its collider stays at 3 m. The old shards and pebble debris are gone under HDRP. Capture section b4-thin-ice (12 shots).
+- Validation：Shared rules 2748; twenty v22 seeds pass (Logs/PolarCompactWorld/v22-twenty) and seed 777's v21 hash is unchanged (DB096612FFE320A7). Package 0.6.95-test (ti-01): gameplay 387, physical 3959, continue 36, performance 61, weather 80 and ui 463 pass (Logs/PolarV7/0.6.95-test/ti-01). Broken views change 0.08-4.3% of pixels and the swimmer's 83%; the intact shore view 0.08%.
+- Decisions and scope：A wet stain spreading from a fresh hole was tried and left out: the damage block covers whole plates, so it darkened whole cells and lifted their shore snow, showing the plate grid. The pond water's GPU cost was not measured separately.
+- Remaining work：Intact ice, loaded ice (bending, flooding, star cracks) and the shore are M3-M5; the user moved them, with a new falling-in plan, to the Thin ice falling water effect upgrade session. The step a loaded plate's 3 cm sag makes at its seams remains.
+
+### Screenshot comparison
+
+| State | Before | After | Difference |
+|---|---|---|---|
+| ti-hole-bank | ![ti-hole-bank before](evidence/2026-11-02/thin-ice-floating/ti-hole-bank-before.png) | ![ti-hole-bank after](evidence/2026-11-02/thin-ice-floating/ti-hole-bank-after.png) | [Comparison](evidence/2026-11-02/thin-ice-floating/ti-hole-bank-comparison.png) |
+| ti-hole-overhead | ![ti-hole-overhead before](evidence/2026-11-02/thin-ice-floating/ti-hole-overhead-before.png) | ![ti-hole-overhead after](evidence/2026-11-02/thin-ice-floating/ti-hole-overhead-after.png) | [Comparison](evidence/2026-11-02/thin-ice-floating/ti-hole-overhead-comparison.png) |
+| ti-hole-stable | ![ti-hole-stable before](evidence/2026-11-02/thin-ice-floating/ti-hole-stable-before.png) | ![ti-hole-stable after](evidence/2026-11-02/thin-ice-floating/ti-hole-stable-after.png) | [Comparison](evidence/2026-11-02/thin-ice-floating/ti-hole-stable-comparison.png) |
+| ti-overhead-broken | ![ti-overhead-broken before](evidence/2026-11-02/thin-ice-floating/ti-overhead-broken-before.png) | ![ti-overhead-broken after](evidence/2026-11-02/thin-ice-floating/ti-overhead-broken-after.png) | [Comparison](evidence/2026-11-02/thin-ice-floating/ti-overhead-broken-comparison.png) |
+| ti-shore-day | ![ti-shore-day before](evidence/2026-11-02/thin-ice-floating/ti-shore-day-before.png) | ![ti-shore-day after](evidence/2026-11-02/thin-ice-floating/ti-shore-day-after.png) | [Comparison](evidence/2026-11-02/thin-ice-floating/ti-shore-day-comparison.png) |
+| ti-shore-day-broken | ![ti-shore-day-broken before](evidence/2026-11-02/thin-ice-floating/ti-shore-day-broken-before.png) | ![ti-shore-day-broken after](evidence/2026-11-02/thin-ice-floating/ti-shore-day-broken-after.png) | [Comparison](evidence/2026-11-02/thin-ice-floating/ti-shore-day-broken-comparison.png) |
+| ti-swimmer | ![ti-swimmer before](evidence/2026-11-02/thin-ice-floating/ti-swimmer-before.png) | ![ti-swimmer after](evidence/2026-11-02/thin-ice-floating/ti-swimmer-after.png) | [Comparison](evidence/2026-11-02/thin-ice-floating/ti-swimmer-comparison.png) |
+
+Difference metrics:
+- ti-hole-bank threshold `12` changed pixels `27032/2073600` (`1.3036%`) MAE `0.004349`.
+- ti-hole-overhead threshold `12` changed pixels `14589/2073600` (`0.7036%`) MAE `0.003866`.
+- ti-hole-stable threshold `12` changed pixels `89736/2073600` (`4.3275%`) MAE `0.014383`.
+- ti-overhead-broken threshold `12` changed pixels `1583/2073600` (`0.0763%`) MAE `0.001882`.
+- ti-shore-day threshold `12` changed pixels `1757/2073600` (`0.0847%`) MAE `0.001670`.
+- ti-shore-day-broken threshold `12` changed pixels `23007/2073600` (`1.1095%`) MAE `0.003897`.
+- ti-swimmer threshold `12` changed pixels `1719019/2073600` (`82.9002%`) MAE `0.177264`.
+
+Related documents:[rendering-streaming.md](../systems/rendering-streaming.md) / [polar-world.md](../systems/polar-world.md).
+
+## Live check of how explorers start after the Acts I-II knowledge change
+<!-- project-update-log:2026-11-02:day12-live-start-check -->
+
+- Reason：The user asked for a live DeepSeek check of how explorers start after 0.6.94-test removed Pole Station's role, the forecast and any hint of a rescue from what they are told.
+- Implementation：No game change. Run kd-live-01 (whole game on DeepSeek, seed 777, four days) measured against wg-live-06 (November 1, old wording) from goals and positions; results in polar-cloud-npcs.md.
+- Validation：kd-live-01: 895 decisions, 893 requests with none failed, $1.02, all 20 alive at day 4. Goals naming Pole Station 31% (28% before) by 12 explorers (16); none name a rescue, ship, assembly or base; 2 of 20 moved over 300 m toward it (3); 13 never left home (9).
+- Decisions and scope：Report rather than change more: the remaining draw is the name and its own view line, and listing Pole Station among charted places is the user's call.
+- Remaining work：Pole Station as an ordinary charted place is not done. Irwin's home hut had no food and he was starving by day 3 (uneven hut stock, still open).
+- Visual evidence:A diagnostic run and documentation only; nothing in the game changes.
+
+Related documents:[polar-cloud-npcs.md](../systems/polar-cloud-npcs.md) / [current-status.md](../current-status.md).
+
+## Polar Habitat containers and supplies
+<!-- project-update-log:2026-11-02:habitat-containers -->
+
+- Reason：The user asked to use Codex's Polar Habitat v1.1 models, with the animation and sounds matched to them; M1 of the approved plan covers containers and supplies.
+- Implementation：Imported the pack (27 FBX models, maps, 28 HDRP/Lit materials, LFS); rebuilt the crate, fuel crate, chest, wall chest, locker, sack, tin, oil flask and rations from it at native size with owned open clips, COL_ boxes and grip/contents sockets; hands reach the moving grip or contents point; the flask's cap turns in refuel and pour; new wooden-lid, cabinet, sack-cord and screw-cap sounds timed to the motions. Package 0.6.96-test, build hm-01.
+- Validation：Shared rules 2748; gameplay 387, physical 3959 and ui 463 pass on hm-01 (Logs/PolarV7/0.6.96-test/hm-01); nine interaction captures before and after (PolarArtCapture section interaction, 16 production captures pass).
+- Decisions and scope：Native sizes kept instead of scaling to the old footprint, and the old reach points kept except the close glint, as the smaller change; the fuel crate's dividers dropped so its eight flasks fit; the cartridge prefab not rebuilt.
+- Remaining work：Stills cannot show the motions (lid swing, cap turn, reach) or the new sounds' timing; the anim-fire before capture failed on a stale fixture and was not repeated. M2 heaters, M3 tent, M4 huts and Pole Station and M5 release follow as their own packages.
+
+### Screenshot comparison
+
+| State | Before | After | Difference |
+|---|---|---|---|
+| container-floor | ![container-floor before](evidence/2026-11-02/habitat-containers/container-floor-before.png) | ![container-floor after](evidence/2026-11-02/habitat-containers/container-floor-after.png) | [Comparison](evidence/2026-11-02/habitat-containers/container-floor-comparison.png) |
+| glint-cabinet | ![glint-cabinet before](evidence/2026-11-02/habitat-containers/glint-cabinet-before.png) | ![glint-cabinet after](evidence/2026-11-02/habitat-containers/glint-cabinet-after.png) | [Comparison](evidence/2026-11-02/habitat-containers/glint-cabinet-comparison.png) |
+| glint-equipmentlocker | ![glint-equipmentlocker before](evidence/2026-11-02/habitat-containers/glint-equipmentlocker-before.png) | ![glint-equipmentlocker after](evidence/2026-11-02/habitat-containers/glint-equipmentlocker-after.png) | [Comparison](evidence/2026-11-02/habitat-containers/glint-equipmentlocker-comparison.png) |
+| glint-fuelcrate | ![glint-fuelcrate before](evidence/2026-11-02/habitat-containers/glint-fuelcrate-before.png) | ![glint-fuelcrate after](evidence/2026-11-02/habitat-containers/glint-fuelcrate-after.png) | [Comparison](evidence/2026-11-02/habitat-containers/glint-fuelcrate-comparison.png) |
+| glint-sack | ![glint-sack before](evidence/2026-11-02/habitat-containers/glint-sack-before.png) | ![glint-sack after](evidence/2026-11-02/habitat-containers/glint-sack-after.png) | [Comparison](evidence/2026-11-02/habitat-containers/glint-sack-comparison.png) |
+| glint-woodencrate | ![glint-woodencrate before](evidence/2026-11-02/habitat-containers/glint-woodencrate-before.png) | ![glint-woodencrate after](evidence/2026-11-02/habitat-containers/glint-woodencrate-after.png) | [Comparison](evidence/2026-11-02/habitat-containers/glint-woodencrate-comparison.png) |
+| prompt-inspect | ![prompt-inspect before](evidence/2026-11-02/habitat-containers/prompt-inspect-before.png) | ![prompt-inspect after](evidence/2026-11-02/habitat-containers/prompt-inspect-after.png) | [Comparison](evidence/2026-11-02/habitat-containers/prompt-inspect-comparison.png) |
+| sack-open | ![sack-open before](evidence/2026-11-02/habitat-containers/sack-open-before.png) | ![sack-open after](evidence/2026-11-02/habitat-containers/sack-open-after.png) | [Comparison](evidence/2026-11-02/habitat-containers/sack-open-comparison.png) |
+| upper-bay | ![upper-bay before](evidence/2026-11-02/habitat-containers/upper-bay-before.png) | ![upper-bay after](evidence/2026-11-02/habitat-containers/upper-bay-after.png) | [Comparison](evidence/2026-11-02/habitat-containers/upper-bay-comparison.png) |
+
+Difference metrics:
+- container-floor threshold `12` changed pixels `1044165/2073600` (`50.3552%`) MAE `0.076308`.
+- glint-cabinet threshold `12` changed pixels `707165/2073600` (`34.1033%`) MAE `0.045281`.
+- glint-equipmentlocker threshold `12` changed pixels `912988/2073600` (`44.0291%`) MAE `0.059845`.
+- glint-fuelcrate threshold `12` changed pixels `797535/2073600` (`38.4614%`) MAE `0.053440`.
+- glint-sack threshold `12` changed pixels `570003/2073600` (`27.4886%`) MAE `0.038125`.
+- glint-woodencrate threshold `12` changed pixels `669530/2073600` (`32.2883%`) MAE `0.048482`.
+- prompt-inspect threshold `12` changed pixels `897707/2073600` (`43.2922%`) MAE `0.068596`.
+- sack-open threshold `12` changed pixels `794404/2073600` (`38.3104%`) MAE `0.053608`.
+- upper-bay threshold `12` changed pixels `1309319/2073600` (`63.1423%`) MAE `0.071229`.
+
+## Pole Station listed among the explorers' places (0.6.97-test)
+<!-- project-update-log:2026-11-02:pole-station-listed -->
+
+- Reason：After the live check of the Acts I-II knowledge change, explorers still planned toward Pole Station; the user chose to list it plainly among their charted places, like any hut.
+- Implementation：The view's own Pole Station line is gone; an explorer without a record of it sees it among its places by distance, 'on the chart, not yet seen', and may walk there; the handbook says only that it is on everyone's chart.
+- Validation：Shared rules 2748, CloudNpcCheck 206 and gameplay 387 on ps-01 pass; live ps-live-01 on DeepSeek (four days, all 20 alive) against kd-live-01: goals naming Pole Station 13.5% (31%), 8 named it on day 1 (11), two ordered a walk there and neither failed.
+- Decisions and scope：Pole Station is always listed (after the nearest eight records) so no explorer loses its place on the chart; travel there needs no record, as for any listed place.
+- Remaining work：The nearest explorer (Quinn, 5.2 km) still set out for it on day 1. Uneven hut stock is still open.
+- Visual evidence:Explorer prompts and the walk executor only; nothing drawn on screen changes.
+
+Related documents:[polar-cloud-npcs.md](../systems/polar-cloud-npcs.md) / [design-decisions.md](../../design-decisions.md) / [current-status.md](../current-status.md).
+
+## Thin ice: deep pond water (world v23 basins, pond water surface)
+<!-- project-update-log:2026-11-02:deep-pond-water -->
+
+- Reason：The user approved Codex's plan for falling through thin ice; its first milestone makes a broken hole look down into deep water instead of a pale floor at sea + 0.6 m.
+- Implementation：World v23 makes ponds 20 m deep (nothing else changes); the basin is drawn at that depth in near-black ground with inward walls; the dry land's water exclusion is cut round every pond over the sea + 0.6 m, and lower ponds keep the owned water above it; one HDRP pool surface stands at the active pond with navy optics.
+- Validation：Package 0.6.98-test (dm-01): gameplay 387, physical 3959, continue 36, performance 61, weather 80 and ui 463 pass; twenty v23 seeds pass and seed 777 keeps its v22 hash; capture b4-deep-water passes 56 shots with no exceptions.
+- Decisions and scope：The exclusion cut starts at the sea + 0.6 m, not 0.1 m, after the adversarial review: water just over the exclusion is hidden wherever a view ray crosses the exclusion first. 1,190 of 8,566 ponds (13.9%) are low on twenty seeds.
+- Remaining work：M2 (undersides, rim support, the underwater view, the dip, the hands, the slush and the seam step), M3 (the breakthrough) and M4 (release checks).
+
+### Screenshot comparison
+
+| State | Before | After | Difference |
+|---|---|---|---|
+| dw-hole-night | ![dw-hole-night before](evidence/2026-11-02/deep-pond-water/dw-hole-night-before.png) | ![dw-hole-night after](evidence/2026-11-02/deep-pond-water/dw-hole-night-after.png) | [Comparison](evidence/2026-11-02/deep-pond-water/dw-hole-night-comparison.png) |
+| dw-hole-oblique | ![dw-hole-oblique before](evidence/2026-11-02/deep-pond-water/dw-hole-oblique-before.png) | ![dw-hole-oblique after](evidence/2026-11-02/deep-pond-water/dw-hole-oblique-after.png) | [Comparison](evidence/2026-11-02/deep-pond-water/dw-hole-oblique-comparison.png) |
+| dw-hole-overcast | ![dw-hole-overcast before](evidence/2026-11-02/deep-pond-water/dw-hole-overcast-before.png) | ![dw-hole-overcast after](evidence/2026-11-02/deep-pond-water/dw-hole-overcast-after.png) | [Comparison](evidence/2026-11-02/deep-pond-water/dw-hole-overcast-comparison.png) |
+| dw-hole-overhead | ![dw-hole-overhead before](evidence/2026-11-02/deep-pond-water/dw-hole-overhead-before.png) | ![dw-hole-overhead after](evidence/2026-11-02/deep-pond-water/dw-hole-overhead-after.png) | [Comparison](evidence/2026-11-02/deep-pond-water/dw-hole-overhead-comparison.png) |
+| dw-intact-bank | ![dw-intact-bank before](evidence/2026-11-02/deep-pond-water/dw-intact-bank-before.png) | ![dw-intact-bank after](evidence/2026-11-02/deep-pond-water/dw-intact-bank-after.png) | [Comparison](evidence/2026-11-02/deep-pond-water/dw-intact-bank-comparison.png) |
+| dw-merged-bank | ![dw-merged-bank before](evidence/2026-11-02/deep-pond-water/dw-merged-bank-before.png) | ![dw-merged-bank after](evidence/2026-11-02/deep-pond-water/dw-merged-bank-after.png) | [Comparison](evidence/2026-11-02/deep-pond-water/dw-merged-bank-comparison.png) |
+| dw-walk-t6-00-bank | ![dw-walk-t6-00-bank before](evidence/2026-11-02/deep-pond-water/dw-walk-t6-00-bank-before.png) | ![dw-walk-t6-00-bank after](evidence/2026-11-02/deep-pond-water/dw-walk-t6-00-bank-after.png) | [Comparison](evidence/2026-11-02/deep-pond-water/dw-walk-t6-00-bank-comparison.png) |
+| dw-walk-t6-00-overhead | ![dw-walk-t6-00-overhead before](evidence/2026-11-02/deep-pond-water/dw-walk-t6-00-overhead-before.png) | ![dw-walk-t6-00-overhead after](evidence/2026-11-02/deep-pond-water/dw-walk-t6-00-overhead-after.png) | [Comparison](evidence/2026-11-02/deep-pond-water/dw-walk-t6-00-overhead-comparison.png) |
+
+Difference metrics:
+- dw-hole-night threshold `12` changed pixels `8998/2073600` (`0.4339%`) MAE `0.002353`.
+- dw-hole-oblique threshold `12` changed pixels `50601/2073600` (`2.4402%`) MAE `0.004469`.
+- dw-hole-overcast threshold `12` changed pixels `41437/2073600` (`1.9983%`) MAE `0.003411`.
+- dw-hole-overhead threshold `12` changed pixels `6832/2073600` (`0.3295%`) MAE `0.002558`.
+- dw-intact-bank threshold `12` changed pixels `1426/2073600` (`0.0688%`) MAE `0.003377`.
+- dw-merged-bank threshold `12` changed pixels `40718/2073600` (`1.9636%`) MAE `0.003819`.
+- dw-walk-t6-00-bank threshold `12` changed pixels `37238/2073600` (`1.7958%`) MAE `0.003837`.
+- dw-walk-t6-00-overhead threshold `12` changed pixels `6258/2073600` (`0.3018%`) MAE `0.002481`.
+
+Related documents:[rendering-streaming.md](../systems/rendering-streaming.md) / [polar-world.md](../systems/polar-world.md) / [design-decisions.md](../../design-decisions.md) / [current-status.md](../current-status.md) / [polar-thin-ice-deep-water.md](../plans/polar-thin-ice-deep-water.md).
+
+## Thin ice open checks: cold water on v23 and pond water GPU cost
+<!-- project-update-log:2026-11-02:thin-ice-open-checks -->
+
+- Reason：0.6.95-test left the cold-water check unrun under the new water level and the pond water's GPU cost unmeasured; the user asked to finish them.
+- Implementation：
+  - PolarColdWaterCheck starts a new seed-777 expedition at the current world version, falls through a weak plate wide enough to pass the capsule and climbs onto the stable plate beside it; the lead tint threshold is 0.05 for HDRP water and the dry-land exclusion mesh is skipped in the snow-overlay check.
+  - PolarFiveAreasCapture waterperf gains three pond views (intact from 25 m, over the broken plate, a swimmer's eye), each alternating the pond's HDRP water, none and its owned water.
+- Validation：
+  - PolarColdWaterCheck v23-02 on world v23 (0.6.98-test code): 31 of 31 pass; v23-01 failed only the swimmer's lead tint at the old 0.1 threshold.
+  - Pond water GPU (Editor, uncapped, HDRP pass timers, pw-1): +0.06 ms intact; a hole filling the screen +0.28 ms own passes, frame +0.25-0.41 ms; swimmer +0.22 ms own passes, frame in noise. Target +0.3 ms.
+- Decisions and scope：The slush's look and the loaded plate's seam step were diagnosed and handed to the deep-water plan's M2, which rewrites PolarArtIcePond.cs and PolarThinIceRuntime.cs.
+- Remaining work：Pond water cost was measured in the Editor only; no paired Player run.
+- Visual evidence:Only Editor check and measurement tools change; no game code, so runtime pixels are unchanged.
+
+Related documents:[polar-gameplay.md](../systems/polar-gameplay.md) / [rendering-streaming.md](../systems/rendering-streaming.md) / [polar-thin-ice-upgrade.md](../plans/polar-thin-ice-upgrade.md).
+
+## Ice edge concept reference set
+<!-- project-update-log:2026-11-02:ice-edge-concepts -->
+
+- Reason：The user requested detailed ice-edge concepts for holes, frozen rivers, crevasses, icebergs, and the Antarctic continental margin.
+- Implementation：Archive ten original built-in ImageGen outputs, exact prompts, source paths and SHA-256 hashes, with a local full-resolution viewing gallery.
+- Validation：All ten images visually inspected; all ten PNGs decode; source/copy hashes match; all 22 local gallery links resolve; each original is 1536x1024.
+- Remaining work：Concept selection remains with the user; no runtime integration is part of this reference set.
+- Visual evidence:Standalone concept references and a local viewing gallery only; no game assets, scenes, shaders, or runtime behavior are changed, so Unity before/after captures do not apply.
+
+Related documents:[README.md](../../art/ice-edge-concepts/README.md) / [index.html](../../art/ice-edge-concepts/index.html) / [current-status.md](../current-status.md).
+
+## Comprehensive ice edge upgrade plan
+<!-- project-update-log:2026-11-02:ice-edge-upgrade-plan -->
+
+- Reason：The user requested a comprehensive ice edge upgrade proposal after reviewing the ten concept benchmarks against the current game.
+- Implementation：Add an English IE0-IE7 proposal covering geometry, thickness-aware materials, snow and water contact, motion, production assets, streaming, visual acceptance and cumulative performance budgets; link it from the plan index and current status.
+- Validation：All 24 local plan links resolve, including all ten original concepts; the document contains IE0-IE7, and proposal entries occur exactly once in the index and status. Targeted git diff whitespace checks pass; the non-visual evidence record verifies with zero capture cases.
+- Decisions and scope：Keep approved deep-water responsibilities with their existing plan and require explicit geography review for new thick icebergs or ice-shelf placements.
+- Remaining work：Proposal review and all IE0-IE7 implementation remain; no runtime validation is claimed for this documentation-only update.
+- Visual evidence:Planning and reference documentation only. No game code, shaders, meshes, materials, scenes, or runtime behavior change; Unity before and after captures do not apply.
+
+Related documents:[polar-ice-edge-upgrade.md](../plans/polar-ice-edge-upgrade.md) / [README.md](../plans/README.md) / [current-status.md](../current-status.md) / [index.html](../../art/ice-edge-concepts/index.html).
+
+## Supply trial under the new rules (diagnostic)
+<!-- project-update-log:2026-11-02:supply-trial-new-rules -->
+
+- Reason：The user asked to rerun the 50% area, 10-hut supply trial with one explorer under the new rules (Acts I-II knowledge, Pole Station listed, world v23).
+- Implementation：None to the game; Grant alone on DeepSeek, seed 777, 12 days, as st-a50h10b.
+- Validation：st-a50h10n4: no goal named Pole Station (54% before) and 57% spoke of searching (28%); he still starved at 7.42 days (7.51) with 2 of 10 huts searched, leaving home for the nearest hut only when his food ran out (day 6.8, 5.8 before).
+- Decisions and scope：Report only: the handbook stays factual, so moving on earlier needs another means (richer near huts or the body's own warning), which is the user's choice.
+- Remaining work：Explorers still stay where food is until it runs out. Three earlier attempts crashed on startup while the ChatGPT app's git diffs held all memory.
+- Visual evidence:A diagnostic run and documentation only; nothing in the game changes.
+
+Related documents:[polar-cloud-npcs.md](../systems/polar-cloud-npcs.md).
+
+## Kerosene heaters from Polar Habitat v1.1
+<!-- project-update-log:2026-11-02:kerosene-heaters -->
+
+- Reason：M2 of the habitat plan, which the user approved: the pack's kerosene heaters replace the hut's cast-iron stove and the tent's code-built stove, with the hands and sounds following the new models.
+- Implementation：
+  - HutHeater and TentHeater prefabs from Polar Habitat v1.1 (PolarHabitatAuthor.BuildHeaters), placed by the hut dressing and the tent view; the old stove stripped from Hut0-4's LOD0 and LOD1 meshes (312 triangles a hut).
+  - A shared burner door (PolarHeaterDoor) opens on the pack's Service cycle to light and refuel, in huts too, with Stove/DoorOpen and Stove/DoorShut; the hands reach the filler, the moving door grip then the fire, and the air control.
+- Validation：
+  - Package 0.6.99-test, build hm2-01: shared rules 2748, gameplay 387, weather 80 and ui 463 pass (Logs/PolarV7/0.6.99-test/hm2-01).
+  - 23 before/after capture cases (five-areas stove and anim-fire on a fresh v23 camp fixture, b6-habitat) compared and reviewed; two review passes (code and captures) with skeptic checks.
+- Decisions and scope：Rules, saves, target boxes, lamps and cues unchanged; colliders are refitted with the huts (M4) and the tent (M3).
+- Remaining work：
+  - Five small visual faults left for M3 and M4: the open door's mica pane still shows the fire and draws an edge line, the tent mouth's edge shows at the seam, Hut1 and Hut3 floor snow still follows the old stove's base, and an explorer refuelling in a hut stands 0.3-0.4 m short.
+  - Frame time not measured.
+
+### Screenshot comparison
+
+| State | Before | After | Difference |
+|---|---|---|---|
+| Hut roof and flue by day | ![Hut roof and flue by day before](evidence/2026-11-02/kerosene-heaters/b6-ext-day-roof-before.png) | ![Hut roof and flue by day after](evidence/2026-11-02/kerosene-heaters/b6-ext-day-roof-after.png) | [Comparison](evidence/2026-11-02/kerosene-heaters/b6-ext-day-roof-comparison.png) |
+| Hut outside at night, stove lit | ![Hut outside at night, stove lit before](evidence/2026-11-02/kerosene-heaters/b6-ext-night-lit-before.png) | ![Hut outside at night, stove lit after](evidence/2026-11-02/kerosene-heaters/b6-ext-night-lit-after.png) | [Comparison](evidence/2026-11-02/kerosene-heaters/b6-ext-night-lit-comparison.png) |
+| Hut ceiling and flue collar by day | ![Hut ceiling and flue collar by day before](evidence/2026-11-02/kerosene-heaters/b6-int-gable-ceiling-day-before.png) | ![Hut ceiling and flue collar by day after](evidence/2026-11-02/kerosene-heaters/b6-int-gable-ceiling-day-after.png) | [Comparison](evidence/2026-11-02/kerosene-heaters/b6-int-gable-ceiling-day-comparison.png) |
+| Hut room by day | ![Hut room by day before](evidence/2026-11-02/kerosene-heaters/b6-int-room-day-before.png) | ![Hut room by day after](evidence/2026-11-02/kerosene-heaters/b6-int-room-day-after.png) | [Comparison](evidence/2026-11-02/kerosene-heaters/b6-int-room-day-comparison.png) |
+| Hut room at night, stove lit | ![Hut room at night, stove lit before](evidence/2026-11-02/kerosene-heaters/b6-int-room-night-lit-before.png) | ![Hut room at night, stove lit after](evidence/2026-11-02/kerosene-heaters/b6-int-room-night-lit-after.png) | [Comparison](evidence/2026-11-02/kerosene-heaters/b6-int-room-night-lit-comparison.png) |
+| Hut stove by day, unlit | ![Hut stove by day, unlit before](evidence/2026-11-02/kerosene-heaters/b6-int-stove-day-unlit-before.png) | ![Hut stove by day, unlit after](evidence/2026-11-02/kerosene-heaters/b6-int-stove-day-unlit-after.png) | [Comparison](evidence/2026-11-02/kerosene-heaters/b6-int-stove-day-unlit-comparison.png) |
+| Hut stove at night, lit | ![Hut stove at night, lit before](evidence/2026-11-02/kerosene-heaters/b6-int-stove-night-lit-before.png) | ![Hut stove at night, lit after](evidence/2026-11-02/kerosene-heaters/b6-int-stove-night-lit-after.png) | [Comparison](evidence/2026-11-02/kerosene-heaters/b6-int-stove-night-lit-comparison.png) |
+| Watching the hut stove at night | ![Watching the hut stove at night before](evidence/2026-11-02/kerosene-heaters/b6-int-watch-night-lit-before.png) | ![Watching the hut stove at night after](evidence/2026-11-02/kerosene-heaters/b6-int-watch-night-lit-after.png) | [Comparison](evidence/2026-11-02/kerosene-heaters/b6-int-watch-night-lit-comparison.png) |
+| Hut at the LOD switch, seen through the door | ![Hut at the LOD switch, seen through the door before](evidence/2026-11-02/kerosene-heaters/b6-lod-cut-inside-before.png) | ![Hut at the LOD switch, seen through the door after](evidence/2026-11-02/kerosene-heaters/b6-lod-cut-inside-after.png) | [Comparison](evidence/2026-11-02/kerosene-heaters/b6-lod-cut-inside-comparison.png) |
+| Meal by the hut stove at night | ![Meal by the hut stove at night before](evidence/2026-11-02/kerosene-heaters/b6-meal-night-lit-before.png) | ![Meal by the hut stove at night after](evidence/2026-11-02/kerosene-heaters/b6-meal-night-lit-after.png) | [Comparison](evidence/2026-11-02/kerosene-heaters/b6-meal-night-lit-comparison.png) |
+| Damaged_L hut inside at night, lit | ![Damaged_L hut inside at night, lit before](evidence/2026-11-02/kerosene-heaters/b6-v1-int-night-lit-before.png) | ![Damaged_L hut inside at night, lit after](evidence/2026-11-02/kerosene-heaters/b6-v1-int-night-lit-after.png) | [Comparison](evidence/2026-11-02/kerosene-heaters/b6-v1-int-night-lit-comparison.png) |
+| Ruined_A hut inside by day | ![Ruined_A hut inside by day before](evidence/2026-11-02/kerosene-heaters/b6-v3-int-day-before.png) | ![Ruined_A hut inside by day after](evidence/2026-11-02/kerosene-heaters/b6-v3-int-day-after.png) | [Comparison](evidence/2026-11-02/kerosene-heaters/b6-v3-int-day-comparison.png) |
+| Player lighting the hut stove, 0.8 s | ![Player lighting the hut stove, 0.8 s before](evidence/2026-11-02/kerosene-heaters/fp-hut-light-before.png) | ![Player lighting the hut stove, 0.8 s after](evidence/2026-11-02/kerosene-heaters/fp-hut-light-after.png) | [Comparison](evidence/2026-11-02/kerosene-heaters/fp-hut-light-comparison.png) |
+| Player refuelling the hut stove, 0.8 s | ![Player refuelling the hut stove, 0.8 s before](evidence/2026-11-02/kerosene-heaters/fp-hut-refuel-before.png) | ![Player refuelling the hut stove, 0.8 s after](evidence/2026-11-02/kerosene-heaters/fp-hut-refuel-after.png) | [Comparison](evidence/2026-11-02/kerosene-heaters/fp-hut-refuel-comparison.png) |
+| Player lighting the tent burner, 0.8 s | ![Player lighting the tent burner, 0.8 s before](evidence/2026-11-02/kerosene-heaters/fp-tent-light-before.png) | ![Player lighting the tent burner, 0.8 s after](evidence/2026-11-02/kerosene-heaters/fp-tent-light-after.png) | [Comparison](evidence/2026-11-02/kerosene-heaters/fp-tent-light-comparison.png) |
+| Hut stove at night, close | ![Hut stove at night, close before](evidence/2026-11-02/kerosene-heaters/hut-close-before.png) | ![Hut stove at night, close after](evidence/2026-11-02/kerosene-heaters/hut-close-after.png) | [Comparison](evidence/2026-11-02/kerosene-heaters/hut-close-comparison.png) |
+| Hut stove at night from the door side | ![Hut stove at night from the door side before](evidence/2026-11-02/kerosene-heaters/hut-door-before.png) | ![Hut stove at night from the door side after](evidence/2026-11-02/kerosene-heaters/hut-door-after.png) | [Comparison](evidence/2026-11-02/kerosene-heaters/hut-door-comparison.png) |
+| Explorer lighting the hut stove from the door side, 0.8 s | ![Explorer lighting the hut stove from the door side, 0.8 s before](evidence/2026-11-02/kerosene-heaters/npc-hut-light-before.png) | ![Explorer lighting the hut stove from the door side, 0.8 s after](evidence/2026-11-02/kerosene-heaters/npc-hut-light-after.png) | [Comparison](evidence/2026-11-02/kerosene-heaters/npc-hut-light-comparison.png) |
+| Explorer refuelling the hut stove, 0.8 s | ![Explorer refuelling the hut stove, 0.8 s before](evidence/2026-11-02/kerosene-heaters/npc-hut-refuel-before.png) | ![Explorer refuelling the hut stove, 0.8 s after](evidence/2026-11-02/kerosene-heaters/npc-hut-refuel-after.png) | [Comparison](evidence/2026-11-02/kerosene-heaters/npc-hut-refuel-comparison.png) |
+| Explorer refuelling the tent burner, 0.8 s | ![Explorer refuelling the tent burner, 0.8 s before](evidence/2026-11-02/kerosene-heaters/npc-tent-refuel-before.png) | ![Explorer refuelling the tent burner, 0.8 s after](evidence/2026-11-02/kerosene-heaters/npc-tent-refuel-after.png) | [Comparison](evidence/2026-11-02/kerosene-heaters/npc-tent-refuel-comparison.png) |
+| Tent stove from the back wall | ![Tent stove from the back wall before](evidence/2026-11-02/kerosene-heaters/tent-back-before.png) | ![Tent stove from the back wall after](evidence/2026-11-02/kerosene-heaters/tent-back-after.png) | [Comparison](evidence/2026-11-02/kerosene-heaters/tent-back-comparison.png) |
+| Tent stove through the open entrance | ![Tent stove through the open entrance before](evidence/2026-11-02/kerosene-heaters/tent-entrance-before.png) | ![Tent stove through the open entrance after](evidence/2026-11-02/kerosene-heaters/tent-entrance-after.png) | [Comparison](evidence/2026-11-02/kerosene-heaters/tent-entrance-comparison.png) |
+| Tent stove at night, standing by the bags | ![Tent stove at night, standing by the bags before](evidence/2026-11-02/kerosene-heaters/tent-stand-before.png) | ![Tent stove at night, standing by the bags after](evidence/2026-11-02/kerosene-heaters/tent-stand-after.png) | [Comparison](evidence/2026-11-02/kerosene-heaters/tent-stand-comparison.png) |
+
+Difference metrics:
+- Hut roof and flue by day threshold `12` changed pixels `8562/2073600` (`0.4129%`) MAE `0.002816`.
+- Hut outside at night, stove lit threshold `12` changed pixels `1367/2073600` (`0.0659%`) MAE `0.001172`.
+- Hut ceiling and flue collar by day threshold `12` changed pixels `1644/2073600` (`0.0793%`) MAE `0.003464`.
+- Hut room by day threshold `12` changed pixels `74929/2073600` (`3.6135%`) MAE `0.008479`.
+- Hut room at night, stove lit threshold `12` changed pixels `129418/2073600` (`6.2412%`) MAE `0.009773`.
+- Hut stove by day, unlit threshold `12` changed pixels `234597/2073600` (`11.3135%`) MAE `0.031902`.
+- Hut stove at night, lit threshold `12` changed pixels `261252/2073600` (`12.5990%`) MAE `0.023283`.
+- Watching the hut stove at night threshold `12` changed pixels `284967/2073600` (`13.7426%`) MAE `0.017300`.
+- Hut at the LOD switch, seen through the door threshold `12` changed pixels `1750/2073600` (`0.0844%`) MAE `0.001258`.
+- Meal by the hut stove at night threshold `12` changed pixels `93995/2073600` (`4.5329%`) MAE `0.004298`.
+- Damaged_L hut inside at night, lit threshold `12` changed pixels `128462/2073600` (`6.1951%`) MAE `0.012461`.
+- Ruined_A hut inside by day threshold `12` changed pixels `72513/2073600` (`3.4970%`) MAE `0.009783`.
+- Player lighting the hut stove, 0.8 s threshold `12` changed pixels `290427/1440000` (`20.1685%`) MAE `0.049143`.
+- Player refuelling the hut stove, 0.8 s threshold `12` changed pixels `315590/1440000` (`21.9160%`) MAE `0.050780`.
+- Player lighting the tent burner, 0.8 s threshold `12` changed pixels `160732/1440000` (`11.1619%`) MAE `0.021697`.
+- Hut stove at night, close threshold `12` changed pixels `289085/1440000` (`20.0753%`) MAE `0.048425`.
+- Hut stove at night from the door side threshold `12` changed pixels `129428/1440000` (`8.9881%`) MAE `0.015760`.
+- Explorer lighting the hut stove from the door side, 0.8 s threshold `12` changed pixels `37562/1440000` (`2.6085%`) MAE `0.004586`.
+- Explorer refuelling the hut stove, 0.8 s threshold `12` changed pixels `172237/1440000` (`11.9609%`) MAE `0.021432`.
+- Explorer refuelling the tent burner, 0.8 s threshold `12` changed pixels `228011/1440000` (`15.8341%`) MAE `0.022434`.
+- Tent stove from the back wall threshold `12` changed pixels `34264/1440000` (`2.3794%`) MAE `0.007223`.
+- Tent stove through the open entrance threshold `12` changed pixels `12333/1440000` (`0.8565%`) MAE `0.002292`.
+- Tent stove at night, standing by the bags threshold `12` changed pixels `63083/1440000` (`4.3808%`) MAE `0.012042`.
+
+Related documents:[polar-habitat-models.md](../plans/polar-habitat-models.md) / [polar-gameplay.md](../systems/polar-gameplay.md) / [polar-audio.md](../systems/polar-audio.md) / [rendering-streaming.md](../systems/rendering-streaming.md) / [polar-huts.md](../systems/polar-huts.md) / [current-status.md](../current-status.md).
+
+## Thin ice: ice from every side, the underwater view, the dip and the hands
+<!-- project-update-log:2026-11-02:underwater-entry -->
+
+- Reason：M2 of the approved deep-water plan: going through thin ice should show the ice from every side and a moment under the water, and the person should climb out onto ice that holds to its visible edge.
+- Implementation：One hole line (PolarThinIce.Hole) for the art, rim colliders, explorers' footing and climbing out, with a 0.15 m capsule over broken plates; ice undersides with sky light through them; HDRP's underwater view in the active pond with the sea on its own layer; a 0.35 m dip of eye and body for about a second on going in; the hands drawn in the world in a pond; a lens film and a low-pass under water; the thin-ice session's darker, patchier slush and dished caps at loaded plates.
+- Validation：Package 0.6.100-test (dm-02): gameplay 389, physical 3959, continue 36, performance 61, weather 80 and ui 463 pass; seed 777 passes 1103 world checks with its v23 hash unchanged; capture b4-deep-water passes 56 shots with no exceptions (dw-m2c).
+- Decisions and scope：Thin-edge transmission and a wet band on piece tops were left out: the captures read as ice without them and both would add a material variant and a diffusion profile to HDRP's global settings. The drawn body follows the dip; without it the eye sank into the treading body.
+- Remaining work：A dark line where a rim strip laps the shore's snow, older than M2, goes to the shore work; M3 (the breakthrough) and M4 (release checks).
+
+### Screenshot comparison
+
+| State | Before | After | Difference |
+|---|---|---|---|
+| dw-hole-waterline | ![dw-hole-waterline before](evidence/2026-11-02/underwater-entry/dw-hole-waterline-before.png) | ![dw-hole-waterline after](evidence/2026-11-02/underwater-entry/dw-hole-waterline-after.png) | [Comparison](evidence/2026-11-02/underwater-entry/dw-hole-waterline-comparison.png) |
+| dw-under-down | ![dw-under-down before](evidence/2026-11-02/underwater-entry/dw-under-down-before.png) | ![dw-under-down after](evidence/2026-11-02/underwater-entry/dw-under-down-after.png) | [Comparison](evidence/2026-11-02/underwater-entry/dw-under-down-comparison.png) |
+| dw-under-side | ![dw-under-side before](evidence/2026-11-02/underwater-entry/dw-under-side-before.png) | ![dw-under-side after](evidence/2026-11-02/underwater-entry/dw-under-side-after.png) | [Comparison](evidence/2026-11-02/underwater-entry/dw-under-side-comparison.png) |
+| dw-under-up | ![dw-under-up before](evidence/2026-11-02/underwater-entry/dw-under-up-before.png) | ![dw-under-up after](evidence/2026-11-02/underwater-entry/dw-under-up-after.png) | [Comparison](evidence/2026-11-02/underwater-entry/dw-under-up-comparison.png) |
+| dw-walk-climb-t0-60 | ![dw-walk-climb-t0-60 before](evidence/2026-11-02/underwater-entry/dw-walk-climb-t0-60-before.png) | ![dw-walk-climb-t0-60 after](evidence/2026-11-02/underwater-entry/dw-walk-climb-t0-60-after.png) | [Comparison](evidence/2026-11-02/underwater-entry/dw-walk-climb-t0-60-comparison.png) |
+| dw-walk-swim-1s | ![dw-walk-swim-1s before](evidence/2026-11-02/underwater-entry/dw-walk-swim-1s-before.png) | ![dw-walk-swim-1s after](evidence/2026-11-02/underwater-entry/dw-walk-swim-1s-after.png) | [Comparison](evidence/2026-11-02/underwater-entry/dw-walk-swim-1s-comparison.png) |
+| dw-walk-t0-30 | ![dw-walk-t0-30 before](evidence/2026-11-02/underwater-entry/dw-walk-t0-30-before.png) | ![dw-walk-t0-30 after](evidence/2026-11-02/underwater-entry/dw-walk-t0-30-after.png) | [Comparison](evidence/2026-11-02/underwater-entry/dw-walk-t0-30-comparison.png) |
+| dw-walk-t0-80 | ![dw-walk-t0-80 before](evidence/2026-11-02/underwater-entry/dw-walk-t0-80-before.png) | ![dw-walk-t0-80 after](evidence/2026-11-02/underwater-entry/dw-walk-t0-80-after.png) | [Comparison](evidence/2026-11-02/underwater-entry/dw-walk-t0-80-comparison.png) |
+| dw-walk-t1-20 | ![dw-walk-t1-20 before](evidence/2026-11-02/underwater-entry/dw-walk-t1-20-before.png) | ![dw-walk-t1-20 after](evidence/2026-11-02/underwater-entry/dw-walk-t1-20-after.png) | [Comparison](evidence/2026-11-02/underwater-entry/dw-walk-t1-20-comparison.png) |
+| dw-walk-t2-00 | ![dw-walk-t2-00 before](evidence/2026-11-02/underwater-entry/dw-walk-t2-00-before.png) | ![dw-walk-t2-00 after](evidence/2026-11-02/underwater-entry/dw-walk-t2-00-after.png) | [Comparison](evidence/2026-11-02/underwater-entry/dw-walk-t2-00-comparison.png) |
+
+Difference metrics:
+- dw-hole-waterline threshold `12` changed pixels `625516/2073600` (`30.1657%`) MAE `0.039062`.
+- dw-under-down threshold `12` changed pixels `2053752/2073600` (`99.0428%`) MAE `0.053710`.
+- dw-under-side threshold `12` changed pixels `2025596/2073600` (`97.6850%`) MAE `0.168779`.
+- dw-under-up threshold `12` changed pixels `1283676/2073600` (`61.9057%`) MAE `0.069515`.
+- dw-walk-climb-t0-60 threshold `12` changed pixels `126540/2073600` (`6.1024%`) MAE `0.013824`.
+- dw-walk-swim-1s threshold `12` changed pixels `334314/2073600` (`16.1224%`) MAE `0.023677`.
+- dw-walk-t0-30 threshold `12` changed pixels `1197088/2073600` (`57.7299%`) MAE `0.098205`.
+- dw-walk-t0-80 threshold `12` changed pixels `1849796/2073600` (`89.2070%`) MAE `0.313366`.
+- dw-walk-t1-20 threshold `12` changed pixels `779841/2073600` (`37.6081%`) MAE `0.051004`.
+- dw-walk-t2-00 threshold `12` changed pixels `654038/2073600` (`31.5412%`) MAE `0.049755`.
+
+Related documents:[polar-thin-ice-deep-water.md](../plans/polar-thin-ice-deep-water.md) / [rendering-streaming.md](../systems/rendering-streaming.md) / [polar-gameplay.md](../systems/polar-gameplay.md) / [polar-audio.md](../systems/polar-audio.md) / [current-status.md](../current-status.md).
+
+## Thin ice: the continuous breakthrough
+<!-- project-update-log:2026-11-02:continuous-breakthrough -->
+
+- Reason：M3 of the approved deep-water plan: the fall through thin ice should be one continuous event, the ice cracking from under the feet, its pieces folding into the water from where it broke, the water answering with rings, spray and bubbles.
+- Implementation：Visual events from real transitions (ThinIceVisualEvent); the break point kept with a broken plate in saves (PolarIceSnapshot.struck, hitX, hitZ); cracks drawn as the exact edges of the plate's Voronoi network from its seeds (_PolarCrackMap), revealed outward from the load with stress; pieces folding in from the break point over 0.2-0.5 s; rings on the pond's HDRP water through one water decal (PondRings.mat, PolarIceRipples.shader, supportWaterDecals on); pooled spray, bubbles and foam (PolarThinIceEffects); pieces bobbing and shoved by a swimmer; a large piece's landing heard and explorers' gasp on coming up.
+- Validation：Package 0.6.101-test (dm-03): gameplay 390, physical 3959, continue 36, performance 61, weather 80 and ui 463 pass; capture b4-deep-water passes 57 shots with no exceptions (dw-m3d).
+- Decisions and scope：The drafted 128 px crack line map dashed near junctions and, widened, overran them, so the shader draws the exact bisector of the two nearest seeds instead. The 24-piece rigid-body simulation was not built: the decal rings move the water's normals only, so pieces have no height to ride, and the swimmer's shove stands in for it. The walk's load frames change nothing at the eye, since the cracks start under the feet; a close view from 2.4 m up (after only) shows them.
+- Remaining work：M4 (performance gates, a load/unload soak, release checks).
+
+### Screenshot comparison
+
+| State | Before | After | Difference |
+|---|---|---|---|
+| dw-hole-storm-t0-00 | ![dw-hole-storm-t0-00 before](evidence/2026-11-02/continuous-breakthrough/dw-hole-storm-t0-00-before.png) | ![dw-hole-storm-t0-00 after](evidence/2026-11-02/continuous-breakthrough/dw-hole-storm-t0-00-after.png) | [Comparison](evidence/2026-11-02/continuous-breakthrough/dw-hole-storm-t0-00-comparison.png) |
+| dw-hole-storm-t0-60 | ![dw-hole-storm-t0-60 before](evidence/2026-11-02/continuous-breakthrough/dw-hole-storm-t0-60-before.png) | ![dw-hole-storm-t0-60 after](evidence/2026-11-02/continuous-breakthrough/dw-hole-storm-t0-60-after.png) | [Comparison](evidence/2026-11-02/continuous-breakthrough/dw-hole-storm-t0-60-comparison.png) |
+| dw-merged-overhead | ![dw-merged-overhead before](evidence/2026-11-02/continuous-breakthrough/dw-merged-overhead-before.png) | ![dw-merged-overhead after](evidence/2026-11-02/continuous-breakthrough/dw-merged-overhead-after.png) | [Comparison](evidence/2026-11-02/continuous-breakthrough/dw-merged-overhead-comparison.png) |
+| dw-run-t0-15 | ![dw-run-t0-15 before](evidence/2026-11-02/continuous-breakthrough/dw-run-t0-15-before.png) | ![dw-run-t0-15 after](evidence/2026-11-02/continuous-breakthrough/dw-run-t0-15-after.png) | [Comparison](evidence/2026-11-02/continuous-breakthrough/dw-run-t0-15-comparison.png) |
+| dw-run-t0-50 | ![dw-run-t0-50 before](evidence/2026-11-02/continuous-breakthrough/dw-run-t0-50-before.png) | ![dw-run-t0-50 after](evidence/2026-11-02/continuous-breakthrough/dw-run-t0-50-after.png) | [Comparison](evidence/2026-11-02/continuous-breakthrough/dw-run-t0-50-comparison.png) |
+| dw-walk-load | ![dw-walk-load before](evidence/2026-11-02/continuous-breakthrough/dw-walk-load-before.png) | ![dw-walk-load after](evidence/2026-11-02/continuous-breakthrough/dw-walk-load-after.png) | [Comparison](evidence/2026-11-02/continuous-breakthrough/dw-walk-load-comparison.png) |
+| dw-walk-load-half | ![dw-walk-load-half before](evidence/2026-11-02/continuous-breakthrough/dw-walk-load-half-before.png) | ![dw-walk-load-half after](evidence/2026-11-02/continuous-breakthrough/dw-walk-load-half-after.png) | [Comparison](evidence/2026-11-02/continuous-breakthrough/dw-walk-load-half-comparison.png) |
+| dw-walk-t0-00 | ![dw-walk-t0-00 before](evidence/2026-11-02/continuous-breakthrough/dw-walk-t0-00-before.png) | ![dw-walk-t0-00 after](evidence/2026-11-02/continuous-breakthrough/dw-walk-t0-00-after.png) | [Comparison](evidence/2026-11-02/continuous-breakthrough/dw-walk-t0-00-comparison.png) |
+| dw-walk-t0-15 | ![dw-walk-t0-15 before](evidence/2026-11-02/continuous-breakthrough/dw-walk-t0-15-before.png) | ![dw-walk-t0-15 after](evidence/2026-11-02/continuous-breakthrough/dw-walk-t0-15-after.png) | [Comparison](evidence/2026-11-02/continuous-breakthrough/dw-walk-t0-15-comparison.png) |
+| dw-walk-t0-30-overhead | ![dw-walk-t0-30-overhead before](evidence/2026-11-02/continuous-breakthrough/dw-walk-t0-30-overhead-before.png) | ![dw-walk-t0-30-overhead after](evidence/2026-11-02/continuous-breakthrough/dw-walk-t0-30-overhead-after.png) | [Comparison](evidence/2026-11-02/continuous-breakthrough/dw-walk-t0-30-overhead-comparison.png) |
+
+Difference metrics:
+- dw-hole-storm-t0-00 threshold `12` changed pixels `42643/2073600` (`2.0565%`) MAE `0.003817`.
+- dw-hole-storm-t0-60 threshold `12` changed pixels `40282/2073600` (`1.9426%`) MAE `0.003461`.
+- dw-merged-overhead threshold `12` changed pixels `8092/2073600` (`0.3902%`) MAE `0.002900`.
+- dw-run-t0-15 threshold `12` changed pixels `408676/2073600` (`19.7085%`) MAE `0.046707`.
+- dw-run-t0-50 threshold `12` changed pixels `1982996/2073600` (`95.6306%`) MAE `0.316788`.
+- dw-walk-load threshold `12` changed pixels `1326/2073600` (`0.0639%`) MAE `0.001553`.
+- dw-walk-load-half threshold `12` changed pixels `57925/2073600` (`2.7935%`) MAE `0.007355`.
+- dw-walk-t0-00 threshold `12` changed pixels `256943/2073600` (`12.3912%`) MAE `0.029142`.
+- dw-walk-t0-15 threshold `12` changed pixels `312031/2073600` (`15.0478%`) MAE `0.031684`.
+- dw-walk-t0-30-overhead threshold `12` changed pixels `17762/2073600` (`0.8566%`) MAE `0.003629`.
+
+Related documents:[polar-thin-ice-deep-water.md](../plans/polar-thin-ice-deep-water.md) / [rendering-streaming.md](../systems/rendering-streaming.md) / [polar-gameplay.md](../systems/polar-gameplay.md) / [polar-audio.md](../systems/polar-audio.md) / [current-status.md](../current-status.md).

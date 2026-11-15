@@ -1,0 +1,77 @@
+docs/engineering/logs/evidence/2026-11-12/save-pieces-shared/results.md
+
+# A save's text shared by two workers and the main thread (0.6.150-test)
+
+November 12, 2026. Package `Builds/HdrpMilestones/tp-01`, Development copy `tp-01-dev`. Done at the user's "Fix the heavier saves near the player", after the measurement in [`line-cast-near`](../line-cast-near/results.md). With the player by an explorer's hut, a save cost the main thread more: a P90 of 2.25 and 3.05 ms, against 1.81 and 1.98 ms with the player far away. No paid run. The save file is byte for byte the same. No rule, save format or drawn pixel changes.
+
+## Where the time went
+
+The profiles of `walk-near` (on `nr-01-dev`) were read again, this time with the save worker's thread as well (`tests/SaveThreads.cs`):
+- **The main thread waited for the worker at every save.** The main thread validates while one worker writes the save's text. In 114 of 115 saves the text took longer than the validation, so the main thread then waited. The wait was about half of the save: median 0.79 and 0.93 ms, P90 1.37 and 1.53 ms.
+- **The worker's text was what grew near the player.** The worker took a median of 1.36 and 1.49 ms (P90 1.98 and 2.61 ms), against 1.24 and 1.38 ms (P90 1.48 and 1.63 ms) far away. The validation's median was about the same, at 0.78 and 0.81 ms against 0.76 and 0.79 ms.
+- **The text's content was not larger.** The two runs' last saves are both about 1.53 million characters. Near the player, the save also holds the player's meeting with explorer 19 and a different hut last seen. The slow saves came in runs of several in a row. That fits the worker sharing the processor with more of the game's own work while an explorer is in view. This laptop's i7-13700H has 6 performance cores and 8 efficiency cores, and the thread pool's worker may run on either.
+- **Timed on the run's own last save** in the Editor (release code; `data/text-parts-editor.txt`):
+  - the text with nothing changed takes 0.67 to 0.73 ms. Of that, 0.49 ms is `JsonUtility` over the state without huts and lists, and 0.13 ms is the marks of every hut;
+  - a changed hut takes up to 0.26 ms, and a changed route about 0.06 ms;
+  - the validation takes 0.51 to 0.54 ms;
+  - the 0.49 ms is people: the state without them takes 0.02 ms, and its 20 people written one by one take 0.50 ms in all.
+
+## The change
+
+- **A save's text in pieces** (`PolarSaveService.Text`). There is a piece for each person: their four kept lists, and the rest of them written by `JsonUtility` (`PolarActorState.Bare`). There is a piece for each hut: its mark, and its text if the mark changed. The last piece is the state without people or huts: `PolarGameplayState.Bare` now leaves the people out too.
+- **Two workers and the main thread share the pieces.** `WriteInBackground` starts two workers, which take pieces in turn (`Interlocked.Increment`). The main thread validates, then takes whatever is left. It then waits only for the pieces the workers are still writing (`ManualResetEventSlim`, set by whoever finishes the last piece).
+  - A worker that starts late finds no piece left and never touches the state.
+  - A piece that fails, on any thread, is raised on the main thread (`Text.Made`), and the save fails as before.
+  - `Write`, `Payload` and `HutText` take every piece on their own thread.
+- **The publishing worker puts the text together.** `Rest` puts each person, with their four lists in place, at `"actors":[]`. It cuts where the huts go, which it finds in the state's own short text. It still writes the text into one string (`string.Create`).
+- **Sizes and threads.** The kept arrays (`huts`, `marks`, `lists`, `listMarks`, `persons`) are sized on the main thread before any piece is taken (`Size`). Each piece writes only its own entries. `JsonUtility` now runs on up to three threads at once, each call on its own objects.
+
+## Verified
+
+- **The text** (`tests/SavePiecesProbe.cs`, `data/pieces-probe.txt`; Editor, release code):
+  - every kept save under `Logs` and `Builds`: 1,462 saves, 1,411 million characters. The payload from its pieces is `JsonUtility`'s own in 1,462 of 1,462. The same holds after a change to each person (a route point, an experience, health, a place's time) and a hut's door: the text is made by two workers and the main thread, and is right again after the changes are undone;
+  - 3,000 saves of `walk-near`'s last save by two workers and the main thread, with the validation, while a person, a hut's door and a route changed between saves: none differed from `JsonUtility`'s own and none threw;
+  - the main thread a save, interleaved over 580 saves: 1.17 ms with one worker making all the text (P90 1.39), against 0.71 ms (P90 0.86) shared.
+- **The gameplay mode's text check** (`PolarMvpAcceptance.SaveTextFault`, 113 single-field changes) passes as part of gameplay 392.
+- **Review.** Three reviewers found no fault. Their lenses were threads and memory visibility, the bytes, and every caller with its failure paths.
+
+## Measured: a near walk day
+
+Before is `walk-near` on `nr-01-dev`. After is `pieces-near` on `tp-01-dev`. Both ran 960 s on seed 777, with every explorer walking between its two nearest huts and no model. The player stood 6 m out from the door of explorer 19's hut 139 (`--walk --near`). Both had 192 saves, with 544 and 545 legs walked. The times are per save, on the main thread unless named, from the profiler logs (`data/save-parts.txt`; `data/step-tree.txt`).
+
+| | minutes 2 to 6, before | after | minutes 10 to 15, before | after |
+|---|---|---|---|---|
+| a save, median | 1.56 ms | 1.04 ms | 1.72 ms | 1.07 ms |
+| a save, P90 | 2.25 ms | 1.24 ms | 3.05 ms | 1.39 ms |
+| a save, slowest | 4.31 ms | 1.95 ms | 8.32 ms | 7.07 ms |
+| the validation, median | 0.78 ms | 0.79 ms | 0.81 ms | 0.79 ms |
+| the main thread's own pieces, median | none | 0.06 ms | none | 0.11 ms |
+| waiting, median | 0.79 ms | 0.16 ms | 0.93 ms | 0.16 ms |
+| waiting, P90 | 1.37 ms | 0.27 ms | 1.53 ms | 0.23 ms |
+| the longest worker, median | 1.36 ms | 0.85 ms | 1.49 ms | 0.87 ms |
+| the workers in all, median | 1.36 ms | 1.65 ms | 1.49 ms | 1.71 ms |
+
+- **Near the player, a save now costs less than it did far away before.** With the player far away (`walk-kept` on `kp-01-dev`), the median was 1.47 and 1.66 ms and the P90 1.81 and 1.98 ms.
+- **The slowest save in minutes 10 to 15** came in both runs from a 6.5 ms validation:
+  - before, 3.26 ms of it was compiling;
+  - after, the two workers' text took 6.6 ms each at the same moment (`data/slow-save-frame.txt`). All three threads stalled together, which no change to a save's own code would cause. Measured afterwards ([`save-gc-lock`](../save-gc-lock/results.md)): not a stop of the world and not the machine. The leading explanation, not confirmed, is a wait on the garbage collector's one allocation lock in the seconds before a cycle; what held it is not known.
+- **The workers do about 0.3 ms more in all.** That is more calls to `JsonUtility` and three threads at once, but it is spread over two threads.
+- **The rest of the day did not change:**
+  - allocation in play was 18.07 MB a minute in both runs (minutes 3 to 14). The text's own allocation on the workers was 9.19 and 9.23 MB over the call-stack stretch;
+  - frames over 25 ms off the profiler's log starts: 6 after, 15 before. Three of each were in the first half second of play. Before, five of them came in one second while Windows was compressing memory;
+  - the explorers' step's P99 was 1.83 and 1.76 ms, against 1.86 and 1.81 ms before. Its two frames over 4 ms were the boulder code's first use (4.01 ms, 1.79 ms of it compiling) and one walking-effort estimate of 4.23 ms (usually under 0.8 ms; not looked into).
+
+## Suites
+
+Gameplay 392 and continue 36 pass on `tp-01` (`Logs/PolarV7/0.6.150-test/tp-01`; `data/suite.txt`). No twenty-seed sweep: world generation and navigation are unchanged.
+
+## Files
+
+- `data/save-parts.txt`: every save of `walk-near`, `pieces-near` and `walk-kept`, with the main thread's parts and each worker's text.
+- `data/step-tree.txt`: the step and save trees of `pieces-near`.
+- `data/walk-day.txt`: the three runs' summaries.
+- `data/pieces-probe.txt`: the text checks and the Editor timing.
+- `data/text-parts-editor.txt`: what each part of the text costs, on `walk-near`'s last save.
+- `data/slow-save-frame.txt`: the threads in the frame of the slowest save after.
+- `data/suite.txt`: the suite run.
+- `tests/SavePiecesProbe.cs`, `tests/SaveThreads.cs`: the probe and the reader.

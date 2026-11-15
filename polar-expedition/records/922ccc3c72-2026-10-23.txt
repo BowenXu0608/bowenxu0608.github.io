@@ -1,0 +1,205 @@
+docs/engineering/logs/2026-10-23.md
+
+# 2026-10-23 Engineering log
+
+## Play at 240 Hz checked: the game clock keeps real time in fullscreen
+<!-- project-update-log:2026-10-23:clock-240hz-0641 -->
+
+- Reason：The user asked whether the game clock lags real time or stalls during normal play at 240 Hz (the weather test had seen 0.325 s reported in 0.5 s and 0.6-5 s stalls), and to fix it if it does.
+- Implementation：The loading profile gains a clock probe (-polarClockProbe <seconds>, PolarLoadingProbe): after entering a new expedition it plays unpaused and writes real time, Unity's unscaled and scaled time, the world clock and each frame's real length to <profile>-clock.json. Package build wt-04 (wt-03 plus the probe, which runs only when asked for).
+- Validation：AC power, 240 Hz, new seed-777 expedition, 90 s from 5 s after entry (Logs/PolarClock/2026-10-23): borderless fullscreen 2560x1440 with vsync, the user's own settings, keeps game and world clock on real time (90.003 s in 90.005 s) at 67 fps on average, p95 22.5 ms, longest frame 103 ms, 48 frames over 50 ms during distant refinement; a 1600x900 window keeps unscaled time right (89.76 s) but deltaTime and the world clock sum to 82.9 s (8% slow).
+- Decisions and scope：Nothing was changed in play: the user plays borderless fullscreen, where the clock keeps real time and no frame stalled beyond 103 ms.
+- Remaining work：Windowed play at 240 Hz runs the game clock 8% slow (Unity rounds deltaTime down to whole refreshes for composed windows); the Player modes' background windows under-report more and stall 0.6-5 s.
+- Visual evidence:A diagnostic probe and documents; nothing the player sees or plays changed.
+
+Related documents:[rendering-streaming.md](../systems/rendering-streaming.md) / [current-status.md](../current-status.md).
+
+## The game clock keeps real time in a window at high refresh rates
+<!-- project-update-log:2026-10-23:windowed-clock-0642 -->
+
+- Reason：The user asked to fix the slow game clock in windowed play at high refresh rates (at 240 Hz a 1600x900 window ran game time 8% slow).
+- Implementation：Unity 6000.2 locks a composed window's Time.deltaTime to the display's refresh under vsync (a Unity bug, fixed in 6000.5). In a built Player in a window with vsync, PolarSettingsHost now sets Time.captureDeltaTime each frame to the real time the last frame took (at most Time.maximumDeltaTime), and leaves it off otherwise, so game time, physics and animation follow real time while vsync still paces the frames; settings are untouched. Package 0.6.42-test, build ck-01.
+- Validation：Clock probe, AC power, 240 Hz, new seed-777 expedition, 90 s (Logs/PolarClock/2026-10-23): windowed 1600x900 before (wt-04) 82.9 s of game time in 90.0 s, after (ck-01) 90.004 s in 90.000 s at 120 fps on average, longest frame 50 ms; borderless fullscreen 90.003 s in 90.004 s before and after. Player modes on ck-01 at 240 Hz: weather 80 and ui 382 pass; the weather mode's door wait now reports 0.508 s in 62 frames.
+- Decisions and scope：A Player-only clock correction for windows with vsync, to be removed when the project moves to Unity 6000.5.
+- Visual evidence:Game speed, not appearance: the same clock probe measured before (wt-04) and after (ck-01); no frame looks different.
+
+Related documents:[rendering-streaming.md](../systems/rendering-streaming.md) / [current-status.md](../current-status.md).
+
+## Snow edges at bare crests taper instead of stepping along the terrain triangles
+<!-- project-update-log:2026-10-23:snow-crest-edge-0643 -->
+
+- Reason：The user asked to work on the leftovers, starting with the snow edge at sharp slope changes: at wind-scoured crests the drawn snow still ended in a toothed shelf along the terrain triangles.
+- Implementation：PolarHills.Height takes an optional crease width; within that many metres of a ridge crease the ridge's slope term fades through zero instead of flipping sign. Only PolarLandscape.GroundCover passes one (CreaseMetres 3), so bare crest cover now fades over about 3.5 m and the drawn snow depth over about 1.2 m; heights, normals, navigation and world hashes are unchanged. A pinned snowedge capture group and a --diagnose-cover checker option. Package 0.6.43-test, build se-01.
+- Validation：Seed 777 (--diagnose-cover): across a crest the slope fell from 0.317 to 0.056 and cover from 1.000 to 0.008 within 10 cm; now cover falls from 1 to 0 over about 3.5 m. Twenty v18 seeds pass with bare land 3.8-6.5% (was 3.9-6.5%, limit 7.5%). Three genuine pairs: the shelf with teeth becomes a soft, irregular edge. se-01: gameplay 339 and weather 80 pass.
+- Decisions and scope：Wind-scoured crests keep their bare ground; only the crest edge softens (docs/design-decisions.md).
+
+### Screenshot comparison
+
+| State | Before | After | Difference |
+|---|---|---|---|
+| Bare crest edge in the camp fixture, from the snow side | ![Bare crest edge in the camp fixture, from the snow side before](evidence/2026-10-23/snow-crest-edge-0643/snow-edge-before.png) | ![Bare crest edge in the camp fixture, from the snow side after](evidence/2026-10-23/snow-crest-edge-0643/snow-edge-after.png) | [Comparison](evidence/2026-10-23/snow-crest-edge-0643/snow-edge-comparison.png) |
+| The same edge from the bare side, looking back at the snow | ![The same edge from the bare side, looking back at the snow before](evidence/2026-10-23/snow-crest-edge-0643/snow-edge-back-before.png) | ![The same edge from the bare side, looking back at the snow after](evidence/2026-10-23/snow-crest-edge-0643/snow-edge-back-after.png) | [Comparison](evidence/2026-10-23/snow-crest-edge-0643/snow-edge-back-comparison.png) |
+| The same edge, close and across | ![The same edge, close and across before](evidence/2026-10-23/snow-crest-edge-0643/snow-edge-close-before.png) | ![The same edge, close and across after](evidence/2026-10-23/snow-crest-edge-0643/snow-edge-close-after.png) | [Comparison](evidence/2026-10-23/snow-crest-edge-0643/snow-edge-close-comparison.png) |
+
+Difference metrics:
+- Bare crest edge in the camp fixture, from the snow side threshold `12` changed pixels `18638/1440000` (`1.2943%`) MAE `0.003565`.
+- The same edge from the bare side, looking back at the snow threshold `12` changed pixels `66997/1440000` (`4.6526%`) MAE `0.009319`.
+- The same edge, close and across threshold `12` changed pixels `127036/1440000` (`8.8219%`) MAE `0.019704`.
+
+Related documents:[rendering-streaming.md](../systems/rendering-streaming.md) / [design-decisions.md](../../design-decisions.md) / [current-status.md](../current-status.md).
+
+## Snow thins to open water's edge instead of ending in a toothed lip
+<!-- project-update-log:2026-10-23:open-shore-snow-0644 -->
+
+- Reason：The user asked to work on the leftovers: along v18 open rivers and lakes the drawn snow ended in a lip that stepped down along the terrain triangles where the river floor's ice colour took it away, a sawtooth along every bank.
+- Implementation：PolarRivers.ShoreDistance gives the metres to the nearest open water's edge (v18 medium rivers and lakes at least WaterDepth deep), and the streamer's snow depth thins to that edge over 3 m (OpenShore), as it already did at ponds. Render only; v17 frozen rivers, heights and world hashes are unchanged. Package 0.6.44-test, build sh-01.
+- Validation：Two genuine pairs (seed 777: an open river from 18 m and a lake from 25 m above the water): the toothed lip becomes snow thinning smoothly to the water. Three assemblies compile; sh-01: gameplay 339 and weather 80 pass (Logs/PolarV7/0.6.44-test/sh-01).
+- Decisions and scope：The painted bank keeps its shape; only the snow's drawn depth tapers to the water.
+- Remaining work：Lake banks keep slight corners every 10 m, where the width is interpolated along the centreline.
+
+### Screenshot comparison
+
+| State | Before | After | Difference |
+|---|---|---|---|
+| World v18: a lake from 25 m above its water | ![World v18: a lake from 25 m above its water before](evidence/2026-10-23/open-shore-snow-0644/lake-before.png) | ![World v18: a lake from 25 m above its water after](evidence/2026-10-23/open-shore-snow-0644/lake-after.png) | [Comparison](evidence/2026-10-23/open-shore-snow-0644/lake-comparison.png) |
+| World v18, seed 777: an open river from 18 m above its water | ![World v18, seed 777: an open river from 18 m above its water before](evidence/2026-10-23/open-shore-snow-0644/river-before.png) | ![World v18, seed 777: an open river from 18 m above its water after](evidence/2026-10-23/open-shore-snow-0644/river-after.png) | [Comparison](evidence/2026-10-23/open-shore-snow-0644/river-comparison.png) |
+
+Difference metrics:
+- World v18: a lake from 25 m above its water threshold `12` changed pixels `74534/1440000` (`5.1760%`) MAE `0.013160`.
+- World v18, seed 777: an open river from 18 m above its water threshold `12` changed pixels `32795/1440000` (`2.2774%`) MAE `0.008313`.
+
+Related documents:[rendering-streaming.md](../systems/rendering-streaming.md) / [current-status.md](../current-status.md).
+
+## Floes stay drawn at 240 m; the user-save floe capture now draws clear weather
+<!-- project-update-log:2026-10-23:floe-capture-weather -->
+
+- Reason：The user asked to work on the leftovers; one was whether a drifting floe that fades 240 m away (the 0.6.40 user-save captures) is the snowfall's visibility or a floe culling bug.
+- Implementation：The five-areas capture said clear weather but only set the weather index, leaving the save's weather blend; with world time frozen the blend never moves, so the user save's captures drew its snowstorm. Its load, and the new seed-777 expedition groups, which drew the new game's light snowfall the same way, now settle clear weather through the same helper the playtest capture uses (PolarFiveAreasCapture). Capture tool only; nothing in the game changed.
+- Validation：User save (world EF25F881DF251FFE), the sea-level floe nearest the stuck position: in clear weather the floe is drawn from 60 m and from 240 m, with more floes farther out; before, both views were in the snowstorm and the floe was lost at 240 m. The capture's save copy no longer fails with an invalid weather transition (6 failed attempts before, none after).
+- Decisions and scope：Floes are drawn at 240 m and beyond; in snowfall they fade with everything else at the weather's visibility, by design.
+
+### Screenshot comparison
+
+| State | Before | After | Difference |
+|---|---|---|---|
+| The user save's sea-level floe from 240 m, 10 m above the water | ![The user save's sea-level floe from 240 m, 10 m above the water before](evidence/2026-10-23/floe-capture-weather/floe-far-before.png) | ![The user save's sea-level floe from 240 m, 10 m above the water after](evidence/2026-10-23/floe-capture-weather/floe-far-after.png) | [Comparison](evidence/2026-10-23/floe-capture-weather/floe-far-comparison.png) |
+| The same floe from 60 m | ![The same floe from 60 m before](evidence/2026-10-23/floe-capture-weather/floe-near-before.png) | ![The same floe from 60 m after](evidence/2026-10-23/floe-capture-weather/floe-near-after.png) | [Comparison](evidence/2026-10-23/floe-capture-weather/floe-near-comparison.png) |
+
+Difference metrics:
+- The user save's sea-level floe from 240 m, 10 m above the water threshold `12` changed pixels `1369308/1440000` (`95.0908%`) MAE `0.179854`.
+- The same floe from 60 m threshold `12` changed pixels `1386824/1440000` (`96.3072%`) MAE `0.211074`.
+
+Related documents:[current-status.md](../current-status.md).
+
+## World v19: a lake in every district; open water ends where the land holds it
+<!-- project-update-log:2026-10-23:lake-every-district-0645 -->
+
+- Reason：The user chose a new world version so that every district has a lake: on two of twenty test seeds one crowded or low district had none (seed 1335335949 district 11, seed 548164728 district 9, a basin below the sea's datum).
+- Implementation：World v19 (PolarRivers.LakeVersion, CurrentVersion 19): a district still without a lake after its 30 tries keeps trying, up to 300 more, and Holds also measures past each lake end, so a v19 lake holds its water at its ends as at its sides. Found while checking: PolarLeads.RiverWater pushed every open-water run end out by its half-width + 2 m, and over lower land the flat sheet hung in the air (seed 777's v18 world: 66 of 224 run ends, lake 4 by 22 m); an end is now pushed out only where the land at the pushed edge stands at or above the water (Held, every world version, render only). Package 0.6.45-test, build lk-01.
+- Validation：Twenty seeds, v19: 20 of 20 pass with a new check that every district has a lake of open water; 31-48 lakes a world (median 38); no lake end opens onto lower land on seeds 777 and 1335335949. v18 keeps its hashes. Three genuine pairs: district 11 gains a lake; lake 4's floating end sheet is gone. lk-01: gameplay 339, physical 2706 and weather 80 pass (Logs/PolarV7/0.6.45-test/lk-01).
+- Decisions and scope：Expeditions begun on v10 to v18 keep their world; their water ends are fixed in drawing only, so a v18 lake end over lower land now ends in a straight edge at its last held point.
+- Remaining work：Inland ground below the sea's datum is drawn under the infinite HDRP ocean as open sea although it is dry (found while capturing, every district of three sampled seeds); not changed.
+
+### Screenshot comparison
+
+| State | Before | After | Difference |
+|---|---|---|---|
+| Seed 1335335949, district 11 (no lake in world v18), from 140 m above the v19 lake's middle | ![Seed 1335335949, district 11 (no lake in world v18), from 140 m above the v19 lake's middle before](evidence/2026-10-23/lake-every-district-0645/district-lake-before.png) | ![Seed 1335335949, district 11 (no lake in world v18), from 140 m above the v19 lake's middle after](evidence/2026-10-23/lake-every-district-0645/district-lake-after.png) | [Comparison](evidence/2026-10-23/lake-every-district-0645/district-lake-comparison.png) |
+| Seed 777 world v18, lake 4's end over land 22 m below its water, from beyond the end | ![Seed 777 world v18, lake 4's end over land 22 m below its water, from beyond the end before](evidence/2026-10-23/lake-every-district-0645/lake-end-before.png) | ![Seed 777 world v18, lake 4's end over land 22 m below its water, from beyond the end after](evidence/2026-10-23/lake-every-district-0645/lake-end-after.png) | [Comparison](evidence/2026-10-23/lake-every-district-0645/lake-end-comparison.png) |
+| The same end from beside it | ![The same end from beside it before](evidence/2026-10-23/lake-every-district-0645/lake-end-side-before.png) | ![The same end from beside it after](evidence/2026-10-23/lake-every-district-0645/lake-end-side-after.png) | [Comparison](evidence/2026-10-23/lake-every-district-0645/lake-end-side-comparison.png) |
+
+Difference metrics:
+- Seed 1335335949, district 11 (no lake in world v18), from 140 m above the v19 lake's middle threshold `12` changed pixels `439780/1440000` (`30.5403%`) MAE `0.152600`.
+- Seed 777 world v18, lake 4's end over land 22 m below its water, from beyond the end threshold `12` changed pixels `59729/1440000` (`4.1478%`) MAE `0.010328`.
+- The same end from beside it threshold `12` changed pixels `40870/1440000` (`2.8382%`) MAE `0.006650`.
+
+Related documents:[polar-world.md](../systems/polar-world.md) / [rendering-streaming.md](../systems/rendering-streaming.md) / [design-decisions.md](../../design-decisions.md) / [current-status.md](../current-status.md).
+
+## The sea is drawn only beyond the coast and in coastal bays; inland hollows below sea level show as dry ground
+<!-- project-update-log:2026-10-23:dry-hollows-0646 -->
+
+- Reason：The user chose to draw the sea only beyond the coast and in the coastal bays: the infinite HDRP ocean (and the opaque sea plane before it) drew every inland hollow below sea level as open sea, swell and all, although it is dry land people walk on.
+- Implementation：HDRP water exclusion (supportWaterExclusion on): PolarArtWater.Dry builds one mesh at load over the land inland of the coast's shelf (lattice rows below Height-70), 0.5 m above the sea and under every river and lake bed, with holes over coastal bays and leads, drawn with HDRP's own Hidden/HDRP/WaterExclusion shader on both faces, so no water surface is drawn over inland ground below sea level. Render only, every world version. A new hollow capture group. Package 0.6.46-test, build dl-01.
+- Validation：Five genuine pairs on a new seed-777 expedition: the hollow 17 m below the sea's level, from 60 m above its rim and from 2 m above the sea's level, now shows its snow; the nearest lead, coastal bay and the sea off the nearest coast keep their water (their differences are wave motion). The exclusion pass takes about 0.006 ms of GPU time. dl-01: gameplay 339 and weather 80 pass (Logs/PolarV7/0.6.46-test/dl-01).
+- Decisions and scope：Only drawing changes: water rules are as before (inland ground below sea level was already dry for walking and swimming).
+
+### Screenshot comparison
+
+| State | Before | After | Difference |
+|---|---|---|---|
+| The coastal bay nearest the camp (unchanged) | ![The coastal bay nearest the camp (unchanged) before](evidence/2026-10-23/dry-hollows-0646/bay-before.png) | ![The coastal bay nearest the camp (unchanged) after](evidence/2026-10-23/dry-hollows-0646/bay-after.png) | [Comparison](evidence/2026-10-23/dry-hollows-0646/bay-comparison.png) |
+| Seed 777: the lowest ground within 1.2 km of the camp (17 m below the sea's level), from 60 m above its rim | ![Seed 777: the lowest ground within 1.2 km of the camp (17 m below the sea's level), from 60 m above its rim before](evidence/2026-10-23/dry-hollows-0646/hollow-above-before.png) | ![Seed 777: the lowest ground within 1.2 km of the camp (17 m below the sea's level), from 60 m above its rim after](evidence/2026-10-23/dry-hollows-0646/hollow-above-after.png) | [Comparison](evidence/2026-10-23/dry-hollows-0646/hollow-above-comparison.png) |
+| The same hollow from 2 m above the sea's level | ![The same hollow from 2 m above the sea's level before](evidence/2026-10-23/dry-hollows-0646/hollow-level-before.png) | ![The same hollow from 2 m above the sea's level after](evidence/2026-10-23/dry-hollows-0646/hollow-level-after.png) | [Comparison](evidence/2026-10-23/dry-hollows-0646/hollow-level-comparison.png) |
+| The lead nearest the camp from 70 m above its water (unchanged) | ![The lead nearest the camp from 70 m above its water (unchanged) before](evidence/2026-10-23/dry-hollows-0646/lead-before.png) | ![The lead nearest the camp from 70 m above its water (unchanged) after](evidence/2026-10-23/dry-hollows-0646/lead-after.png) | [Comparison](evidence/2026-10-23/dry-hollows-0646/lead-comparison.png) |
+| The sea off the nearest coast (unchanged) | ![The sea off the nearest coast (unchanged) before](evidence/2026-10-23/dry-hollows-0646/sea-before.png) | ![The sea off the nearest coast (unchanged) after](evidence/2026-10-23/dry-hollows-0646/sea-after.png) | [Comparison](evidence/2026-10-23/dry-hollows-0646/sea-comparison.png) |
+
+Difference metrics:
+- The coastal bay nearest the camp (unchanged) threshold `12` changed pixels `17560/1440000` (`1.2194%`) MAE `0.006506`.
+- Seed 777: the lowest ground within 1.2 km of the camp (17 m below the sea's level), from 60 m above its rim threshold `12` changed pixels `691610/1440000` (`48.0285%`) MAE `0.230109`.
+- The same hollow from 2 m above the sea's level threshold `12` changed pixels `1114865/1440000` (`77.4212%`) MAE `0.394055`.
+- The lead nearest the camp from 70 m above its water (unchanged) threshold `12` changed pixels `1163/1440000` (`0.0808%`) MAE `0.001394`.
+- The sea off the nearest coast (unchanged) threshold `12` changed pixels `292543/1440000` (`20.3155%`) MAE `0.024483`.
+
+Related documents:[rendering-streaming.md](../systems/rendering-streaming.md) / [design-decisions.md](../../design-decisions.md) / [current-status.md](../current-status.md).
+
+## Fewer route flags, low rock islands, oil flasks in one slot
+<!-- project-update-log:2026-10-23:playtest-0647 -->
+
+- Reason：The user played 0.6.46-test in a snowstorm and asked, with a screenshot, for a tenth of the route flags, a natural look for the huge rock (a rock island), and oil flasks in one quick-bar slot with empty ones removed.
+- Implementation：
+  - Route flags every 600 m (was 60 m), counted on from one walk to the next (PolarLandforms.FlagSpacing); seed 777's world v19 has 905 instead of 8074.
+  - Rock islands (PolarWorldStreamer.RockIsland, near and distant alike): 2.5-4 times across and 0.7 of that high, tilted up to 5 degrees, the base halfway between the cell's ground and its lowest neighbour's and sunk 0.3 of the scale; they were 5-9 times, upright, up to 23 m tall or 34 m wide on an overhanging base.
+  - Oil flasks stack in one quick-bar slot and backpack cell showing their days of fire together (PolarMvpController.Stacked). A flask or can that runs dry is discarded (PolarActions.EmptyFlask); nobody starts with an empty flask; oil poured or taken back goes into a carried flask with room or a new one (FillFlask); older saves lose their empty flasks on loading. Package 0.6.47-test, build fo-03.
+- Validation：
+  - Seven genuine pairs on a new seed-777 expedition (capture group p47): the walk's flag is gone; the nearest rock island (IceRock3, was 31 x 34 x 15 m) is a low half-buried outcrop from 20, 45 and 130 m; the quick bar and backpack show one flask entry (2.5 days for 2.4 + 2.4 + 1.2 L) instead of four slots with the empty starting flask. After-only views of each of the five rock models: Logs/ProjectUpdateCapture/five-areas/after2/p47rocks.
+  - Tools/PolarGameplayCheck (2686 shared, 20607 weather/rest/resource, 44 keepsake) and Tools/CloudNpcCheck (144) pass; Player modes on fo-03: gameplay 339, physical 2706, physical-resume 16 pass, ui 382 on fo-02 (fo-01 to fo-03 differ only in test code).
+- Decisions and scope：A pour or a take with every carried flask full goes into a new flask rather than failing, so taking oil back from a stove still works without a reusable empty flask.
+- Remaining work：A drifting floe in a lake read as a dark block above the water in one tuning view; floes were not changed.
+
+### Screenshot comparison
+
+| State | Before | After | Difference |
+|---|---|---|---|
+| The backpack with the same flasks | ![The backpack with the same flasks before](evidence/2026-10-23/playtest-0647/backpack-before.png) | ![The backpack with the same flasks after](evidence/2026-10-23/playtest-0647/backpack-after.png) | [Comparison](evidence/2026-10-23/playtest-0647/backpack-comparison.png) |
+| The quick bar with three oil flasks given (2.4, 2.4 and 1.2 L) beside what the player starts with | ![The quick bar with three oil flasks given (2.4, 2.4 and 1.2 L) beside what the player starts with before](evidence/2026-10-23/playtest-0647/bar-before.png) | ![The quick bar with three oil flasks given (2.4, 2.4 and 1.2 L) beside what the player starts with after](evidence/2026-10-23/playtest-0647/bar-after.png) | [Comparison](evidence/2026-10-23/playtest-0647/bar-comparison.png) |
+| The same rock island from 20 m | ![The same rock island from 20 m before](evidence/2026-10-23/playtest-0647/island-close-before.png) | ![The same rock island from 20 m after](evidence/2026-10-23/playtest-0647/island-close-after.png) | [Comparison](evidence/2026-10-23/playtest-0647/island-close-comparison.png) |
+| The same rock island from 130 m | ![The same rock island from 130 m before](evidence/2026-10-23/playtest-0647/island-far-before.png) | ![The same rock island from 130 m after](evidence/2026-10-23/playtest-0647/island-far-after.png) | [Comparison](evidence/2026-10-23/playtest-0647/island-far-comparison.png) |
+| The rock island nearest the camp (IceRock3, Rock_12) from 45 m | ![The rock island nearest the camp (IceRock3, Rock_12) from 45 m before](evidence/2026-10-23/playtest-0647/island-near-before.png) | ![The rock island nearest the camp (IceRock3, Rock_12) from 45 m after](evidence/2026-10-23/playtest-0647/island-near-after.png) | [Comparison](evidence/2026-10-23/playtest-0647/island-near-comparison.png) |
+| The field map | ![The field map before](evidence/2026-10-23/playtest-0647/map-before.png) | ![The field map after](evidence/2026-10-23/playtest-0647/map-after.png) | [Comparison](evidence/2026-10-23/playtest-0647/map-comparison.png) |
+| The walk nearest the camp from 20% along it, looking along it (seed 777, world v19) | ![The walk nearest the camp from 20% along it, looking along it (seed 777, world v19) before](evidence/2026-10-23/playtest-0647/walk-flags-before.png) | ![The walk nearest the camp from 20% along it, looking along it (seed 777, world v19) after](evidence/2026-10-23/playtest-0647/walk-flags-after.png) | [Comparison](evidence/2026-10-23/playtest-0647/walk-flags-comparison.png) |
+
+Difference metrics:
+- The backpack with the same flasks threshold `12` changed pixels `382960/1440000` (`26.5944%`) MAE `0.032474`.
+- The quick bar with three oil flasks given (2.4, 2.4 and 1.2 L) beside what the player starts with threshold `12` changed pixels `2486/1440000` (`0.1726%`) MAE `0.002857`.
+- The same rock island from 20 m threshold `12` changed pixels `419804/1440000` (`29.1531%`) MAE `0.107096`.
+- The same rock island from 130 m threshold `12` changed pixels `5973/1440000` (`0.4148%`) MAE `0.002850`.
+- The rock island nearest the camp (IceRock3, Rock_12) from 45 m threshold `12` changed pixels `66636/1440000` (`4.6275%`) MAE `0.017236`.
+- The field map threshold `12` changed pixels `221380/1440000` (`15.3736%`) MAE `0.017821`.
+- The walk nearest the camp from 20% along it, looking along it (seed 777, world v19) threshold `12` changed pixels `1015/1440000` (`0.0705%`) MAE `0.001142`.
+
+Related documents:[polar-world.md](../systems/polar-world.md) / [polar-gameplay.md](../systems/polar-gameplay.md) / [polar-ui.md](../systems/polar-ui.md) / [design-decisions.md](../../design-decisions.md).
+
+## Route flags: a taller pole and a red cloth that streams and flaps in the wind
+<!-- project-update-log:2026-10-23:route-flags-wave-0648 -->
+
+- Reason：The user found the route flags too small and too solid, and asked for flags that wave in the wind.
+- Implementation：Each route flag is a 3.2 m pole with a 1.1 by 0.7 m red cloth (was a 2.3 m pole with a rigid 0.42 by 0.26 m plate). PolarRouteFlag reshapes the cloth each frame while it is in view within 250 m: it streams downwind with the weather's wind heading, stands out further and flaps faster with stronger wind and gusts (45 degrees below the horizontal in a calm, near flat in a blizzard), and carries folds that run to its free end. Render only; the 600 m spacing of 0.6.47-test is unchanged. A flags capture group. Package 0.6.48-test, build rf-01.
+- Validation：Four genuine pairs (the flag nearest a new seed-777 camp from 7 m and 40 m, clear weather and snowstorm) and a 60-frame clip from upwind in the snowstorm, in which the cloth changes shape from frame to frame. rf-01: gameplay 339 and weather 80 pass (Logs/PolarV7/0.6.48-test/rf-01).
+- Decisions and scope：The cloth runs on game time, so it stops while the game is paused; flags out of view or beyond 250 m keep their last shape.
+
+### Screenshot comparison
+
+| State | Before | After | Difference |
+|---|---|---|---|
+| The same flag from 40 m at eye height, clear weather | ![The same flag from 40 m at eye height, clear weather before](evidence/2026-10-23/route-flags-wave-0648/flag-far-before.png) | ![The same flag from 40 m at eye height, clear weather after](evidence/2026-10-23/route-flags-wave-0648/flag-far-after.png) | [Comparison](evidence/2026-10-23/route-flags-wave-0648/flag-far-comparison.png) |
+| The same flag from 40 m in a snowstorm | ![The same flag from 40 m in a snowstorm before](evidence/2026-10-23/route-flags-wave-0648/flag-far-storm-before.png) | ![The same flag from 40 m in a snowstorm after](evidence/2026-10-23/route-flags-wave-0648/flag-far-storm-after.png) | [Comparison](evidence/2026-10-23/route-flags-wave-0648/flag-far-storm-comparison.png) |
+| Seed 777: the route flag nearest the camp from 7 m beside it, across the wind, clear weather | ![Seed 777: the route flag nearest the camp from 7 m beside it, across the wind, clear weather before](evidence/2026-10-23/route-flags-wave-0648/flag-near-before.png) | ![Seed 777: the route flag nearest the camp from 7 m beside it, across the wind, clear weather after](evidence/2026-10-23/route-flags-wave-0648/flag-near-after.png) | [Comparison](evidence/2026-10-23/route-flags-wave-0648/flag-near-comparison.png) |
+| The same flag from 7 m in a snowstorm | ![The same flag from 7 m in a snowstorm before](evidence/2026-10-23/route-flags-wave-0648/flag-near-storm-before.png) | ![The same flag from 7 m in a snowstorm after](evidence/2026-10-23/route-flags-wave-0648/flag-near-storm-after.png) | [Comparison](evidence/2026-10-23/route-flags-wave-0648/flag-near-storm-comparison.png) |
+
+Difference metrics:
+- The same flag from 40 m at eye height, clear weather threshold `12` changed pixels `500/1440000` (`0.0347%`) MAE `0.001131`.
+- The same flag from 40 m in a snowstorm threshold `12` changed pixels `430/1440000` (`0.0299%`) MAE `0.000838`.
+- Seed 777: the route flag nearest the camp from 7 m beside it, across the wind, clear weather threshold `12` changed pixels `15740/1440000` (`1.0931%`) MAE `0.004586`.
+- The same flag from 7 m in a snowstorm threshold `12` changed pixels `12437/1440000` (`0.8637%`) MAE `0.003778`.
+
+Related documents:[rendering-streaming.md](../systems/rendering-streaming.md) / [design-decisions.md](../../design-decisions.md) / [current-status.md](../current-status.md).

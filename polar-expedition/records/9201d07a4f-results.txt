@@ -1,0 +1,97 @@
+docs/engineering/logs/evidence/2026-11-10/pack-asset-audit/results.md
+
+# Empty pack managers: measured result (0.6.131-test, November 10, 2026)
+
+The fix chosen by the [audit](audit.md): `Assets/Scripts/Polar/Gameplay/PolarPackManagers.cs` sets empty instances of the pack's `SaveableDatabase`, `BuildingManager` and `PoolManager` at the first start-up stage, so the pack never reads the two manager assets or the 76 prefabs behind them. Package `Builds/HdrpMilestones/pm-02`; Development twin `pm-02-dev`. Sizes are binary (1 GiB = 1,024 MB) unless marked GB.
+
+## Memory, same route before and after
+
+Benchmark route, High, 1920x1080, Development builds `mp-02` (before) and `pm-02-dev` (after). Private memory in GiB:
+
+| Point | Before | After | Change |
+|---|---|---|---|
+| Front page, before the expedition | 2.38 | 0.92 | -1.46 |
+| Expedition loaded | 5.64 | 4.31 | -1.33 |
+| Distant terrain sharpened | 6.02 | 4.70 | -1.32 |
+| Open snow | 6.06 | 4.72 | -1.34 |
+| Hut at night | 6.12 | 4.77 | -1.35 |
+| Pond | 6.16 | 4.81 | -1.35 |
+| Coast | 6.13 | 4.79 | -1.35 |
+| Into a blizzard | 6.14 | 4.80 | -1.34 |
+| Front page, after the expedition | 6.21 | 4.90 | -1.31 |
+| The same after unloading and a collection | 6.21 | 4.85 | -1.36 |
+| Highest point of the 100 ms timeline | 6.40 | 5.08 | -1.32 |
+
+What went, at the open-snow point (MB):
+
+| | Before | After |
+|---|---|---|
+| Textures | 1,839 | 774 |
+| Sounds | 101 | 22 |
+| Shaders | 206 | 164 |
+| Meshes | 685 | 659 |
+| Graphics (estimated) | 3,604 | 2,516 |
+| Native | 1,044 | 845 |
+| Unity objects, count | 87,019 | 77,887 |
+
+On the front page, textures fell from 1,193 to 44 MB, Unity objects from 1,525 to 182 MB and video memory (DXGI) from 1.30 to 0.14 GB.
+
+## Checks the audit asked for
+
+- **The two roots are gone.** `owners-by-root.csv` has no row for `Manager<SaveableDatabase>` or `Manager<BuildingManager>` on the front page or in open snow.
+- **Nothing else loads the Managers folder.** None of the marker assets (`Workbench_NRM`, `BuildingLogs_NRM`, `Marlin336_NRM`, `HuntingAxe_NRM`, `STP_Ambient_ForestNight` and others) is loaded on the front page, held or unheld. That settles the open question about the pool manager's folder search: with its instance seeded, the search is never made.
+- **What the game uses still loads.** In play `MaleSurvivorSkin`, `Rock3_NRM` and `Rock5_NRM` are present, held by the game's own assets.
+- **The pack's files are untouched.** `SaveableDatabase.asset` and `BuildingManager.asset` hash the same before and after the builds.
+- **The package's start-up table** lists `PolarPackManagers.Seed` at stage 4 (`SubsystemRegistration`), ahead of the pack's two hooks at stage 3 and the pool manager's at stage 1.
+- **No exception line** in any Player log.
+
+## Start-up
+
+Launch to the front page, release packages, alternating `cs-01` (0.6.130-test) and `pm-02`, 1280x720 window:
+
+| Round | `cs-01`, s | `pm-02`, s |
+|---|---|---|
+| 1 (first after the builds) | 24.2 | 19.9 |
+| 2 | 11.4 | 7.7 |
+| 3 | 9.5 | 7.7 |
+| 4 | 9.8 | 8.7 |
+
+A warm start is about 2 seconds shorter. Three seconds after the front page appears, private memory is 1.31 GiB against 2.74 GiB.
+
+## Player suite on `pm-02`
+
+All 12 offline modes pass, 6,437 checks (`Logs/PolarV7/0.6.131-test/pm-02`). Peak private memory in GB (decimal, as the suite reports it), against the last runs on record for each mode (0.6.127-test to 0.6.129-test, Direct3D 11):
+
+| Mode | Checks | Peak before | Peak now |
+|---|---|---|---|
+| gameplay | 390 | 7.50 to 7.70 | 6.14 |
+| physical | 3959 | 6.48 | 5.00 |
+| physical-resume | 18 | 6.29 | 4.84 |
+| continue | 36 | 7.18 | 5.56 |
+| performance | 79 | 7.13 to 7.24 | 5.80 |
+| buildings | 395 | 6.59 | 5.04 |
+| fractured | 31 | 6.95 | 5.60 |
+| handbook | 353 | 6.91 | 5.49 |
+| weather | 84 | 6.28 to 6.48 | 4.93 |
+| weather-resume | 10 | 5.80 | 4.48 |
+| ui | 463 | 7.36 | 5.89 |
+| handbook-revision | 619 | 7.00 | 5.63 |
+
+The gate is 8 GiB, which is 8.59 GB: the highest mode now stands 2.45 GB under it, where it stood 0.89 GB under it.
+
+Front page runner (`Logs/PolarFront/0.6.131-test/pm-02`): front-page 173, startup 4 and screen-args 3 pass. The window stayed in front, so the display checks ran.
+
+## Not measured
+
+- The one-off load at the first handbook opening and at the first sight of Frost, Moss or Shaw. The handbook, handbook-revision, ui and gameplay modes, which open the handbook and meet explorers, pass; no mode times a single worst frame there.
+- A release build's memory by snapshot (the snapshots are from Development builds; the suite's peaks above are from the release package).
+- Editor Play Mode was not run with the new class.
+
+## Capture tool
+
+Both captures taken after the return to the front page had crashed inside Unity's own snapshot code in two of five runs. They now wait two seconds first (`PolarMemoryCapture.Take(..., settle)`); the run on `pm-02-dev` completed all ten captures. One clean run does not prove the fault gone.
+
+## Files
+
+- [data](data/): `before-after-by-point.csv`, the before and after `index.csv`, the after ownership tables, `startup-times.json`, `suite-summary.json`, `front-page-summary.json`.
+- Full output (ignored by git): `Logs/MemoryProfiling/pm-02-dev-high-1080`, `Logs/MemoryProfiling/audit`.

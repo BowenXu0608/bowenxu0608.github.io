@@ -1,0 +1,77 @@
+docs/engineering/logs/evidence/2026-11-11/known-items/results.md
+
+# The known items after the live profile (November 11, 2026, test package 0.6.137-test)
+
+The user's list of what was known and not fixed after 0.6.136-test, with "you can try to solve them without asking": the front page keeping an expedition's memory, the explorers' director allocating every frame, the explorers' step making slow frames, a save's 5.8 MB, and the small per-frame allocations the reviewers had noted. Package `Builds/HdrpMilestones/fp-02`; `fp-01` differs only in the last four small allocation fixes (body sightings, weather weights, the rescue check and the tent pose), and its Development copy `fp-01-dev` carried the walk profile below. No rule, save format or drawn pixel changes.
+
+## What changed
+
+- **The explorers' director** (`PolarNpcDirector.Current`, read for every explorer every frame) checks for an open offer or proposal with plain loops and builds its text only when there is one; otherwise the text is the constant `";"` the joins gave. `Pump` walks the explorers with a plain loop and sorts the queue only when it holds something.
+- **Door passages.** `PolarHutDoor` keeps a list of the doors on active objects, and `PolarHutDoor.Solid(site)` finds a hut's solid door in it. `PrepareDoorPassage` searched the whole world's hierarchy (`GetComponentsInChildren<PolarHutDoor>`) at every half metre of an explorer's walk near a doorway.
+- **Ground heights.** `PolarFracturedWorld.Height` and `PolarGeometry.Inverse` keep their last eight answers on each thread, keyed by the exact inputs (the world by the reference of its hash text, so nothing holds a world). A step asks the same point several times (support, footing, the move test); each is now worked out once. Every answer is bit for bit what it was: seed 777's world check gives the same summary (`Logs/PolarCompactWorld/v23-777-memo`).
+- **Terrain shelter.** An explorer's shelter where it stands (21 height samples, about 0.3 ms) is worked out two explorers a frame between rules steps (`PolarMvpController.WarmShelter`), into the cache `SetExposure` already kept (the same position, the wind's heading within .01). The step's frame no longer works it out for everyone who moved.
+- **A save's envelope** is written straight into the file (`PolarSaveFile.WriteEnvelope`, `Escape`) in the text `JsonUtility` gave, so the worker no longer builds it as one string (3.4 MB for the largest save). The payload, made on the main thread by `JsonUtility.ToJson`, is as it was.
+- **Leaving an expedition lets it go.** `QuitToMenu` drops the expedition's people, views and clients (`DropExpedition`, shared with a new start) and starts `PolarWorldController.Unload`: once the world sound's 1 s fade and any streaming work are over, the HDRP presentation lets go of the world (`PolarHdrpPresentation.Detach`: its materials, far shadows and hut state, its volumes off, the front page's camera on), the generated world and its textures are destroyed, every reference to the world is dropped, and unused assets are unloaded and collected. A new expedition started during the wait stops it. The front page sits on an opaque backdrop (`PolarMvpUi.FrontPage`), so nothing seen changes.
+- **Small per-frame allocations.** `AdvanceAction`'s three lambdas became methods (`BoxOf`, `DefenderInSight`, `Clearers`); a body in sight is not built into a belief the observer already holds (`ObserveBodies`, with `Keep`'s lambda a loop, `Has`); item prefabs are looked up once a kind; containers by plain loops (`Box`, `HasLayout`); a carried list's mass in place (`PolarItemDefinition.Mass(List)`, summed in double and rounded once, as `Sum` does); the foreground pass tells the handbook's view by its instance; airborne drops and far drop views are walked only when there are any; the weather's five weights go into a kept array; the rescue check's lambda and the tent pose's clip lookup moved where their closures are made only when used.
+- **Diagnostics.** Profiler markers `Polar.Npc.Contact`, `.Perceive`, `.Execute`, `.Route`, `.Support`, `.Boulders`, `.Footing`, `.Along`, `.Skirt`, `.Door`, `Polar.World.CanMove`, `.TravelCost` and `Polar.Walk.Effort`; `-polarSaveRateWalk` (`Tools/polar_save_rate.py --walk`) has every explorer walk between its two nearest huts with no model, the step at work at no cost.
+
+## Measured
+
+### The explorers' step: a scripted walk
+
+Every explorer walking between its two nearest huts for 900 real seconds (one game day), the model withheld, High at 1600x900 and 60 fps pacing, Development builds; frame times from the four minutes without call stacks (`Tools/polar_save_rate.py --walk --profile`, tables from `PolarFrameTimeReport`):
+
+| | Before | First fixes | This package |
+|---|---|---|---|
+| Build | `ob-01-dev` (0.6.136-test and the markers) | `ob-02-dev` (doors, director, small allocations) | `fp-01-dev` |
+| Walking legs in the day | 510 | 510 | 509 |
+| Frames over 25 ms, of about 14,100 | 230 | 201 | 44 |
+| 99th percentile | 36.65 ms | 27.51 ms | 21.20 ms |
+| Longest frame | 78.25 ms | 58.67 ms | 33.13 ms |
+| Mean of the slow frames | 41.05 ms | 32.04 ms | 26.89 ms |
+| Largest frame of the explorers' step | 67.97 ms | 41.42 ms | 21.70 ms |
+| Largest door passage | 46.55 ms | 7.74 ms | 8.07 ms |
+| Managed allocation ("GC Allocated In Frame") | 50.6 KB a frame, 2.9 MB a second | | 18.0 KB a frame, 1.0 MB a second |
+| Frames with a collection on the main thread | 40 | | 15 |
+
+- In the slow frames that remain, the step's parts are the door (4.1 ms a slow frame), the move test (3.5), walking effort (2.6), support (2.3) and the senses (2.0); none dominates.
+- From the call stacks (KB a frame): the director's `Current` 10.84 to none, `PrepareDoorPassage` 9.24 to none, the save envelope's string on the worker 12.14 to 0.05 (`Escape`'s buffer), `Mass` 0.80 to none. What remains largest is the save's payload text on the main thread (about 3 MB a save, 10 KB a frame over the day).
+
+### The save envelope
+
+`tests/EnvelopeProbe.cs` wrote `JsonUtility`'s envelope for a payload of every character from 1 to 0x2FFF, an empty payload and a null one on Unity 6000.3; `tests/EnvelopeCheck.cs` writes the same with `WriteEnvelope` and compares bytes, and also rewrites 191 kept saves (198 MB) from their payloads: all byte for byte the same. The largest save is 1.71 MB; its envelope as one string was 1,794,452 characters (3.42 MB), no longer made. `tests/escapes.py` counted the escapes kept saves hold.
+
+### The front page after an expedition
+
+The benchmark route on release builds at High, 1920x1080, then back to the front page, a second new expedition (seed 778) loaded and refined, and back again (`Tools/polar_memory_profile.py --second-expedition`). Before: 0.6.134-test (`mt-01`, `Logs/MemoryProfiling/mt-01-release`; nothing since touches memory). After: `fp-02` (`Logs/MemoryProfiling/fp-02-release`).
+
+| Point | Private memory, before | after | Video memory, before | after | Managed objects, before | after |
+|---|---|---|---|---|---|---|
+| Front page, before any expedition | 0.79 GiB | 0.79 GiB | 0.14 GB | 0.14 GB | 8 MB | 8 MB |
+| Expedition loaded and refined | 4.23 GiB | 4.26 GiB | 2.03 GB | 2.23 GB | 425 MB | 424 MB |
+| End of the route (blizzard) | 4.35 GiB | 4.36 GiB | 1.84 GB | 1.85 GB | 431 MB | 446 MB |
+| **Front page, between** | **4.85 GiB** | **3.70 GiB** | **2.00 GB** | **1.04 GB** | **408 MB** | **147 MB** |
+| Second expedition loaded | 4.95 GiB | 4.37 GiB | 1.74 GB | 1.68 GB | 424 MB | 412 MB |
+| Second expedition refined | 4.98 GiB | 4.53 GiB | 1.93 GB | 1.91 GB | 505 MB | 426 MB |
+| Front page, after | 5.05 GiB | 3.84 GiB | 1.93 GB | 1.01 GB | 512 MB | 158 MB |
+| The same after unloading unused assets and a collection | 5.05 GiB | 3.60 GiB | 1.93 GB | 1.01 GB | 482 MB | 131 MB |
+
+- **The run's peak** is 5.21 GB of private memory, against 5.63 GB: the second expedition now starts from what the first handed back.
+- **What the front page still holds** (3.70 GiB against 0.79 before any expedition): the managed heap keeps the size it grew to (546 MB; Mono never gives it back), Unity's allocators keep 0.81 GB reserved (0.35 GB before any expedition), about 0.9 GB of video memory stays with HDRP (render targets at the expedition's size and the like, owned by the pipeline), and the rest is native memory the driver and allocators keep. The next expedition reuses it, as the second expedition's rows show.
+- The expedition's own rows are as they were, within the run-to-run spread.
+
+### A live day
+
+Not run: it costs API calls (about 4-5 yuan a day), and the scripted walk already runs the director (the save-rate report's `director` is true) and the step without the model. The director's work that only a live day exercises (decisions, requests, talk) is not changed here.
+
+## Checks
+
+- **Shared rules** 2750 of 2750 (two new: the envelope as `JsonUtility` writes it, and a missing payload written empty). **Explorer checks** 208.
+- **World.** All twenty seeds pass `Tools/polar_v11_seeds.py --version 23`, and every seed's summary equals the November 10 sweep's, hashes included (`Logs/PolarCompactWorld/v23-twenty-fp02` against `v23-twenty-ma01`).
+- **Player suite.** All 12 modes pass on `fp-02`, 6,437 checks: gameplay 390, physical 3959, physical-resume 18, continue 36, performance 79 (first run), buildings 395, fractured 31, handbook 353, weather 84, weather-resume 10, ui 463, handbook-revision 619 (`Logs/PolarV7/0.6.137-test/fp-02`). The gameplay mode ends with a return to the front page, and the memory run above returned twice and started a second expedition in between, both on the new path.
+- **Front page.** Front page 173, startup 4 and screen-args 3 pass on `fp-02` (`Logs/PolarFront/0.6.137-test/fp-02c`, the user's own saves and settings unchanged), the changed check among them: "After returning to the front page the world is silent and let go". Two earlier runs (`fp-02`, `fp-02b`) passed the first 114 checks and stopped at the display confirm: a Windows Security prompt (`PickerHost`, opened at 04:50, not touched) held the foreground, so the window helper was refused 74 times and Windows refused the game exclusive full screen. The passing run came after the user was back and the screen was free.
+
+## Not done
+
+- A save's payload text: about 3 MB on the main thread a save, now the largest allocation left. Writing it without `JsonUtility` is a larger rewrite.
+- `StepBench` (`tests/StepBench.cs`) timed the ground tests of a half-metre step on the game's own code under Unity's Mono and found the height lookup the largest part (10.7 µs a call); its numbers are for the code before the change.

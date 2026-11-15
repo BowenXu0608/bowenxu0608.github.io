@@ -1,0 +1,551 @@
+docs/engineering/logs/2026-11-04.md
+
+# 2026-11-04 Engineering log
+
+## Snow on the pond ice and its shore
+<!-- project-update-log:2026-11-04:pond-shore-snow -->
+
+- Reason：M5 of the thin-ice plan: the 16-sided pond outline met the bank's snow in a hard line, and far ponds read as pale-blue discs.
+- Implementation：A snow lip mesh in the ground's plain material carries the bank's snow 0.4-2 m onto loaded ponds' ice; the ice draws drift tongues and long streaks along the ground's wind, snow in about half the refrozen cracks, a mottled hoarfrost apron with glints and load cracks through the snow as wet grey lines; ponds past about 80 m are .62 smooth; distant ponds draw the same from uv0's shore distances with a painted lip. Render only (0.6.108-test, build ss-01).
+- Validation：16 before/after pairs (seed 777, b4-intact-ice) inspected; gameplay 390, continue 36 and performance 79 pass on ss-01 (Logs/PolarV7/0.6.108-test/ss-01); pond 33 GPU P95 intact 8.14 ms, breaking 11.15 ms, quiet 10.97 ms; soak +0 meshes, materials, textures and objects.
+- Decisions and scope：The lip holds the bank's snow depth 2.4 m up to the shore and falls as 1 - t^3, since the ground's drawn depth thins to nothing at the shore; the snow is procedural from shore distances, with no ice-map channel.
+- Remaining work：Things put down within 2 m of the shore can sink into the lip; the lip hides a loaded plate's cracks under it. Next: the pond hole rims (E01, E02) when the user says.
+
+### Screenshot comparison
+
+| State | Before | After | Difference |
+|---|---|---|---|
+| ii-bank | ![ii-bank before](evidence/2026-11-04/pond-shore-snow/ii-bank-before.png) | ![ii-bank after](evidence/2026-11-04/pond-shore-snow/ii-bank-after.png) | [Comparison](evidence/2026-11-04/pond-shore-snow/ii-bank-comparison.png) |
+| ii-bank-centre | ![ii-bank-centre before](evidence/2026-11-04/pond-shore-snow/ii-bank-centre-before.png) | ![ii-bank-centre after](evidence/2026-11-04/pond-shore-snow/ii-bank-centre-after.png) | [Comparison](evidence/2026-11-04/pond-shore-snow/ii-bank-centre-comparison.png) |
+| ii-distant | ![ii-distant before](evidence/2026-11-04/pond-shore-snow/ii-distant-before.png) | ![ii-distant after](evidence/2026-11-04/pond-shore-snow/ii-distant-after.png) | [Comparison](evidence/2026-11-04/pond-shore-snow/ii-distant-comparison.png) |
+| ii-distant-far | ![ii-distant-far before](evidence/2026-11-04/pond-shore-snow/ii-distant-far-before.png) | ![ii-distant-far after](evidence/2026-11-04/pond-shore-snow/ii-distant-far-after.png) | [Comparison](evidence/2026-11-04/pond-shore-snow/ii-distant-far-comparison.png) |
+| ii-feet | ![ii-feet before](evidence/2026-11-04/pond-shore-snow/ii-feet-before.png) | ![ii-feet after](evidence/2026-11-04/pond-shore-snow/ii-feet-after.png) | [Comparison](evidence/2026-11-04/pond-shore-snow/ii-feet-comparison.png) |
+| ii-lip-close | ![ii-lip-close before](evidence/2026-11-04/pond-shore-snow/ii-lip-close-before.png) | ![ii-lip-close after](evidence/2026-11-04/pond-shore-snow/ii-lip-close-after.png) | [Comparison](evidence/2026-11-04/pond-shore-snow/ii-lip-close-comparison.png) |
+| ii-lip-low | ![ii-lip-low before](evidence/2026-11-04/pond-shore-snow/ii-lip-low-before.png) | ![ii-lip-low after](evidence/2026-11-04/pond-shore-snow/ii-lip-low-after.png) | [Comparison](evidence/2026-11-04/pond-shore-snow/ii-lip-low-comparison.png) |
+| ii-lip-overhead | ![ii-lip-overhead before](evidence/2026-11-04/pond-shore-snow/ii-lip-overhead-before.png) | ![ii-lip-overhead after](evidence/2026-11-04/pond-shore-snow/ii-lip-overhead-after.png) | [Comparison](evidence/2026-11-04/pond-shore-snow/ii-lip-overhead-comparison.png) |
+| ii-load50-close | ![ii-load50-close before](evidence/2026-11-04/pond-shore-snow/ii-load50-close-before.png) | ![ii-load50-close after](evidence/2026-11-04/pond-shore-snow/ii-load50-close-after.png) | [Comparison](evidence/2026-11-04/pond-shore-snow/ii-load50-close-comparison.png) |
+| ii-load95-close | ![ii-load95-close before](evidence/2026-11-04/pond-shore-snow/ii-load95-close-before.png) | ![ii-load95-close after](evidence/2026-11-04/pond-shore-snow/ii-load95-close-after.png) | [Comparison](evidence/2026-11-04/pond-shore-snow/ii-load95-close-comparison.png) |
+| ii-night | ![ii-night before](evidence/2026-11-04/pond-shore-snow/ii-night-before.png) | ![ii-night after](evidence/2026-11-04/pond-shore-snow/ii-night-after.png) | [Comparison](evidence/2026-11-04/pond-shore-snow/ii-night-comparison.png) |
+| ii-overcast | ![ii-overcast before](evidence/2026-11-04/pond-shore-snow/ii-overcast-before.png) | ![ii-overcast after](evidence/2026-11-04/pond-shore-snow/ii-overcast-after.png) | [Comparison](evidence/2026-11-04/pond-shore-snow/ii-overcast-comparison.png) |
+| ii-overhead | ![ii-overhead before](evidence/2026-11-04/pond-shore-snow/ii-overhead-before.png) | ![ii-overhead after](evidence/2026-11-04/pond-shore-snow/ii-overhead-after.png) | [Comparison](evidence/2026-11-04/pond-shore-snow/ii-overhead-comparison.png) |
+| ii-overhead-low | ![ii-overhead-low before](evidence/2026-11-04/pond-shore-snow/ii-overhead-low-before.png) | ![ii-overhead-low after](evidence/2026-11-04/pond-shore-snow/ii-overhead-low-after.png) | [Comparison](evidence/2026-11-04/pond-shore-snow/ii-overhead-low-comparison.png) |
+| ii-standing | ![ii-standing before](evidence/2026-11-04/pond-shore-snow/ii-standing-before.png) | ![ii-standing after](evidence/2026-11-04/pond-shore-snow/ii-standing-after.png) | [Comparison](evidence/2026-11-04/pond-shore-snow/ii-standing-comparison.png) |
+| ii-storm | ![ii-storm before](evidence/2026-11-04/pond-shore-snow/ii-storm-before.png) | ![ii-storm after](evidence/2026-11-04/pond-shore-snow/ii-storm-after.png) | [Comparison](evidence/2026-11-04/pond-shore-snow/ii-storm-comparison.png) |
+
+Difference metrics:
+- ii-bank threshold `12` changed pixels `497441/2073600` (`23.9892%`) MAE `0.048419`.
+- ii-bank-centre threshold `12` changed pixels `561564/2073600` (`27.0816%`) MAE `0.053577`.
+- ii-distant threshold `12` changed pixels `3686/2073600` (`0.1778%`) MAE `0.001715`.
+- ii-distant-far threshold `12` changed pixels `2562/2073600` (`0.1236%`) MAE `0.001430`.
+- ii-feet threshold `12` changed pixels `1182192/2073600` (`57.0116%`) MAE `0.151919`.
+- ii-lip-close threshold `12` changed pixels `912104/2073600` (`43.9865%`) MAE `0.083840`.
+- ii-lip-low threshold `12` changed pixels `124630/2073600` (`6.0103%`) MAE `0.011020`.
+- ii-lip-overhead threshold `12` changed pixels `885521/2073600` (`42.7045%`) MAE `0.131281`.
+- ii-load50-close threshold `12` changed pixels `1514427/2073600` (`73.0337%`) MAE `0.288808`.
+- ii-load95-close threshold `12` changed pixels `1492847/2073600` (`71.9930%`) MAE `0.287976`.
+- ii-night threshold `12` changed pixels `561365/2073600` (`27.0720%`) MAE `0.059011`.
+- ii-overcast threshold `12` changed pixels `561054/2073600` (`27.0570%`) MAE `0.051895`.
+- ii-overhead threshold `12` changed pixels `386857/2073600` (`18.6563%`) MAE `0.056773`.
+- ii-overhead-low threshold `12` changed pixels `716912/2073600` (`34.5733%`) MAE `0.150829`.
+- ii-standing threshold `12` changed pixels `1091404/2073600` (`52.6333%`) MAE `0.157060`.
+- ii-storm threshold `12` changed pixels `545616/2073600` (`26.3125%`) MAE `0.044115`.
+
+Related documents:[polar-thin-ice-upgrade.md](../plans/polar-thin-ice-upgrade.md) / [rendering-streaming.md](../systems/rendering-streaming.md).
+
+## Huts and Pole Station from Polar Habitat v1.1 (habitat plan M4)
+<!-- project-update-log:2026-11-04:habitat-huts -->
+
+- Reason：M4 of the habitat plan: the user asked (November 2) for the huts and Pole Station from Polar Habitat v1.1, with the bunk's lower berth as the bed.
+- Implementation：Hut0-4, HutFar0-4, the entry door and a new Pole Station building are the pack's (PolarHabitatAuthor.BuildHuts): its shell, bunk, table, bench, shelves and props; box colliders under the names the game reads; three LODs and a shadows-only box mesh; fallen boards culled where the game puts things and settled onto the floor and each other; roof and floor seams backed. Sleepers on the cot face the door and lie back onto the pillows (explorers turn round a step first; the drawn body turns in game time). The door leaf is the pack's EntryDoor; Pole Station has the pack's mast and instrument box. The B6 hut tools, StripHutStoves and the code-built interior are retired. Package 0.6.109-test, build hh-01.
+- Validation：PolarHutAssetValidation 3067 checks pass (five huts and Pole Station); art capture PASS 90; 21 before/after pairs, the five-areas door, rest, people, sleep, stove and fire cases and the Pole Station shots inspected; gameplay 390, physical 3959, physical-resume 18, continue 36, performance 79, buildings 395, fractured 31, weather 80 and weather-resume 10 pass on hh-01 (Logs/PolarV7/0.6.109-test/hh-01), hut-to-hut P95 16.70 ms as ss-01's; loading alternating with ss-01, two runs each: playable 60.3-60.8 s (60.5-61.6 s), refinement complete 177.8-178.5 s (177.6-178.1 s), P95 12.5 ms in all four; the report's own flag fails on both builds since PolarLoadingProfile still expects 21 people (20 since world v21).
+- Decisions and scope：LOD0 keeps the pack's meshes (52-94k triangles) with box shadows and no mesh colliders; the station district's three other huts are ordinary huts; the player's eye still only drops in height on the cot.
+- Remaining work：The b6-station capture cases show a station-district hut, not Pole Station (PolarPoleStationCapture shows it); an explorer's raised feet on the berth come from the lying clip; PolarLoadingProfile's 21-people check is stale. Next: M5, the release with the full suite.
+
+### Screenshot comparison
+
+| State | Before | After | Difference |
+|---|---|---|---|
+| b6-entrance-snow-00 | ![b6-entrance-snow-00 before](evidence/2026-11-04/habitat-huts/b6-entrance-snow-00-before.png) | ![b6-entrance-snow-00 after](evidence/2026-11-04/habitat-huts/b6-entrance-snow-00-after.png) | [Comparison](evidence/2026-11-04/habitat-huts/b6-entrance-snow-00-comparison.png) |
+| b6-ext-day-back | ![b6-ext-day-back before](evidence/2026-11-04/habitat-huts/b6-ext-day-back-before.png) | ![b6-ext-day-back after](evidence/2026-11-04/habitat-huts/b6-ext-day-back-after.png) | [Comparison](evidence/2026-11-04/habitat-huts/b6-ext-day-back-comparison.png) |
+| b6-ext-day-front | ![b6-ext-day-front before](evidence/2026-11-04/habitat-huts/b6-ext-day-front-before.png) | ![b6-ext-day-front after](evidence/2026-11-04/habitat-huts/b6-ext-day-front-after.png) | [Comparison](evidence/2026-11-04/habitat-huts/b6-ext-day-front-comparison.png) |
+| b6-ext-day-roof | ![b6-ext-day-roof before](evidence/2026-11-04/habitat-huts/b6-ext-day-roof-before.png) | ![b6-ext-day-roof after](evidence/2026-11-04/habitat-huts/b6-ext-day-roof-after.png) | [Comparison](evidence/2026-11-04/habitat-huts/b6-ext-day-roof-comparison.png) |
+| b6-ext-night-lit | ![b6-ext-night-lit before](evidence/2026-11-04/habitat-huts/b6-ext-night-lit-before.png) | ![b6-ext-night-lit after](evidence/2026-11-04/habitat-huts/b6-ext-night-lit-after.png) | [Comparison](evidence/2026-11-04/habitat-huts/b6-ext-night-lit-comparison.png) |
+| b6-int-gable-ceiling-day | ![b6-int-gable-ceiling-day before](evidence/2026-11-04/habitat-huts/b6-int-gable-ceiling-day-before.png) | ![b6-int-gable-ceiling-day after](evidence/2026-11-04/habitat-huts/b6-int-gable-ceiling-day-after.png) | [Comparison](evidence/2026-11-04/habitat-huts/b6-int-gable-ceiling-day-comparison.png) |
+| b6-int-room-day | ![b6-int-room-day before](evidence/2026-11-04/habitat-huts/b6-int-room-day-before.png) | ![b6-int-room-day after](evidence/2026-11-04/habitat-huts/b6-int-room-day-after.png) | [Comparison](evidence/2026-11-04/habitat-huts/b6-int-room-day-comparison.png) |
+| b6-int-room-night-lit | ![b6-int-room-night-lit before](evidence/2026-11-04/habitat-huts/b6-int-room-night-lit-before.png) | ![b6-int-room-night-lit after](evidence/2026-11-04/habitat-huts/b6-int-room-night-lit-after.png) | [Comparison](evidence/2026-11-04/habitat-huts/b6-int-room-night-lit-comparison.png) |
+| b6-int-stove-night-lit | ![b6-int-stove-night-lit before](evidence/2026-11-04/habitat-huts/b6-int-stove-night-lit-before.png) | ![b6-int-stove-night-lit after](evidence/2026-11-04/habitat-huts/b6-int-stove-night-lit-after.png) | [Comparison](evidence/2026-11-04/habitat-huts/b6-int-stove-night-lit-comparison.png) |
+| b6-int-window-day | ![b6-int-window-day before](evidence/2026-11-04/habitat-huts/b6-int-window-day-before.png) | ![b6-int-window-day after](evidence/2026-11-04/habitat-huts/b6-int-window-day-after.png) | [Comparison](evidence/2026-11-04/habitat-huts/b6-int-window-day-comparison.png) |
+| b6-lod-045m | ![b6-lod-045m before](evidence/2026-11-04/habitat-huts/b6-lod-045m-before.png) | ![b6-lod-045m after](evidence/2026-11-04/habitat-huts/b6-lod-045m-after.png) | [Comparison](evidence/2026-11-04/habitat-huts/b6-lod-045m-comparison.png) |
+| b6-lod-090m | ![b6-lod-090m before](evidence/2026-11-04/habitat-huts/b6-lod-090m-before.png) | ![b6-lod-090m after](evidence/2026-11-04/habitat-huts/b6-lod-090m-after.png) | [Comparison](evidence/2026-11-04/habitat-huts/b6-lod-090m-comparison.png) |
+| b6-meal-night-lit | ![b6-meal-night-lit before](evidence/2026-11-04/habitat-huts/b6-meal-night-lit-before.png) | ![b6-meal-night-lit after](evidence/2026-11-04/habitat-huts/b6-meal-night-lit-after.png) | [Comparison](evidence/2026-11-04/habitat-huts/b6-meal-night-lit-comparison.png) |
+| b6-station-ext-day-060m | ![b6-station-ext-day-060m before](evidence/2026-11-04/habitat-huts/b6-station-ext-day-060m-before.png) | ![b6-station-ext-day-060m after](evidence/2026-11-04/habitat-huts/b6-station-ext-day-060m-after.png) | [Comparison](evidence/2026-11-04/habitat-huts/b6-station-ext-day-060m-comparison.png) |
+| b6-station-int-up-day | ![b6-station-int-up-day before](evidence/2026-11-04/habitat-huts/b6-station-int-up-day-before.png) | ![b6-station-int-up-day after](evidence/2026-11-04/habitat-huts/b6-station-int-up-day-after.png) | [Comparison](evidence/2026-11-04/habitat-huts/b6-station-int-up-day-comparison.png) |
+| b6-store-stocked-day | ![b6-store-stocked-day before](evidence/2026-11-04/habitat-huts/b6-store-stocked-day-before.png) | ![b6-store-stocked-day after](evidence/2026-11-04/habitat-huts/b6-store-stocked-day-after.png) | [Comparison](evidence/2026-11-04/habitat-huts/b6-store-stocked-day-comparison.png) |
+| b6-v1-ext-day | ![b6-v1-ext-day before](evidence/2026-11-04/habitat-huts/b6-v1-ext-day-before.png) | ![b6-v1-ext-day after](evidence/2026-11-04/habitat-huts/b6-v1-ext-day-after.png) | [Comparison](evidence/2026-11-04/habitat-huts/b6-v1-ext-day-comparison.png) |
+| b6-v1-int-day | ![b6-v1-int-day before](evidence/2026-11-04/habitat-huts/b6-v1-int-day-before.png) | ![b6-v1-int-day after](evidence/2026-11-04/habitat-huts/b6-v1-int-day-after.png) | [Comparison](evidence/2026-11-04/habitat-huts/b6-v1-int-day-comparison.png) |
+| b6-v3-ext-day | ![b6-v3-ext-day before](evidence/2026-11-04/habitat-huts/b6-v3-ext-day-before.png) | ![b6-v3-ext-day after](evidence/2026-11-04/habitat-huts/b6-v3-ext-day-after.png) | [Comparison](evidence/2026-11-04/habitat-huts/b6-v3-ext-day-comparison.png) |
+| b6-v3-int-day | ![b6-v3-int-day before](evidence/2026-11-04/habitat-huts/b6-v3-int-day-before.png) | ![b6-v3-int-day after](evidence/2026-11-04/habitat-huts/b6-v3-int-day-after.png) | [Comparison](evidence/2026-11-04/habitat-huts/b6-v3-int-day-comparison.png) |
+| door-open-inside | ![door-open-inside before](evidence/2026-11-04/habitat-huts/door-open-inside-before.png) | ![door-open-inside after](evidence/2026-11-04/habitat-huts/door-open-inside-after.png) | [Comparison](evidence/2026-11-04/habitat-huts/door-open-inside-comparison.png) |
+
+Difference metrics:
+- b6-entrance-snow-00 threshold `12` changed pixels `704909/2073600` (`33.9945%`) MAE `0.076245`.
+- b6-ext-day-back threshold `12` changed pixels `260783/2073600` (`12.5763%`) MAE `0.022572`.
+- b6-ext-day-front threshold `12` changed pixels `234473/2073600` (`11.3075%`) MAE `0.024340`.
+- b6-ext-day-roof threshold `12` changed pixels `260305/2073600` (`12.5533%`) MAE `0.028929`.
+- b6-ext-night-lit threshold `12` changed pixels `143754/2073600` (`6.9326%`) MAE `0.010633`.
+- b6-int-gable-ceiling-day threshold `12` changed pixels `1642657/2073600` (`79.2176%`) MAE `0.079649`.
+- b6-int-room-day threshold `12` changed pixels `1331317/2073600` (`64.2032%`) MAE `0.053579`.
+- b6-int-room-night-lit threshold `12` changed pixels `1049535/2073600` (`50.6141%`) MAE `0.041280`.
+- b6-int-stove-night-lit threshold `12` changed pixels `1466501/2073600` (`70.7225%`) MAE `0.063197`.
+- b6-int-window-day threshold `12` changed pixels `1459321/2073600` (`70.3762%`) MAE `0.058767`.
+- b6-lod-045m threshold `12` changed pixels `12682/2073600` (`0.6116%`) MAE `0.002424`.
+- b6-lod-090m threshold `12` changed pixels `3569/2073600` (`0.1721%`) MAE `0.001309`.
+- b6-meal-night-lit threshold `12` changed pixels `531497/2073600` (`25.6316%`) MAE `0.018595`.
+- b6-station-ext-day-060m threshold `12` changed pixels `7240/2073600` (`0.3492%`) MAE `0.001525`.
+- b6-station-int-up-day threshold `12` changed pixels `1634066/2073600` (`78.8033%`) MAE `0.100433`.
+- b6-store-stocked-day threshold `12` changed pixels `1300716/2073600` (`62.7274%`) MAE `0.046868`.
+- b6-v1-ext-day threshold `12` changed pixels `798325/2073600` (`38.4995%`) MAE `0.075512`.
+- b6-v1-int-day threshold `12` changed pixels `1381868/2073600` (`66.6410%`) MAE `0.088401`.
+- b6-v3-ext-day threshold `12` changed pixels `786052/2073600` (`37.9076%`) MAE `0.095954`.
+- b6-v3-int-day threshold `12` changed pixels `1397509/2073600` (`67.3953%`) MAE `0.127228`.
+- door-open-inside threshold `12` changed pixels `934611/2073600` (`45.0719%`) MAE `0.086178`.
+
+Related documents:[polar-habitat-models.md](../plans/polar-habitat-models.md).
+
+## River, lake and lead shore ice: ice-edge plan M3
+<!-- project-update-log:2026-11-04:shore-ice -->
+
+- Reason：M3 of the ice-edge plan (concepts E03, E04): shore ice along rivers, lakes and leads was an even ribbon of 2 m quads with a gap after about every other one, with bare lake ends.
+- Implementation：Shore ice is built by PolarIceEdge.Run (River and Lead profiles) as broken plates 6-16 cm thick with uneven widths, jagged water edges, cracks, rafted plates and snow by the bank thinning to clear ice; river plates sink to the water at the bank and open plates do not drift; ice runs round held lake ends; shadows within about 60 m; river pieces built on loading workers, a river each, while the leads are built. Render only (0.6.110-test, build ie-08).
+- Validation：Gameplay 390 and weather 80 on ie-08 (Logs/PolarV7/0.6.110-test/ie-08b; a first ie-08 run stopped once when a hut door did not open within 5 s of real time, and passed on the rerun); performance 79 on ie-05, which differs only in the review's fixes: sea view median of 16 pairs +0.58 ms GPU P95, -0.26 ms main; new-game loading on ie-08 about 0.1 s of M3 on the main thread; seed 777 shore ice 324,529 vertices (1.29 times); 6 before/after pairs in b8-ice-edge.
+- Decisions and scope：A review outside Unity found drifted and lifted plates showing their open sides and a load wait of 1.45 s, so open plates no longer drift, river plates' bank edges sink to the water, and each river goes to its own loading worker. River ends keep their 3 m taper: a level end row laid a sheet over lower land at one upstream end.
+- Remaining work：M4 (gap walls: crevasses, bay ice fronts, lead rock), its own package.
+
+### Screenshot comparison
+
+| State | Before | After | Difference |
+|---|---|---|---|
+| lake-end-overhead | ![lake-end-overhead before](evidence/2026-11-04/shore-ice/lake-end-overhead-before.png) | ![lake-end-overhead after](evidence/2026-11-04/shore-ice/lake-end-overhead-after.png) | [Comparison](evidence/2026-11-04/shore-ice/lake-end-overhead-comparison.png) |
+| lead-foot | ![lead-foot before](evidence/2026-11-04/shore-ice/lead-foot-before.png) | ![lead-foot after](evidence/2026-11-04/shore-ice/lead-foot-after.png) | [Comparison](evidence/2026-11-04/shore-ice/lead-foot-comparison.png) |
+| river | ![river before](evidence/2026-11-04/shore-ice/river-before.png) | ![river after](evidence/2026-11-04/shore-ice/river-after.png) | [Comparison](evidence/2026-11-04/shore-ice/river-comparison.png) |
+| river-bend | ![river-bend before](evidence/2026-11-04/shore-ice/river-bend-before.png) | ![river-bend after](evidence/2026-11-04/shore-ice/river-bend-after.png) | [Comparison](evidence/2026-11-04/shore-ice/river-bend-comparison.png) |
+| river-edge | ![river-edge before](evidence/2026-11-04/shore-ice/river-edge-before.png) | ![river-edge after](evidence/2026-11-04/shore-ice/river-edge-after.png) | [Comparison](evidence/2026-11-04/shore-ice/river-edge-comparison.png) |
+| river-overhead | ![river-overhead before](evidence/2026-11-04/shore-ice/river-overhead-before.png) | ![river-overhead after](evidence/2026-11-04/shore-ice/river-overhead-after.png) | [Comparison](evidence/2026-11-04/shore-ice/river-overhead-comparison.png) |
+
+Difference metrics:
+- lake-end-overhead threshold `12` changed pixels `202809/2073600` (`9.7805%`) MAE `0.028044`.
+- lead-foot threshold `12` changed pixels `88672/2073600` (`4.2762%`) MAE `0.011296`.
+- river threshold `12` changed pixels `12801/2073600` (`0.6173%`) MAE `0.002701`.
+- river-bend threshold `12` changed pixels `412789/2073600` (`19.9069%`) MAE `0.053180`.
+- river-edge threshold `12` changed pixels `15097/2073600` (`0.7281%`) MAE `0.002559`.
+- river-overhead threshold `12` changed pixels `62164/2073600` (`2.9979%`) MAE `0.010043`.
+
+Related documents:[rendering-streaming.md](../systems/rendering-streaming.md) / [polar-ice-edge-upgrade.md](../plans/polar-ice-edge-upgrade.md) / [current-status.md](../current-status.md).
+
+## Polar Habitat release: habitat plan M5
+<!-- project-update-log:2026-11-04:habitat-release -->
+
+- Reason：M5 of the habitat plan, its release: the full Player suite and the front page on one package, the handbook and the front-page backdrop checked for the old hut, and every M0 case captured again.
+- Implementation：Only Pole Station wears the station's drifts and distant smoke (PolarArtHutDressing; since world v21 the two traverse depots had worn them too). The front-page backdrop is rendered again under HDRP from a v23 start snapshot (night-clear: the pack's hut with its window lit; it showed world v12's red cabin), and PolarFrontPageBackdrop first draws 30 frames into its 5120x2880 target so HDRP's temporal history starts at that size. PolarLoadingProfile expects PolarGameplayFactory.People people (it expected 21); two build-gate lines requiring hut mesh colliders, the unused AddPrism and stale door and stove comments are gone; the art capture's b6-station cases show Pole Station; the front-page runner uses a v23 fixture, and its cold-breathing check expects the 0.16 level set in 0.6.85-test.
+- Validation：Full Player suite on hr-01 (Logs/PolarV7/0.6.111-test/hr-01): gameplay 390, physical 3959, physical-resume 18, continue 36, performance 79 (hut-to-hut P95 16.69 ms), buildings 395, fractured 31, handbook 353, weather 80, weather-resume 10, ui 463, handbook-revision 619. Front page 132, startup 4 and screen-args 3 on hr-02, which differs only in that check (Logs/PolarFront/0.6.111-test/hr-02; hr-01's run stopped on it after 115). 143 before/after pairs inspected: each case against its earliest before from M1-M4 (art hm5-after: b6-habitat, interaction, b7-equipment; five-areas hm5-after, nine groups; PolarPoleStationCapture), plus the backdrop and the front page. Against M3's and M4's afters the five-areas shots differ only by the pack hut seen from the tent and track views and by breath puffs; Pole Station equals hh-01's.
+- Decisions and scope：The handbook's 32 illustrations still show the early-October hut; the user chose to have Codex repaint them (docs/art/polar-handbook/habitat-repaint-handoff.md), so M5 ships them unchanged. Far-hut proxies and PolarExperienceCapture were not captured again.
+- Remaining work：The handbook repaint. The GDD's tent camp section still calls the tent's heater a small iron stove (the user's call). Capture notes: the five-areas Editor logs carry the same 'Invalid location observation' background-save validation exceptions as M3's and M4's runs, and glint-woodencrate shows the handbook toolbar that b7's book cases leave open. Correction to the M4 entry: its b6-station cases showed Traverse depot 1 dressed as Pole Station, not a station-district hut.
+
+### Screenshot comparison
+
+| State | Before | After | Difference |
+|---|---|---|---|
+| b6-entrance-damaged-00 | ![b6-entrance-damaged-00 before](evidence/2026-11-04/habitat-release/b6-entrance-damaged-00-before.png) | ![b6-entrance-damaged-00 after](evidence/2026-11-04/habitat-release/b6-entrance-damaged-00-after.png) | [Comparison](evidence/2026-11-04/habitat-release/b6-entrance-damaged-00-comparison.png) |
+| b6-entrance-snow-00 | ![b6-entrance-snow-00 before](evidence/2026-11-04/habitat-release/b6-entrance-snow-00-before.png) | ![b6-entrance-snow-00 after](evidence/2026-11-04/habitat-release/b6-entrance-snow-00-after.png) | [Comparison](evidence/2026-11-04/habitat-release/b6-entrance-snow-00-comparison.png) |
+| b6-entrance-snow-90 | ![b6-entrance-snow-90 before](evidence/2026-11-04/habitat-release/b6-entrance-snow-90-before.png) | ![b6-entrance-snow-90 after](evidence/2026-11-04/habitat-release/b6-entrance-snow-90-after.png) | [Comparison](evidence/2026-11-04/habitat-release/b6-entrance-snow-90-comparison.png) |
+| b6-ext-day-back | ![b6-ext-day-back before](evidence/2026-11-04/habitat-release/b6-ext-day-back-before.png) | ![b6-ext-day-back after](evidence/2026-11-04/habitat-release/b6-ext-day-back-after.png) | [Comparison](evidence/2026-11-04/habitat-release/b6-ext-day-back-comparison.png) |
+| b6-ext-day-front | ![b6-ext-day-front before](evidence/2026-11-04/habitat-release/b6-ext-day-front-before.png) | ![b6-ext-day-front after](evidence/2026-11-04/habitat-release/b6-ext-day-front-after.png) | [Comparison](evidence/2026-11-04/habitat-release/b6-ext-day-front-comparison.png) |
+| Hut roof and flue by day | ![Hut roof and flue by day before](evidence/2026-11-04/habitat-release/b6-ext-day-roof-before.png) | ![Hut roof and flue by day after](evidence/2026-11-04/habitat-release/b6-ext-day-roof-after.png) | [Comparison](evidence/2026-11-04/habitat-release/b6-ext-day-roof-comparison.png) |
+| b6-ext-dusk-heavy-lit | ![b6-ext-dusk-heavy-lit before](evidence/2026-11-04/habitat-release/b6-ext-dusk-heavy-lit-before.png) | ![b6-ext-dusk-heavy-lit after](evidence/2026-11-04/habitat-release/b6-ext-dusk-heavy-lit-after.png) | [Comparison](evidence/2026-11-04/habitat-release/b6-ext-dusk-heavy-lit-comparison.png) |
+| Hut outside at night, stove lit | ![Hut outside at night, stove lit before](evidence/2026-11-04/habitat-release/b6-ext-night-lit-before.png) | ![Hut outside at night, stove lit after](evidence/2026-11-04/habitat-release/b6-ext-night-lit-after.png) | [Comparison](evidence/2026-11-04/habitat-release/b6-ext-night-lit-comparison.png) |
+| b6-ext-night-lit-120m | ![b6-ext-night-lit-120m before](evidence/2026-11-04/habitat-release/b6-ext-night-lit-120m-before.png) | ![b6-ext-night-lit-120m after](evidence/2026-11-04/habitat-release/b6-ext-night-lit-120m-after.png) | [Comparison](evidence/2026-11-04/habitat-release/b6-ext-night-lit-120m-comparison.png) |
+| b6-ext-night-lit-blizzard-060m | ![b6-ext-night-lit-blizzard-060m before](evidence/2026-11-04/habitat-release/b6-ext-night-lit-blizzard-060m-before.png) | ![b6-ext-night-lit-blizzard-060m after](evidence/2026-11-04/habitat-release/b6-ext-night-lit-blizzard-060m-after.png) | [Comparison](evidence/2026-11-04/habitat-release/b6-ext-night-lit-blizzard-060m-comparison.png) |
+| b6-ext-night-unlit | ![b6-ext-night-unlit before](evidence/2026-11-04/habitat-release/b6-ext-night-unlit-before.png) | ![b6-ext-night-unlit after](evidence/2026-11-04/habitat-release/b6-ext-night-unlit-after.png) | [Comparison](evidence/2026-11-04/habitat-release/b6-ext-night-unlit-comparison.png) |
+| Hut ceiling and flue collar by day | ![Hut ceiling and flue collar by day before](evidence/2026-11-04/habitat-release/b6-int-gable-ceiling-day-before.png) | ![Hut ceiling and flue collar by day after](evidence/2026-11-04/habitat-release/b6-int-gable-ceiling-day-after.png) | [Comparison](evidence/2026-11-04/habitat-release/b6-int-gable-ceiling-day-comparison.png) |
+| Hut room by day | ![Hut room by day before](evidence/2026-11-04/habitat-release/b6-int-room-day-before.png) | ![Hut room by day after](evidence/2026-11-04/habitat-release/b6-int-room-day-after.png) | [Comparison](evidence/2026-11-04/habitat-release/b6-int-room-day-comparison.png) |
+| Hut room at night, stove lit | ![Hut room at night, stove lit before](evidence/2026-11-04/habitat-release/b6-int-room-night-lit-before.png) | ![Hut room at night, stove lit after](evidence/2026-11-04/habitat-release/b6-int-room-night-lit-after.png) | [Comparison](evidence/2026-11-04/habitat-release/b6-int-room-night-lit-comparison.png) |
+| b6-int-room-night-unlit | ![b6-int-room-night-unlit before](evidence/2026-11-04/habitat-release/b6-int-room-night-unlit-before.png) | ![b6-int-room-night-unlit after](evidence/2026-11-04/habitat-release/b6-int-room-night-unlit-after.png) | [Comparison](evidence/2026-11-04/habitat-release/b6-int-room-night-unlit-comparison.png) |
+| Hut stove by day, unlit | ![Hut stove by day, unlit before](evidence/2026-11-04/habitat-release/b6-int-stove-day-unlit-before.png) | ![Hut stove by day, unlit after](evidence/2026-11-04/habitat-release/b6-int-stove-day-unlit-after.png) | [Comparison](evidence/2026-11-04/habitat-release/b6-int-stove-day-unlit-comparison.png) |
+| Hut stove at night, lit | ![Hut stove at night, lit before](evidence/2026-11-04/habitat-release/b6-int-stove-night-lit-before.png) | ![Hut stove at night, lit after](evidence/2026-11-04/habitat-release/b6-int-stove-night-lit-after.png) | [Comparison](evidence/2026-11-04/habitat-release/b6-int-stove-night-lit-comparison.png) |
+| Watching the hut stove at night | ![Watching the hut stove at night before](evidence/2026-11-04/habitat-release/b6-int-watch-night-lit-before.png) | ![Watching the hut stove at night after](evidence/2026-11-04/habitat-release/b6-int-watch-night-lit-after.png) | [Comparison](evidence/2026-11-04/habitat-release/b6-int-watch-night-lit-comparison.png) |
+| b6-int-window-day | ![b6-int-window-day before](evidence/2026-11-04/habitat-release/b6-int-window-day-before.png) | ![b6-int-window-day after](evidence/2026-11-04/habitat-release/b6-int-window-day-after.png) | [Comparison](evidence/2026-11-04/habitat-release/b6-int-window-day-comparison.png) |
+| b6-lod-045m | ![b6-lod-045m before](evidence/2026-11-04/habitat-release/b6-lod-045m-before.png) | ![b6-lod-045m after](evidence/2026-11-04/habitat-release/b6-lod-045m-after.png) | [Comparison](evidence/2026-11-04/habitat-release/b6-lod-045m-comparison.png) |
+| b6-lod-090m | ![b6-lod-090m before](evidence/2026-11-04/habitat-release/b6-lod-090m-before.png) | ![b6-lod-090m after](evidence/2026-11-04/habitat-release/b6-lod-090m-after.png) | [Comparison](evidence/2026-11-04/habitat-release/b6-lod-090m-comparison.png) |
+| Hut at the LOD switch, seen through the door | ![Hut at the LOD switch, seen through the door before](evidence/2026-11-04/habitat-release/b6-lod-cut-inside-before.png) | ![Hut at the LOD switch, seen through the door after](evidence/2026-11-04/habitat-release/b6-lod-cut-inside-after.png) | [Comparison](evidence/2026-11-04/habitat-release/b6-lod-cut-inside-comparison.png) |
+| b6-lod-cut-past | ![b6-lod-cut-past before](evidence/2026-11-04/habitat-release/b6-lod-cut-past-before.png) | ![b6-lod-cut-past after](evidence/2026-11-04/habitat-release/b6-lod-cut-past-after.png) | [Comparison](evidence/2026-11-04/habitat-release/b6-lod-cut-past-comparison.png) |
+| Meal by the hut stove at night | ![Meal by the hut stove at night before](evidence/2026-11-04/habitat-release/b6-meal-night-lit-before.png) | ![Meal by the hut stove at night after](evidence/2026-11-04/habitat-release/b6-meal-night-lit-after.png) | [Comparison](evidence/2026-11-04/habitat-release/b6-meal-night-lit-comparison.png) |
+| b6-station-ext-day-060m | ![b6-station-ext-day-060m before](evidence/2026-11-04/habitat-release/b6-station-ext-day-060m-before.png) | ![b6-station-ext-day-060m after](evidence/2026-11-04/habitat-release/b6-station-ext-day-060m-after.png) | [Comparison](evidence/2026-11-04/habitat-release/b6-station-ext-day-060m-comparison.png) |
+| b6-station-ext-day-200m | ![b6-station-ext-day-200m before](evidence/2026-11-04/habitat-release/b6-station-ext-day-200m-before.png) | ![b6-station-ext-day-200m after](evidence/2026-11-04/habitat-release/b6-station-ext-day-200m-after.png) | [Comparison](evidence/2026-11-04/habitat-release/b6-station-ext-day-200m-comparison.png) |
+| b6-station-int-up-day | ![b6-station-int-up-day before](evidence/2026-11-04/habitat-release/b6-station-int-up-day-before.png) | ![b6-station-int-up-day after](evidence/2026-11-04/habitat-release/b6-station-int-up-day-after.png) | [Comparison](evidence/2026-11-04/habitat-release/b6-station-int-up-day-comparison.png) |
+| b6-store-empty-day | ![b6-store-empty-day before](evidence/2026-11-04/habitat-release/b6-store-empty-day-before.png) | ![b6-store-empty-day after](evidence/2026-11-04/habitat-release/b6-store-empty-day-after.png) | [Comparison](evidence/2026-11-04/habitat-release/b6-store-empty-day-comparison.png) |
+| b6-store-stocked-day | ![b6-store-stocked-day before](evidence/2026-11-04/habitat-release/b6-store-stocked-day-before.png) | ![b6-store-stocked-day after](evidence/2026-11-04/habitat-release/b6-store-stocked-day-after.png) | [Comparison](evidence/2026-11-04/habitat-release/b6-store-stocked-day-comparison.png) |
+| b6-v1-ext-day | ![b6-v1-ext-day before](evidence/2026-11-04/habitat-release/b6-v1-ext-day-before.png) | ![b6-v1-ext-day after](evidence/2026-11-04/habitat-release/b6-v1-ext-day-after.png) | [Comparison](evidence/2026-11-04/habitat-release/b6-v1-ext-day-comparison.png) |
+| b6-v1-int-day | ![b6-v1-int-day before](evidence/2026-11-04/habitat-release/b6-v1-int-day-before.png) | ![b6-v1-int-day after](evidence/2026-11-04/habitat-release/b6-v1-int-day-after.png) | [Comparison](evidence/2026-11-04/habitat-release/b6-v1-int-day-comparison.png) |
+| Damaged_L hut inside at night, lit | ![Damaged_L hut inside at night, lit before](evidence/2026-11-04/habitat-release/b6-v1-int-night-lit-before.png) | ![Damaged_L hut inside at night, lit after](evidence/2026-11-04/habitat-release/b6-v1-int-night-lit-after.png) | [Comparison](evidence/2026-11-04/habitat-release/b6-v1-int-night-lit-comparison.png) |
+| b6-v3-ext-day | ![b6-v3-ext-day before](evidence/2026-11-04/habitat-release/b6-v3-ext-day-before.png) | ![b6-v3-ext-day after](evidence/2026-11-04/habitat-release/b6-v3-ext-day-after.png) | [Comparison](evidence/2026-11-04/habitat-release/b6-v3-ext-day-comparison.png) |
+| Ruined_A hut inside by day | ![Ruined_A hut inside by day before](evidence/2026-11-04/habitat-release/b6-v3-int-day-before.png) | ![Ruined_A hut inside by day after](evidence/2026-11-04/habitat-release/b6-v3-int-day-after.png) | [Comparison](evidence/2026-11-04/habitat-release/b6-v3-int-day-comparison.png) |
+| b7-book-held-interior | ![b7-book-held-interior before](evidence/2026-11-04/habitat-release/b7-book-held-interior-before.png) | ![b7-book-held-interior after](evidence/2026-11-04/habitat-release/b7-book-held-interior-after.png) | [Comparison](evidence/2026-11-04/habitat-release/b7-book-held-interior-comparison.png) |
+| b7-book-held-night | ![b7-book-held-night before](evidence/2026-11-04/habitat-release/b7-book-held-night-before.png) | ![b7-book-held-night after](evidence/2026-11-04/habitat-release/b7-book-held-night-after.png) | [Comparison](evidence/2026-11-04/habitat-release/b7-book-held-night-comparison.png) |
+| b7-harpoon-hold-interior | ![b7-harpoon-hold-interior before](evidence/2026-11-04/habitat-release/b7-harpoon-hold-interior-before.png) | ![b7-harpoon-hold-interior after](evidence/2026-11-04/habitat-release/b7-harpoon-hold-interior-after.png) | [Comparison](evidence/2026-11-04/habitat-release/b7-harpoon-hold-interior-comparison.png) |
+| b7-harpoon-hold-night | ![b7-harpoon-hold-night before](evidence/2026-11-04/habitat-release/b7-harpoon-hold-night-before.png) | ![b7-harpoon-hold-night after](evidence/2026-11-04/habitat-release/b7-harpoon-hold-night-after.png) | [Comparison](evidence/2026-11-04/habitat-release/b7-harpoon-hold-night-comparison.png) |
+| b7-rifle-hold-interior | ![b7-rifle-hold-interior before](evidence/2026-11-04/habitat-release/b7-rifle-hold-interior-before.png) | ![b7-rifle-hold-interior after](evidence/2026-11-04/habitat-release/b7-rifle-hold-interior-after.png) | [Comparison](evidence/2026-11-04/habitat-release/b7-rifle-hold-interior-comparison.png) |
+| b7-rifle-hold-night | ![b7-rifle-hold-night before](evidence/2026-11-04/habitat-release/b7-rifle-hold-night-before.png) | ![b7-rifle-hold-night after](evidence/2026-11-04/habitat-release/b7-rifle-hold-night-after.png) | [Comparison](evidence/2026-11-04/habitat-release/b7-rifle-hold-night-comparison.png) |
+| b7-rifle-reload-25-night | ![b7-rifle-reload-25-night before](evidence/2026-11-04/habitat-release/b7-rifle-reload-25-night-before.png) | ![b7-rifle-reload-25-night after](evidence/2026-11-04/habitat-release/b7-rifle-reload-25-night-after.png) | [Comparison](evidence/2026-11-04/habitat-release/b7-rifle-reload-25-night-comparison.png) |
+| b7-rifle-reload-58-night | ![b7-rifle-reload-58-night before](evidence/2026-11-04/habitat-release/b7-rifle-reload-58-night-before.png) | ![b7-rifle-reload-58-night after](evidence/2026-11-04/habitat-release/b7-rifle-reload-58-night-after.png) | [Comparison](evidence/2026-11-04/habitat-release/b7-rifle-reload-58-night-comparison.png) |
+| container-floor | ![container-floor before](evidence/2026-11-04/habitat-release/container-floor-before.png) | ![container-floor after](evidence/2026-11-04/habitat-release/container-floor-after.png) | [Comparison](evidence/2026-11-04/habitat-release/container-floor-comparison.png) |
+| door-open-inside | ![door-open-inside before](evidence/2026-11-04/habitat-release/door-open-inside-before.png) | ![door-open-inside after](evidence/2026-11-04/habitat-release/door-open-inside-after.png) | [Comparison](evidence/2026-11-04/habitat-release/door-open-inside-comparison.png) |
+| fp door close in, end | ![fp door close in, end before](evidence/2026-11-04/habitat-release/fa-fp-door-close-in-end-before.png) | ![fp door close in, end after](evidence/2026-11-04/habitat-release/fa-fp-door-close-in-end-after.png) | [Comparison](evidence/2026-11-04/habitat-release/fa-fp-door-close-in-end-comparison.png) |
+| fp door close in, mid | ![fp door close in, mid before](evidence/2026-11-04/habitat-release/fa-fp-door-close-in-mid-before.png) | ![fp door close in, mid after](evidence/2026-11-04/habitat-release/fa-fp-door-close-in-mid-after.png) | [Comparison](evidence/2026-11-04/habitat-release/fa-fp-door-close-in-mid-comparison.png) |
+| fp door close out, end | ![fp door close out, end before](evidence/2026-11-04/habitat-release/fa-fp-door-close-out-end-before.png) | ![fp door close out, end after](evidence/2026-11-04/habitat-release/fa-fp-door-close-out-end-after.png) | [Comparison](evidence/2026-11-04/habitat-release/fa-fp-door-close-out-end-comparison.png) |
+| fp door close out, mid | ![fp door close out, mid before](evidence/2026-11-04/habitat-release/fa-fp-door-close-out-mid-before.png) | ![fp door close out, mid after](evidence/2026-11-04/habitat-release/fa-fp-door-close-out-mid-after.png) | [Comparison](evidence/2026-11-04/habitat-release/fa-fp-door-close-out-mid-comparison.png) |
+| fp door open in, end | ![fp door open in, end before](evidence/2026-11-04/habitat-release/fa-fp-door-open-in-end-before.png) | ![fp door open in, end after](evidence/2026-11-04/habitat-release/fa-fp-door-open-in-end-after.png) | [Comparison](evidence/2026-11-04/habitat-release/fa-fp-door-open-in-end-comparison.png) |
+| fp door open in, mid | ![fp door open in, mid before](evidence/2026-11-04/habitat-release/fa-fp-door-open-in-mid-before.png) | ![fp door open in, mid after](evidence/2026-11-04/habitat-release/fa-fp-door-open-in-mid-after.png) | [Comparison](evidence/2026-11-04/habitat-release/fa-fp-door-open-in-mid-comparison.png) |
+| fp door open out, end | ![fp door open out, end before](evidence/2026-11-04/habitat-release/fa-fp-door-open-out-end-before.png) | ![fp door open out, end after](evidence/2026-11-04/habitat-release/fa-fp-door-open-out-end-after.png) | [Comparison](evidence/2026-11-04/habitat-release/fa-fp-door-open-out-end-comparison.png) |
+| fp door open out, mid | ![fp door open out, mid before](evidence/2026-11-04/habitat-release/fa-fp-door-open-out-mid-before.png) | ![fp door open out, mid after](evidence/2026-11-04/habitat-release/fa-fp-door-open-out-mid-after.png) | [Comparison](evidence/2026-11-04/habitat-release/fa-fp-door-open-out-mid-comparison.png) |
+| fp eat, at 0.8 s | ![fp eat, at 0.8 s before](evidence/2026-11-04/habitat-release/fa-fp-eat-before.png) | ![fp eat, at 0.8 s after](evidence/2026-11-04/habitat-release/fa-fp-eat-after.png) | [Comparison](evidence/2026-11-04/habitat-release/fa-fp-eat-comparison.png) |
+| Player closing the flap, end | ![Player closing the flap, end before](evidence/2026-11-04/habitat-release/fa-fp-flap-close-end-before.png) | ![Player closing the flap, end after](evidence/2026-11-04/habitat-release/fa-fp-flap-close-end-after.png) | [Comparison](evidence/2026-11-04/habitat-release/fa-fp-flap-close-end-comparison.png) |
+| Player closing the flap, mid | ![Player closing the flap, mid before](evidence/2026-11-04/habitat-release/fa-fp-flap-close-mid-before.png) | ![Player closing the flap, mid after](evidence/2026-11-04/habitat-release/fa-fp-flap-close-mid-after.png) | [Comparison](evidence/2026-11-04/habitat-release/fa-fp-flap-close-mid-comparison.png) |
+| Player opening the flap, end | ![Player opening the flap, end before](evidence/2026-11-04/habitat-release/fa-fp-flap-open-end-before.png) | ![Player opening the flap, end after](evidence/2026-11-04/habitat-release/fa-fp-flap-open-end-after.png) | [Comparison](evidence/2026-11-04/habitat-release/fa-fp-flap-open-end-comparison.png) |
+| Player opening the flap, mid | ![Player opening the flap, mid before](evidence/2026-11-04/habitat-release/fa-fp-flap-open-mid-before.png) | ![Player opening the flap, mid after](evidence/2026-11-04/habitat-release/fa-fp-flap-open-mid-after.png) | [Comparison](evidence/2026-11-04/habitat-release/fa-fp-flap-open-mid-comparison.png) |
+| Player lighting the hut stove, 0.8 s | ![Player lighting the hut stove, 0.8 s before](evidence/2026-11-04/habitat-release/fa-fp-hut-light-before.png) | ![Player lighting the hut stove, 0.8 s after](evidence/2026-11-04/habitat-release/fa-fp-hut-light-after.png) | [Comparison](evidence/2026-11-04/habitat-release/fa-fp-hut-light-comparison.png) |
+| fp hut putout, at 0.8 s | ![fp hut putout, at 0.8 s before](evidence/2026-11-04/habitat-release/fa-fp-hut-putout-before.png) | ![fp hut putout, at 0.8 s after](evidence/2026-11-04/habitat-release/fa-fp-hut-putout-after.png) | [Comparison](evidence/2026-11-04/habitat-release/fa-fp-hut-putout-comparison.png) |
+| Player refuelling the hut stove, 0.8 s | ![Player refuelling the hut stove, 0.8 s before](evidence/2026-11-04/habitat-release/fa-fp-hut-refuel-before.png) | ![Player refuelling the hut stove, 0.8 s after](evidence/2026-11-04/habitat-release/fa-fp-hut-refuel-after.png) | [Comparison](evidence/2026-11-04/habitat-release/fa-fp-hut-refuel-comparison.png) |
+| fp pitch, frame 0070 | ![fp pitch, frame 0070 before](evidence/2026-11-04/habitat-release/fa-fp-pitch-f0070-before.png) | ![fp pitch, frame 0070 after](evidence/2026-11-04/habitat-release/fa-fp-pitch-f0070-after.png) | [Comparison](evidence/2026-11-04/habitat-release/fa-fp-pitch-f0070-comparison.png) |
+| fp pitch, frame 0120 | ![fp pitch, frame 0120 before](evidence/2026-11-04/habitat-release/fa-fp-pitch-f0120-before.png) | ![fp pitch, frame 0120 after](evidence/2026-11-04/habitat-release/fa-fp-pitch-f0120-after.png) | [Comparison](evidence/2026-11-04/habitat-release/fa-fp-pitch-f0120-comparison.png) |
+| fp sleep cot, frame 0149 | ![fp sleep cot, frame 0149 before](evidence/2026-11-04/habitat-release/fa-fp-sleep-cot-f0149-before.png) | ![fp sleep cot, frame 0149 after](evidence/2026-11-04/habitat-release/fa-fp-sleep-cot-f0149-after.png) | [Comparison](evidence/2026-11-04/habitat-release/fa-fp-sleep-cot-f0149-comparison.png) |
+| fp sleep tent, frame 0149 | ![fp sleep tent, frame 0149 before](evidence/2026-11-04/habitat-release/fa-fp-sleep-tent-f0149-before.png) | ![fp sleep tent, frame 0149 after](evidence/2026-11-04/habitat-release/fa-fp-sleep-tent-f0149-after.png) | [Comparison](evidence/2026-11-04/habitat-release/fa-fp-sleep-tent-f0149-comparison.png) |
+| fp strike, frame 0045 | ![fp strike, frame 0045 before](evidence/2026-11-04/habitat-release/fa-fp-strike-f0045-before.png) | ![fp strike, frame 0045 after](evidence/2026-11-04/habitat-release/fa-fp-strike-f0045-after.png) | [Comparison](evidence/2026-11-04/habitat-release/fa-fp-strike-f0045-comparison.png) |
+| Player lighting the tent burner, 0.8 s | ![Player lighting the tent burner, 0.8 s before](evidence/2026-11-04/habitat-release/fa-fp-tent-light-before.png) | ![Player lighting the tent burner, 0.8 s after](evidence/2026-11-04/habitat-release/fa-fp-tent-light-after.png) | [Comparison](evidence/2026-11-04/habitat-release/fa-fp-tent-light-comparison.png) |
+| Player putting out the tent burner | ![Player putting out the tent burner before](evidence/2026-11-04/habitat-release/fa-fp-tent-putout-before.png) | ![Player putting out the tent burner after](evidence/2026-11-04/habitat-release/fa-fp-tent-putout-after.png) | [Comparison](evidence/2026-11-04/habitat-release/fa-fp-tent-putout-comparison.png) |
+| Player refuelling the tent burner | ![Player refuelling the tent burner before](evidence/2026-11-04/habitat-release/fa-fp-tent-refuel-before.png) | ![Player refuelling the tent burner after](evidence/2026-11-04/habitat-release/fa-fp-tent-refuel-after.png) | [Comparison](evidence/2026-11-04/habitat-release/fa-fp-tent-refuel-comparison.png) |
+| fp wake alert, frame 0100 | ![fp wake alert, frame 0100 before](evidence/2026-11-04/habitat-release/fa-fp-wake-alert-f0100-before.png) | ![fp wake alert, frame 0100 after](evidence/2026-11-04/habitat-release/fa-fp-wake-alert-f0100-after.png) | [Comparison](evidence/2026-11-04/habitat-release/fa-fp-wake-alert-f0100-comparison.png) |
+| fp wake calm, frame 0100 | ![fp wake calm, frame 0100 before](evidence/2026-11-04/habitat-release/fa-fp-wake-calm-f0100-before.png) | ![fp wake calm, frame 0100 after](evidence/2026-11-04/habitat-release/fa-fp-wake-calm-f0100-after.png) | [Comparison](evidence/2026-11-04/habitat-release/fa-fp-wake-calm-f0100-comparison.png) |
+| hud-play | ![hud-play before](evidence/2026-11-04/habitat-release/fa-hud-play-before.png) | ![hud-play after](evidence/2026-11-04/habitat-release/fa-hud-play-after.png) | [Comparison](evidence/2026-11-04/habitat-release/fa-hud-play-comparison.png) |
+| Hut stove at night, close | ![Hut stove at night, close before](evidence/2026-11-04/habitat-release/fa-hut-close-before.png) | ![Hut stove at night, close after](evidence/2026-11-04/habitat-release/fa-hut-close-after.png) | [Comparison](evidence/2026-11-04/habitat-release/fa-hut-close-comparison.png) |
+| hut-disc | ![hut-disc before](evidence/2026-11-04/habitat-release/fa-hut-disc-before.png) | ![hut-disc after](evidence/2026-11-04/habitat-release/fa-hut-disc-after.png) | [Comparison](evidence/2026-11-04/habitat-release/fa-hut-disc-comparison.png) |
+| Hut stove at night from the door side | ![Hut stove at night from the door side before](evidence/2026-11-04/habitat-release/fa-hut-door-before.png) | ![Hut stove at night from the door side after](evidence/2026-11-04/habitat-release/fa-hut-door-after.png) | [Comparison](evidence/2026-11-04/habitat-release/fa-hut-door-comparison.png) |
+| npc call help, frame 0036 | ![npc call help, frame 0036 before](evidence/2026-11-04/habitat-release/fa-npc-call-help-f0036-before.png) | ![npc call help, frame 0036 after](evidence/2026-11-04/habitat-release/fa-npc-call-help-f0036-after.png) | [Comparison](evidence/2026-11-04/habitat-release/fa-npc-call-help-f0036-comparison.png) |
+| npc death asleep, frame 0089 | ![npc death asleep, frame 0089 before](evidence/2026-11-04/habitat-release/fa-npc-death-asleep-f0089-before.png) | ![npc death asleep, frame 0089 after](evidence/2026-11-04/habitat-release/fa-npc-death-asleep-f0089-after.png) | [Comparison](evidence/2026-11-04/habitat-release/fa-npc-death-asleep-f0089-comparison.png) |
+| npc door behind, end | ![npc door behind, end before](evidence/2026-11-04/habitat-release/fa-npc-door-behind-end-before.png) | ![npc door behind, end after](evidence/2026-11-04/habitat-release/fa-npc-door-behind-end-after.png) | [Comparison](evidence/2026-11-04/habitat-release/fa-npc-door-behind-end-comparison.png) |
+| npc door behind, mid | ![npc door behind, mid before](evidence/2026-11-04/habitat-release/fa-npc-door-behind-mid-before.png) | ![npc door behind, mid after](evidence/2026-11-04/habitat-release/fa-npc-door-behind-mid-after.png) | [Comparison](evidence/2026-11-04/habitat-release/fa-npc-door-behind-mid-comparison.png) |
+| npc door close out, end | ![npc door close out, end before](evidence/2026-11-04/habitat-release/fa-npc-door-close-out-end-before.png) | ![npc door close out, end after](evidence/2026-11-04/habitat-release/fa-npc-door-close-out-end-after.png) | [Comparison](evidence/2026-11-04/habitat-release/fa-npc-door-close-out-end-comparison.png) |
+| npc door close out, mid | ![npc door close out, mid before](evidence/2026-11-04/habitat-release/fa-npc-door-close-out-mid-before.png) | ![npc door close out, mid after](evidence/2026-11-04/habitat-release/fa-npc-door-close-out-mid-after.png) | [Comparison](evidence/2026-11-04/habitat-release/fa-npc-door-close-out-mid-comparison.png) |
+| npc door open out, end | ![npc door open out, end before](evidence/2026-11-04/habitat-release/fa-npc-door-open-out-end-before.png) | ![npc door open out, end after](evidence/2026-11-04/habitat-release/fa-npc-door-open-out-end-after.png) | [Comparison](evidence/2026-11-04/habitat-release/fa-npc-door-open-out-end-comparison.png) |
+| npc door open out, mid | ![npc door open out, mid before](evidence/2026-11-04/habitat-release/fa-npc-door-open-out-mid-before.png) | ![npc door open out, mid after](evidence/2026-11-04/habitat-release/fa-npc-door-open-out-mid-after.png) | [Comparison](evidence/2026-11-04/habitat-release/fa-npc-door-open-out-mid-comparison.png) |
+| npc eat, at 0.8 s | ![npc eat, at 0.8 s before](evidence/2026-11-04/habitat-release/fa-npc-eat-before.png) | ![npc eat, at 0.8 s after](evidence/2026-11-04/habitat-release/fa-npc-eat-after.png) | [Comparison](evidence/2026-11-04/habitat-release/fa-npc-eat-comparison.png) |
+| Explorer closing the flap, end | ![Explorer closing the flap, end before](evidence/2026-11-04/habitat-release/fa-npc-flap-close-end-before.png) | ![Explorer closing the flap, end after](evidence/2026-11-04/habitat-release/fa-npc-flap-close-end-after.png) | [Comparison](evidence/2026-11-04/habitat-release/fa-npc-flap-close-end-comparison.png) |
+| Explorer closing the flap, mid | ![Explorer closing the flap, mid before](evidence/2026-11-04/habitat-release/fa-npc-flap-close-mid-before.png) | ![Explorer closing the flap, mid after](evidence/2026-11-04/habitat-release/fa-npc-flap-close-mid-after.png) | [Comparison](evidence/2026-11-04/habitat-release/fa-npc-flap-close-mid-comparison.png) |
+| Explorer opening the flap, end | ![Explorer opening the flap, end before](evidence/2026-11-04/habitat-release/fa-npc-flap-open-end-before.png) | ![Explorer opening the flap, end after](evidence/2026-11-04/habitat-release/fa-npc-flap-open-end-after.png) | [Comparison](evidence/2026-11-04/habitat-release/fa-npc-flap-open-end-comparison.png) |
+| Explorer opening the flap, mid | ![Explorer opening the flap, mid before](evidence/2026-11-04/habitat-release/fa-npc-flap-open-mid-before.png) | ![Explorer opening the flap, mid after](evidence/2026-11-04/habitat-release/fa-npc-flap-open-mid-after.png) | [Comparison](evidence/2026-11-04/habitat-release/fa-npc-flap-open-mid-comparison.png) |
+| npc hut light far, at 0.8 s | ![npc hut light far, at 0.8 s before](evidence/2026-11-04/habitat-release/fa-npc-hut-light-far-before.png) | ![npc hut light far, at 0.8 s after](evidence/2026-11-04/habitat-release/fa-npc-hut-light-far-after.png) | [Comparison](evidence/2026-11-04/habitat-release/fa-npc-hut-light-far-comparison.png) |
+| npc hut putout, at 0.8 s | ![npc hut putout, at 0.8 s before](evidence/2026-11-04/habitat-release/fa-npc-hut-putout-before.png) | ![npc hut putout, at 0.8 s after](evidence/2026-11-04/habitat-release/fa-npc-hut-putout-after.png) | [Comparison](evidence/2026-11-04/habitat-release/fa-npc-hut-putout-comparison.png) |
+| Explorer refuelling the hut stove, 0.8 s | ![Explorer refuelling the hut stove, 0.8 s before](evidence/2026-11-04/habitat-release/fa-npc-hut-refuel-before.png) | ![Explorer refuelling the hut stove, 0.8 s after](evidence/2026-11-04/habitat-release/fa-npc-hut-refuel-after.png) | [Comparison](evidence/2026-11-04/habitat-release/fa-npc-hut-refuel-comparison.png) |
+| npc pitch, frame 0030 | ![npc pitch, frame 0030 before](evidence/2026-11-04/habitat-release/fa-npc-pitch-f0030-before.png) | ![npc pitch, frame 0030 after](evidence/2026-11-04/habitat-release/fa-npc-pitch-f0030-after.png) | [Comparison](evidence/2026-11-04/habitat-release/fa-npc-pitch-f0030-comparison.png) |
+| npc pitch, frame 0070 | ![npc pitch, frame 0070 before](evidence/2026-11-04/habitat-release/fa-npc-pitch-f0070-before.png) | ![npc pitch, frame 0070 after](evidence/2026-11-04/habitat-release/fa-npc-pitch-f0070-after.png) | [Comparison](evidence/2026-11-04/habitat-release/fa-npc-pitch-f0070-comparison.png) |
+| npc pitch, frame 0110 | ![npc pitch, frame 0110 before](evidence/2026-11-04/habitat-release/fa-npc-pitch-f0110-before.png) | ![npc pitch, frame 0110 after](evidence/2026-11-04/habitat-release/fa-npc-pitch-f0110-after.png) | [Comparison](evidence/2026-11-04/habitat-release/fa-npc-pitch-f0110-comparison.png) |
+| npc pitch, frame 0150 | ![npc pitch, frame 0150 before](evidence/2026-11-04/habitat-release/fa-npc-pitch-f0150-before.png) | ![npc pitch, frame 0150 after](evidence/2026-11-04/habitat-release/fa-npc-pitch-f0150-after.png) | [Comparison](evidence/2026-11-04/habitat-release/fa-npc-pitch-f0150-comparison.png) |
+| npc sleep cot 2, frame 0149 | ![npc sleep cot 2, frame 0149 before](evidence/2026-11-04/habitat-release/fa-npc-sleep-cot-2-f0149-before.png) | ![npc sleep cot 2, frame 0149 after](evidence/2026-11-04/habitat-release/fa-npc-sleep-cot-2-f0149-after.png) | [Comparison](evidence/2026-11-04/habitat-release/fa-npc-sleep-cot-2-f0149-comparison.png) |
+| npc sleep cot, frame 0149 | ![npc sleep cot, frame 0149 before](evidence/2026-11-04/habitat-release/fa-npc-sleep-cot-f0149-before.png) | ![npc sleep cot, frame 0149 after](evidence/2026-11-04/habitat-release/fa-npc-sleep-cot-f0149-after.png) | [Comparison](evidence/2026-11-04/habitat-release/fa-npc-sleep-cot-f0149-comparison.png) |
+| npc sleep tent, frame 0149 | ![npc sleep tent, frame 0149 before](evidence/2026-11-04/habitat-release/fa-npc-sleep-tent-f0149-before.png) | ![npc sleep tent, frame 0149 after](evidence/2026-11-04/habitat-release/fa-npc-sleep-tent-f0149-after.png) | [Comparison](evidence/2026-11-04/habitat-release/fa-npc-sleep-tent-f0149-comparison.png) |
+| npc strike, frame 0045 | ![npc strike, frame 0045 before](evidence/2026-11-04/habitat-release/fa-npc-strike-f0045-before.png) | ![npc strike, frame 0045 after](evidence/2026-11-04/habitat-release/fa-npc-strike-f0045-after.png) | [Comparison](evidence/2026-11-04/habitat-release/fa-npc-strike-f0045-comparison.png) |
+| npc talk, frame 0043 | ![npc talk, frame 0043 before](evidence/2026-11-04/habitat-release/fa-npc-talk-f0043-before.png) | ![npc talk, frame 0043 after](evidence/2026-11-04/habitat-release/fa-npc-talk-f0043-after.png) | [Comparison](evidence/2026-11-04/habitat-release/fa-npc-talk-f0043-comparison.png) |
+| Explorer putting out the tent burner | ![Explorer putting out the tent burner before](evidence/2026-11-04/habitat-release/fa-npc-tent-putout-before.png) | ![Explorer putting out the tent burner after](evidence/2026-11-04/habitat-release/fa-npc-tent-putout-after.png) | [Comparison](evidence/2026-11-04/habitat-release/fa-npc-tent-putout-comparison.png) |
+| Explorer refuelling the tent burner, 0.8 s | ![Explorer refuelling the tent burner, 0.8 s before](evidence/2026-11-04/habitat-release/fa-npc-tent-refuel-before.png) | ![Explorer refuelling the tent burner, 0.8 s after](evidence/2026-11-04/habitat-release/fa-npc-tent-refuel-after.png) | [Comparison](evidence/2026-11-04/habitat-release/fa-npc-tent-refuel-comparison.png) |
+| npc wake alert, frame 0100 | ![npc wake alert, frame 0100 before](evidence/2026-11-04/habitat-release/fa-npc-wake-alert-f0100-before.png) | ![npc wake alert, frame 0100 after](evidence/2026-11-04/habitat-release/fa-npc-wake-alert-f0100-after.png) | [Comparison](evidence/2026-11-04/habitat-release/fa-npc-wake-alert-f0100-comparison.png) |
+| npc wake calm, frame 0100 | ![npc wake calm, frame 0100 before](evidence/2026-11-04/habitat-release/fa-npc-wake-calm-f0100-before.png) | ![npc wake calm, frame 0100 after](evidence/2026-11-04/habitat-release/fa-npc-wake-calm-f0100-after.png) | [Comparison](evidence/2026-11-04/habitat-release/fa-npc-wake-calm-f0100-comparison.png) |
+| npc wake, frame 0045 | ![npc wake, frame 0045 before](evidence/2026-11-04/habitat-release/fa-npc-wake-f0045-before.png) | ![npc wake, frame 0045 after](evidence/2026-11-04/habitat-release/fa-npc-wake-f0045-after.png) | [Comparison](evidence/2026-11-04/habitat-release/fa-npc-wake-f0045-comparison.png) |
+| npc watch aim, frame 0030 | ![npc watch aim, frame 0030 before](evidence/2026-11-04/habitat-release/fa-npc-watch-aim-f0030-before.png) | ![npc watch aim, frame 0030 after](evidence/2026-11-04/habitat-release/fa-npc-watch-aim-f0030-after.png) | [Comparison](evidence/2026-11-04/habitat-release/fa-npc-watch-aim-f0030-comparison.png) |
+| npc watch, frame 0060 | ![npc watch, frame 0060 before](evidence/2026-11-04/habitat-release/fa-npc-watch-f0060-before.png) | ![npc watch, frame 0060 after](evidence/2026-11-04/habitat-release/fa-npc-watch-f0060-after.png) | [Comparison](evidence/2026-11-04/habitat-release/fa-npc-watch-f0060-comparison.png) |
+| sleep shot down, last frame | ![sleep shot down, last frame before](evidence/2026-11-04/habitat-release/fa-sleep-shot-down-before.png) | ![sleep shot down, last frame after](evidence/2026-11-04/habitat-release/fa-sleep-shot-down-after.png) | [Comparison](evidence/2026-11-04/habitat-release/fa-sleep-shot-down-comparison.png) |
+| sleep x up, last frame | ![sleep x up, last frame before](evidence/2026-11-04/habitat-release/fa-sleep-x-up-before.png) | ![sleep x up, last frame after](evidence/2026-11-04/habitat-release/fa-sleep-x-up-after.png) | [Comparison](evidence/2026-11-04/habitat-release/fa-sleep-x-up-comparison.png) |
+| Tent stove from the back wall | ![Tent stove from the back wall before](evidence/2026-11-04/habitat-release/fa-tent-back-before.png) | ![Tent stove from the back wall after](evidence/2026-11-04/habitat-release/fa-tent-back-after.png) | [Comparison](evidence/2026-11-04/habitat-release/fa-tent-back-comparison.png) |
+| Tent stove through the open entrance | ![Tent stove through the open entrance before](evidence/2026-11-04/habitat-release/fa-tent-entrance-before.png) | ![Tent stove through the open entrance after](evidence/2026-11-04/habitat-release/fa-tent-entrance-after.png) | [Comparison](evidence/2026-11-04/habitat-release/fa-tent-entrance-comparison.png) |
+| Tent snow pit | ![Tent snow pit before](evidence/2026-11-04/habitat-release/fa-tent-pit-before.png) | ![Tent snow pit after](evidence/2026-11-04/habitat-release/fa-tent-pit-after.png) | [Comparison](evidence/2026-11-04/habitat-release/fa-tent-pit-comparison.png) |
+| Tent half pitched | ![Tent half pitched before](evidence/2026-11-04/habitat-release/fa-tent-pitch-half-before.png) | ![Tent half pitched after](evidence/2026-11-04/habitat-release/fa-tent-pitch-half-after.png) | [Comparison](evidence/2026-11-04/habitat-release/fa-tent-pitch-half-comparison.png) |
+| Tent pitched | ![Tent pitched before](evidence/2026-11-04/habitat-release/fa-tent-pitched-before.png) | ![Tent pitched after](evidence/2026-11-04/habitat-release/fa-tent-pitched-after.png) | [Comparison](evidence/2026-11-04/habitat-release/fa-tent-pitched-comparison.png) |
+| Tent from the side | ![Tent from the side before](evidence/2026-11-04/habitat-release/fa-tent-side-before.png) | ![Tent from the side after](evidence/2026-11-04/habitat-release/fa-tent-side-after.png) | [Comparison](evidence/2026-11-04/habitat-release/fa-tent-side-comparison.png) |
+| Tent stove at night, standing by the bags | ![Tent stove at night, standing by the bags before](evidence/2026-11-04/habitat-release/fa-tent-stand-before.png) | ![Tent stove at night, standing by the bags after](evidence/2026-11-04/habitat-release/fa-tent-stand-after.png) | [Comparison](evidence/2026-11-04/habitat-release/fa-tent-stand-comparison.png) |
+| Tent burner by day, inside | ![Tent burner by day, inside before](evidence/2026-11-04/habitat-release/fa-tent-stove-day-inside-before.png) | ![Tent burner by day, inside after](evidence/2026-11-04/habitat-release/fa-tent-stove-day-inside-after.png) | [Comparison](evidence/2026-11-04/habitat-release/fa-tent-stove-day-inside-comparison.png) |
+| Tent burner by day, outside | ![Tent burner by day, outside before](evidence/2026-11-04/habitat-release/fa-tent-stove-day-outside-before.png) | ![Tent burner by day, outside after](evidence/2026-11-04/habitat-release/fa-tent-stove-day-outside-after.png) | [Comparison](evidence/2026-11-04/habitat-release/fa-tent-stove-day-outside-comparison.png) |
+| Tent burner at night, inside | ![Tent burner at night, inside before](evidence/2026-11-04/habitat-release/fa-tent-stove-night-inside-before.png) | ![Tent burner at night, inside after](evidence/2026-11-04/habitat-release/fa-tent-stove-night-inside-after.png) | [Comparison](evidence/2026-11-04/habitat-release/fa-tent-stove-night-inside-comparison.png) |
+| Tent burner at night, outside | ![Tent burner at night, outside before](evidence/2026-11-04/habitat-release/fa-tent-stove-night-outside-before.png) | ![Tent burner at night, outside after](evidence/2026-11-04/habitat-release/fa-tent-stove-night-outside-after.png) | [Comparison](evidence/2026-11-04/habitat-release/fa-tent-stove-night-outside-comparison.png) |
+| Tent burner prompt | ![Tent burner prompt before](evidence/2026-11-04/habitat-release/fa-tent-stove-prompt-before.png) | ![Tent burner prompt after](evidence/2026-11-04/habitat-release/fa-tent-stove-prompt-after.png) | [Comparison](evidence/2026-11-04/habitat-release/fa-tent-stove-prompt-comparison.png) |
+| Tent burner prompt with oil | ![Tent burner prompt with oil before](evidence/2026-11-04/habitat-release/fa-tent-stove-prompt-oil-before.png) | ![Tent burner prompt with oil after](evidence/2026-11-04/habitat-release/fa-tent-stove-prompt-oil-after.png) | [Comparison](evidence/2026-11-04/habitat-release/fa-tent-stove-prompt-oil-comparison.png) |
+| Tent half struck | ![Tent half struck before](evidence/2026-11-04/habitat-release/fa-tent-strike-half-before.png) | ![Tent half struck after](evidence/2026-11-04/habitat-release/fa-tent-strike-half-after.png) | [Comparison](evidence/2026-11-04/habitat-release/fa-tent-strike-half-comparison.png) |
+| Front-page backdrop | ![Front-page backdrop before](evidence/2026-11-04/habitat-release/front-backdrop-before.png) | ![Front-page backdrop after](evidence/2026-11-04/habitat-release/front-backdrop-after.png) | [Comparison](evidence/2026-11-04/habitat-release/front-backdrop-comparison.png) |
+| Front page, 0.6.86-test wv-09 | ![Front page, 0.6.86-test wv-09 before](evidence/2026-11-04/habitat-release/front-page-1600x900-before.png) | ![Front page, 0.6.86-test wv-09 after](evidence/2026-11-04/habitat-release/front-page-1600x900-after.png) | [Comparison](evidence/2026-11-04/habitat-release/front-page-1600x900-comparison.png) |
+| glint-cabinet | ![glint-cabinet before](evidence/2026-11-04/habitat-release/glint-cabinet-before.png) | ![glint-cabinet after](evidence/2026-11-04/habitat-release/glint-cabinet-after.png) | [Comparison](evidence/2026-11-04/habitat-release/glint-cabinet-comparison.png) |
+| glint-equipmentlocker | ![glint-equipmentlocker before](evidence/2026-11-04/habitat-release/glint-equipmentlocker-before.png) | ![glint-equipmentlocker after](evidence/2026-11-04/habitat-release/glint-equipmentlocker-after.png) | [Comparison](evidence/2026-11-04/habitat-release/glint-equipmentlocker-comparison.png) |
+| glint-fuelcrate | ![glint-fuelcrate before](evidence/2026-11-04/habitat-release/glint-fuelcrate-before.png) | ![glint-fuelcrate after](evidence/2026-11-04/habitat-release/glint-fuelcrate-after.png) | [Comparison](evidence/2026-11-04/habitat-release/glint-fuelcrate-comparison.png) |
+| glint-sack | ![glint-sack before](evidence/2026-11-04/habitat-release/glint-sack-before.png) | ![glint-sack after](evidence/2026-11-04/habitat-release/glint-sack-after.png) | [Comparison](evidence/2026-11-04/habitat-release/glint-sack-comparison.png) |
+| glint-woodencrate | ![glint-woodencrate before](evidence/2026-11-04/habitat-release/glint-woodencrate-before.png) | ![glint-woodencrate after](evidence/2026-11-04/habitat-release/glint-woodencrate-after.png) | [Comparison](evidence/2026-11-04/habitat-release/glint-woodencrate-comparison.png) |
+| handbook-last-page | ![handbook-last-page before](evidence/2026-11-04/habitat-release/handbook-last-page-before.png) | ![handbook-last-page after](evidence/2026-11-04/habitat-release/handbook-last-page-after.png) | [Comparison](evidence/2026-11-04/habitat-release/handbook-last-page-comparison.png) |
+| hud-sheltered | ![hud-sheltered before](evidence/2026-11-04/habitat-release/hud-sheltered-before.png) | ![hud-sheltered after](evidence/2026-11-04/habitat-release/hud-sheltered-after.png) | [Comparison](evidence/2026-11-04/habitat-release/hud-sheltered-comparison.png) |
+| hud-underwater | ![hud-underwater before](evidence/2026-11-04/habitat-release/hud-underwater-before.png) | ![hud-underwater after](evidence/2026-11-04/habitat-release/hud-underwater-after.png) | [Comparison](evidence/2026-11-04/habitat-release/hud-underwater-comparison.png) |
+| map-during-action | ![map-during-action before](evidence/2026-11-04/habitat-release/map-during-action-before.png) | ![map-during-action after](evidence/2026-11-04/habitat-release/map-during-action-after.png) | [Comparison](evidence/2026-11-04/habitat-release/map-during-action-comparison.png) |
+| map-hover-note | ![map-hover-note before](evidence/2026-11-04/habitat-release/map-hover-note-before.png) | ![map-hover-note after](evidence/2026-11-04/habitat-release/map-hover-note-after.png) | [Comparison](evidence/2026-11-04/habitat-release/map-hover-note-comparison.png) |
+| npc-after-fight | ![npc-after-fight before](evidence/2026-11-04/habitat-release/npc-after-fight-before.png) | ![npc-after-fight after](evidence/2026-11-04/habitat-release/npc-after-fight-after.png) | [Comparison](evidence/2026-11-04/habitat-release/npc-after-fight-comparison.png) |
+| prompt-inspect | ![prompt-inspect before](evidence/2026-11-04/habitat-release/prompt-inspect-before.png) | ![prompt-inspect after](evidence/2026-11-04/habitat-release/prompt-inspect-after.png) | [Comparison](evidence/2026-11-04/habitat-release/prompt-inspect-comparison.png) |
+| Pole Station capture: centre | ![Pole Station capture: centre before](evidence/2026-11-04/habitat-release/ps-centre-before.png) | ![Pole Station capture: centre after](evidence/2026-11-04/habitat-release/ps-centre-after.png) | [Comparison](evidence/2026-11-04/habitat-release/ps-centre-comparison.png) |
+| Pole Station capture: map station | ![Pole Station capture: map station before](evidence/2026-11-04/habitat-release/ps-map-station-before.png) | ![Pole Station capture: map station after](evidence/2026-11-04/habitat-release/ps-map-station-after.png) | [Comparison](evidence/2026-11-04/habitat-release/ps-map-station-comparison.png) |
+| Pole Station capture: rescue coast | ![Pole Station capture: rescue coast before](evidence/2026-11-04/habitat-release/ps-rescue-coast-before.png) | ![Pole Station capture: rescue coast after](evidence/2026-11-04/habitat-release/ps-rescue-coast-after.png) | [Comparison](evidence/2026-11-04/habitat-release/ps-rescue-coast-comparison.png) |
+| Pole Station capture: station hut | ![Pole Station capture: station hut before](evidence/2026-11-04/habitat-release/ps-station-hut-before.png) | ![Pole Station capture: station hut after](evidence/2026-11-04/habitat-release/ps-station-hut-after.png) | [Comparison](evidence/2026-11-04/habitat-release/ps-station-hut-comparison.png) |
+| Pole Station capture: station table | ![Pole Station capture: station table before](evidence/2026-11-04/habitat-release/ps-station-table-before.png) | ![Pole Station capture: station table after](evidence/2026-11-04/habitat-release/ps-station-table-after.png) | [Comparison](evidence/2026-11-04/habitat-release/ps-station-table-comparison.png) |
+| sack-open | ![sack-open before](evidence/2026-11-04/habitat-release/sack-open-before.png) | ![sack-open after](evidence/2026-11-04/habitat-release/sack-open-after.png) | [Comparison](evidence/2026-11-04/habitat-release/sack-open-comparison.png) |
+| upper-bay | ![upper-bay before](evidence/2026-11-04/habitat-release/upper-bay-before.png) | ![upper-bay after](evidence/2026-11-04/habitat-release/upper-bay-after.png) | [Comparison](evidence/2026-11-04/habitat-release/upper-bay-comparison.png) |
+
+Difference metrics:
+- b6-entrance-damaged-00 threshold `12` changed pixels `928465/2073600` (`44.7755%`) MAE `0.092879`.
+- b6-entrance-snow-00 threshold `12` changed pixels `705226/2073600` (`34.0097%`) MAE `0.076314`.
+- b6-entrance-snow-90 threshold `12` changed pixels `876631/2073600` (`42.2758%`) MAE `0.096057`.
+- b6-ext-day-back threshold `12` changed pixels `261260/2073600` (`12.5993%`) MAE `0.022603`.
+- b6-ext-day-front threshold `12` changed pixels `238576/2073600` (`11.5054%`) MAE `0.024998`.
+- Hut roof and flue by day threshold `12` changed pixels `262215/2073600` (`12.6454%`) MAE `0.029565`.
+- b6-ext-dusk-heavy-lit threshold `12` changed pixels `34220/2073600` (`1.6503%`) MAE `0.002889`.
+- Hut outside at night, stove lit threshold `12` changed pixels `143054/2073600` (`6.8988%`) MAE `0.010454`.
+- b6-ext-night-lit-120m threshold `12` changed pixels `3521/2073600` (`0.1698%`) MAE `0.001791`.
+- b6-ext-night-lit-blizzard-060m threshold `12` changed pixels `277/2073600` (`0.0134%`) MAE `0.000665`.
+- b6-ext-night-unlit threshold `12` changed pixels `142420/2073600` (`6.8682%`) MAE `0.010407`.
+- Hut ceiling and flue collar by day threshold `12` changed pixels `1642287/2073600` (`79.1998%`) MAE `0.079529`.
+- Hut room by day threshold `12` changed pixels `1354367/2073600` (`65.3148%`) MAE `0.056921`.
+- Hut room at night, stove lit threshold `12` changed pixels `1084452/2073600` (`52.2980%`) MAE `0.045316`.
+- b6-int-room-night-unlit threshold `12` changed pixels `5916/2073600` (`0.2853%`) MAE `0.006100`.
+- Hut stove by day, unlit threshold `12` changed pixels `1852265/2073600` (`89.3261%`) MAE `0.101611`.
+- Hut stove at night, lit threshold `12` changed pixels `1522953/2073600` (`73.4449%`) MAE `0.073863`.
+- Watching the hut stove at night threshold `12` changed pixels `1322464/2073600` (`63.7762%`) MAE `0.052740`.
+- b6-int-window-day threshold `12` changed pixels `1505188/2073600` (`72.5882%`) MAE `0.067109`.
+- b6-lod-045m threshold `12` changed pixels `13679/2073600` (`0.6597%`) MAE `0.002867`.
+- b6-lod-090m threshold `12` changed pixels `3455/2073600` (`0.1666%`) MAE `0.001216`.
+- Hut at the LOD switch, seen through the door threshold `12` changed pixels `7380/2073600` (`0.3559%`) MAE `0.001736`.
+- b6-lod-cut-past threshold `12` changed pixels `7590/2073600` (`0.3660%`) MAE `0.001729`.
+- Meal by the hut stove at night threshold `12` changed pixels `572083/2073600` (`27.5889%`) MAE `0.019351`.
+- b6-station-ext-day-060m threshold `12` changed pixels `7329/2073600` (`0.3534%`) MAE `0.001543`.
+- b6-station-ext-day-200m threshold `12` changed pixels `1196/2073600` (`0.0577%`) MAE `0.001012`.
+- b6-station-int-up-day threshold `12` changed pixels `1635687/2073600` (`78.8815%`) MAE `0.100559`.
+- b6-store-empty-day threshold `12` changed pixels `1123332/2073600` (`54.1730%`) MAE `0.041610`.
+- b6-store-stocked-day threshold `12` changed pixels `1303257/2073600` (`62.8500%`) MAE `0.046781`.
+- b6-v1-ext-day threshold `12` changed pixels `803560/2073600` (`38.7519%`) MAE `0.077170`.
+- b6-v1-int-day threshold `12` changed pixels `1397236/2073600` (`67.3821%`) MAE `0.090071`.
+- Damaged_L hut inside at night, lit threshold `12` changed pixels `1017334/2073600` (`49.0612%`) MAE `0.049782`.
+- b6-v3-ext-day threshold `12` changed pixels `795237/2073600` (`38.3505%`) MAE `0.098130`.
+- Ruined_A hut inside by day threshold `12` changed pixels `1420907/2073600` (`68.5237%`) MAE `0.131196`.
+- b7-book-held-interior threshold `12` changed pixels `903309/2073600` (`43.5624%`) MAE `0.038398`.
+- b7-book-held-night threshold `12` changed pixels `509300/2073600` (`24.5612%`) MAE `0.016650`.
+- b7-harpoon-hold-interior threshold `12` changed pixels `1583032/2073600` (`76.3422%`) MAE `0.064372`.
+- b7-harpoon-hold-night threshold `12` changed pixels `1093948/2073600` (`52.7560%`) MAE `0.038627`.
+- b7-rifle-hold-interior threshold `12` changed pixels `1600996/2073600` (`77.2085%`) MAE `0.065193`.
+- b7-rifle-hold-night threshold `12` changed pixels `2011186/2073600` (`96.9901%`) MAE `0.270059`.
+- b7-rifle-reload-25-night threshold `12` changed pixels `1785651/2073600` (`86.1136%`) MAE `0.120389`.
+- b7-rifle-reload-58-night threshold `12` changed pixels `1404527/2073600` (`67.7337%`) MAE `0.060837`.
+- container-floor threshold `12` changed pixels `1704458/2073600` (`82.1980%`) MAE `0.104403`.
+- door-open-inside threshold `12` changed pixels `1490039/2073600` (`71.8576%`) MAE `0.117218`.
+- fp door close in, end threshold `12` changed pixels `1110900/1440000` (`77.1458%`) MAE `0.064678`.
+- fp door close in, mid threshold `12` changed pixels `1027748/1440000` (`71.3714%`) MAE `0.049152`.
+- fp door close out, end threshold `12` changed pixels `1364479/1440000` (`94.7555%`) MAE `0.233730`.
+- fp door close out, mid threshold `12` changed pixels `1331951/1440000` (`92.4966%`) MAE `0.221819`.
+- fp door open in, end threshold `12` changed pixels `928464/1440000` (`64.4767%`) MAE `0.091178`.
+- fp door open in, mid threshold `12` changed pixels `930032/1440000` (`64.5856%`) MAE `0.091891`.
+- fp door open out, end threshold `12` changed pixels `1226114/1440000` (`85.1468%`) MAE `0.165786`.
+- fp door open out, mid threshold `12` changed pixels `1154714/1440000` (`80.1885%`) MAE `0.152366`.
+- fp eat, at 0.8 s threshold `12` changed pixels `1130641/1440000` (`78.5167%`) MAE `0.083983`.
+- Player closing the flap, end threshold `12` changed pixels `852592/1440000` (`59.2078%`) MAE `0.084604`.
+- Player closing the flap, mid threshold `12` changed pixels `830801/1440000` (`57.6945%`) MAE `0.084307`.
+- Player opening the flap, end threshold `12` changed pixels `863917/1440000` (`59.9942%`) MAE `0.096920`.
+- Player opening the flap, mid threshold `12` changed pixels `821772/1440000` (`57.0675%`) MAE `0.088700`.
+- Player lighting the hut stove, 0.8 s threshold `12` changed pixels `1205180/1440000` (`83.6931%`) MAE `0.099021`.
+- fp hut putout, at 0.8 s threshold `12` changed pixels `1068456/1440000` (`74.1983%`) MAE `0.075604`.
+- Player refuelling the hut stove, 0.8 s threshold `12` changed pixels `1171412/1440000` (`81.3481%`) MAE `0.096173`.
+- fp pitch, frame 0070 threshold `12` changed pixels `607120/1440000` (`42.1611%`) MAE `0.082172`.
+- fp pitch, frame 0120 threshold `12` changed pixels `690936/1440000` (`47.9817%`) MAE `0.076944`.
+- fp sleep cot, frame 0149 threshold `12` changed pixels `927611/1440000` (`64.4174%`) MAE `0.056670`.
+- fp sleep tent, frame 0149 threshold `12` changed pixels `1158486/1440000` (`80.4504%`) MAE `0.082278`.
+- fp strike, frame 0045 threshold `12` changed pixels `571006/1440000` (`39.6532%`) MAE `0.086707`.
+- Player lighting the tent burner, 0.8 s threshold `12` changed pixels `990465/1440000` (`68.7823%`) MAE `0.095375`.
+- Player putting out the tent burner threshold `12` changed pixels `946352/1440000` (`65.7189%`) MAE `0.088646`.
+- Player refuelling the tent burner threshold `12` changed pixels `964822/1440000` (`67.0015%`) MAE `0.094876`.
+- fp wake alert, frame 0100 threshold `12` changed pixels `1026072/1440000` (`71.2550%`) MAE `0.098881`.
+- fp wake calm, frame 0100 threshold `12` changed pixels `743475/1440000` (`51.6302%`) MAE `0.040012`.
+- hud-play threshold `12` changed pixels `525/1440000` (`0.0365%`) MAE `0.000106`.
+- Hut stove at night, close threshold `12` changed pixels `1154470/1440000` (`80.1715%`) MAE `0.101028`.
+- hut-disc threshold `12` changed pixels `121331/1440000` (`8.4258%`) MAE `0.016138`.
+- Hut stove at night from the door side threshold `12` changed pixels `970706/1440000` (`67.4101%`) MAE `0.065395`.
+- npc call help, frame 0036 threshold `12` changed pixels `1513/1440000` (`0.1051%`) MAE `0.000161`.
+- npc death asleep, frame 0089 threshold `12` changed pixels `643561/1440000` (`44.6917%`) MAE `0.031553`.
+- npc door behind, end threshold `12` changed pixels `1046378/1440000` (`72.6651%`) MAE `0.061632`.
+- npc door behind, mid threshold `12` changed pixels `979214/1440000` (`68.0010%`) MAE `0.055195`.
+- npc door close out, end threshold `12` changed pixels `555928/1440000` (`38.6061%`) MAE `0.082046`.
+- npc door close out, mid threshold `12` changed pixels `562162/1440000` (`39.0390%`) MAE `0.082343`.
+- npc door open out, end threshold `12` changed pixels `547078/1440000` (`37.9915%`) MAE `0.072344`.
+- npc door open out, mid threshold `12` changed pixels `546750/1440000` (`37.9688%`) MAE `0.072284`.
+- npc eat, at 0.8 s threshold `12` changed pixels `1171349/1440000` (`81.3437%`) MAE `0.087231`.
+- Explorer closing the flap, end threshold `12` changed pixels `349887/1440000` (`24.2977%`) MAE `0.035811`.
+- Explorer closing the flap, mid threshold `12` changed pixels `348301/1440000` (`24.1876%`) MAE `0.036195`.
+- Explorer opening the flap, end threshold `12` changed pixels `340939/1440000` (`23.6763%`) MAE `0.035511`.
+- Explorer opening the flap, mid threshold `12` changed pixels `352142/1440000` (`24.4543%`) MAE `0.037373`.
+- npc hut light far, at 0.8 s threshold `12` changed pixels `824065/1440000` (`57.2267%`) MAE `0.047648`.
+- npc hut putout, at 0.8 s threshold `12` changed pixels `1070730/1440000` (`74.3563%`) MAE `0.067597`.
+- Explorer refuelling the hut stove, 0.8 s threshold `12` changed pixels `1194820/1440000` (`82.9736%`) MAE `0.092581`.
+- npc pitch, frame 0030 threshold `12` changed pixels `134190/1440000` (`9.3187%`) MAE `0.018315`.
+- npc pitch, frame 0070 threshold `12` changed pixels `193473/1440000` (`13.4356%`) MAE `0.029619`.
+- npc pitch, frame 0110 threshold `12` changed pixels `304179/1440000` (`21.1235%`) MAE `0.036331`.
+- npc pitch, frame 0150 threshold `12` changed pixels `260969/1440000` (`18.1228%`) MAE `0.026733`.
+- npc sleep cot 2, frame 0149 threshold `12` changed pixels `663950/1440000` (`46.1076%`) MAE `0.032347`.
+- npc sleep cot, frame 0149 threshold `12` changed pixels `668930/1440000` (`46.4535%`) MAE `0.032726`.
+- npc sleep tent, frame 0149 threshold `12` changed pixels `476910/1440000` (`33.1187%`) MAE `0.044661`.
+- npc strike, frame 0045 threshold `12` changed pixels `219413/1440000` (`15.2370%`) MAE `0.029339`.
+- npc talk, frame 0043 threshold `12` changed pixels `6867/1440000` (`0.4769%`) MAE `0.001329`.
+- Explorer putting out the tent burner threshold `12` changed pixels `597060/1440000` (`41.4625%`) MAE `0.070386`.
+- Explorer refuelling the tent burner, 0.8 s threshold `12` changed pixels `649503/1440000` (`45.1044%`) MAE `0.079781`.
+- npc wake alert, frame 0100 threshold `12` changed pixels `462741/1440000` (`32.1348%`) MAE `0.043815`.
+- npc wake calm, frame 0100 threshold `12` changed pixels `668847/1440000` (`46.4477%`) MAE `0.032768`.
+- npc wake, frame 0045 threshold `12` changed pixels `944206/1440000` (`65.5699%`) MAE `0.053663`.
+- npc watch aim, frame 0030 threshold `12` changed pixels `702885/1440000` (`48.8115%`) MAE `0.038872`.
+- npc watch, frame 0060 threshold `12` changed pixels `796146/1440000` (`55.2879%`) MAE `0.043900`.
+- sleep shot down, last frame threshold `12` changed pixels `0/1440000` (`0.0000%`) MAE `0.000000`.
+- sleep x up, last frame threshold `12` changed pixels `791349/1440000` (`54.9548%`) MAE `0.054437`.
+- Tent stove from the back wall threshold `12` changed pixels `1066853/1440000` (`74.0870%`) MAE `0.093277`.
+- Tent stove through the open entrance threshold `12` changed pixels `642068/1440000` (`44.5881%`) MAE `0.058944`.
+- Tent snow pit threshold `12` changed pixels `508059/1440000` (`35.2819%`) MAE `0.054001`.
+- Tent half pitched threshold `12` changed pixels `34213/1440000` (`2.3759%`) MAE `0.007142`.
+- Tent pitched threshold `12` changed pixels `35237/1440000` (`2.4470%`) MAE `0.007293`.
+- Tent from the side threshold `12` changed pixels `466625/1440000` (`32.4045%`) MAE `0.058925`.
+- Tent stove at night, standing by the bags threshold `12` changed pixels `966410/1440000` (`67.1118%`) MAE `0.084206`.
+- Tent burner by day, inside threshold `12` changed pixels `1270160/1440000` (`88.2056%`) MAE `0.128969`.
+- Tent burner by day, outside threshold `12` changed pixels `33407/1440000` (`2.3199%`) MAE `0.005151`.
+- Tent burner at night, inside threshold `12` changed pixels `1223393/1440000` (`84.9578%`) MAE `0.097037`.
+- Tent burner at night, outside threshold `12` changed pixels `7804/1440000` (`0.5419%`) MAE `0.003515`.
+- Tent burner prompt threshold `12` changed pixels `972628/1440000` (`67.5436%`) MAE `0.098934`.
+- Tent burner prompt with oil threshold `12` changed pixels `976593/1440000` (`67.8190%`) MAE `0.097683`.
+- Tent half struck threshold `12` changed pixels `22009/1440000` (`1.5284%`) MAE `0.005206`.
+- Front-page backdrop threshold `12` changed pixels `3564799/3686400` (`96.7014%`) MAE `0.118528`.
+- Front page, 0.6.86-test wv-09 threshold `12` changed pixels `860921/1440000` (`59.7862%`) MAE `0.054383`.
+- glint-cabinet threshold `12` changed pixels `1546011/2073600` (`74.5569%`) MAE `0.076614`.
+- glint-equipmentlocker threshold `12` changed pixels `1746724/2073600` (`84.2363%`) MAE `0.094700`.
+- glint-fuelcrate threshold `12` changed pixels `1529245/2073600` (`73.7483%`) MAE `0.081808`.
+- glint-sack threshold `12` changed pixels `1483989/2073600` (`71.5658%`) MAE `0.069982`.
+- glint-woodencrate threshold `12` changed pixels `1665462/2073600` (`80.3174%`) MAE `0.093230`.
+- handbook-last-page threshold `12` changed pixels `280469/2073600` (`13.5257%`) MAE `0.010931`.
+- hud-sheltered threshold `12` changed pixels `1603131/2073600` (`77.3115%`) MAE `0.084072`.
+- hud-underwater threshold `12` changed pixels `295834/2073600` (`14.2667%`) MAE `0.056527`.
+- map-during-action threshold `12` changed pixels `675180/2073600` (`32.5608%`) MAE `0.041462`.
+- map-hover-note threshold `12` changed pixels `265658/2073600` (`12.8114%`) MAE `0.046213`.
+- npc-after-fight threshold `12` changed pixels `143715/2073600` (`6.9307%`) MAE `0.030168`.
+- prompt-inspect threshold `12` changed pixels `1651659/2073600` (`79.6518%`) MAE `0.101722`.
+- Pole Station capture: centre threshold `12` changed pixels `769/1440000` (`0.0534%`) MAE `0.000886`.
+- Pole Station capture: map station threshold `12` changed pixels `45/1440000` (`0.0031%`) MAE `0.000561`.
+- Pole Station capture: rescue coast threshold `12` changed pixels `1123/1440000` (`0.0780%`) MAE `0.001550`.
+- Pole Station capture: station hut threshold `12` changed pixels `28357/1440000` (`1.9692%`) MAE `0.006243`.
+- Pole Station capture: station table threshold `12` changed pixels `926208/1440000` (`64.3200%`) MAE `0.056872`.
+- sack-open threshold `12` changed pixels `1503249/2073600` (`72.4946%`) MAE `0.082195`.
+- upper-bay threshold `12` changed pixels `1595032/2073600` (`76.9209%`) MAE `0.086295`.
+
+Related documents:[polar-habitat-models.md](../plans/polar-habitat-models.md).
+
+## Pond hole rims: a chipped section and a crust ridge (concepts E01, E02)
+<!-- project-update-log:2026-11-04:pond-hole-rims -->
+
+- Reason：Thin-ice pond holes ended in a straight vertical cut with no crust or wet edge; the ice-edge plan's pond-holes line (concepts E01, E02) went to the thin-ice session.
+- Implementation：A broken plate's hole ends in a chipped five-row section of flat facets (lip, chip, waterline notch, foot, bottom) and a crust ridge in broken runs along the strip; the faces are shaded as ice with bubbles, a wet band and glaze line at the waterline and dark turquoise below it. Render only; package 0.6.112-test, build rm-02.
+- Validation：Gameplay 390, continue 36 and performance 79 pass on rm-02 (Logs/PolarV7/0.6.112-test/rm-02); pond 33 GPU P95 7.63/10.44/10.29 ms intact/breaking/quiet against hr-01's 7.93/10.89/10.82 ms, not paired; art capture b4-deep-water 70 PASS before (rim-before) and after (rim-after4); 8 inspected pairs; a final three-lens review with two verifiers per finding found one rare zero-normal facet, fixed in rm-02.
+- Decisions and scope：The ridge takes the snow's colour only where a drift tongue reaches it; elsewhere it is rimed ice (a white line round every hole read as a tube).
+- Remaining work：Floating pieces' sides keep their old uniform band; uv0's run jumps once a hole at its first sample.
+
+### Screenshot comparison
+
+| State | Before | After | Difference |
+|---|---|---|---|
+| hole-overhead | ![hole-overhead before](evidence/2026-11-04/pond-hole-rims/hole-overhead-before.png) | ![hole-overhead after](evidence/2026-11-04/pond-hole-rims/hole-overhead-after.png) | [Comparison](evidence/2026-11-04/pond-hole-rims/hole-overhead-comparison.png) |
+| merged-rim | ![merged-rim before](evidence/2026-11-04/pond-hole-rims/merged-rim-before.png) | ![merged-rim after](evidence/2026-11-04/pond-hole-rims/merged-rim-after.png) | [Comparison](evidence/2026-11-04/pond-hole-rims/merged-rim-comparison.png) |
+| rim-e01 | ![rim-e01 before](evidence/2026-11-04/pond-hole-rims/rim-e01-before.png) | ![rim-e01 after](evidence/2026-11-04/pond-hole-rims/rim-e01-after.png) | [Comparison](evidence/2026-11-04/pond-hole-rims/rim-e01-comparison.png) |
+| rim-e01-near | ![rim-e01-near before](evidence/2026-11-04/pond-hole-rims/rim-e01-near-before.png) | ![rim-e01-near after](evidence/2026-11-04/pond-hole-rims/rim-e01-near-after.png) | [Comparison](evidence/2026-11-04/pond-hole-rims/rim-e01-near-comparison.png) |
+| rim-e01-night | ![rim-e01-night before](evidence/2026-11-04/pond-hole-rims/rim-e01-night-before.png) | ![rim-e01-night after](evidence/2026-11-04/pond-hole-rims/rim-e01-night-after.png) | [Comparison](evidence/2026-11-04/pond-hole-rims/rim-e01-night-comparison.png) |
+| rim-e02 | ![rim-e02 before](evidence/2026-11-04/pond-hole-rims/rim-e02-before.png) | ![rim-e02 after](evidence/2026-11-04/pond-hole-rims/rim-e02-after.png) | [Comparison](evidence/2026-11-04/pond-hole-rims/rim-e02-comparison.png) |
+| rim-shore | ![rim-shore before](evidence/2026-11-04/pond-hole-rims/rim-shore-before.png) | ![rim-shore after](evidence/2026-11-04/pond-hole-rims/rim-shore-after.png) | [Comparison](evidence/2026-11-04/pond-hole-rims/rim-shore-comparison.png) |
+| rim-under | ![rim-under before](evidence/2026-11-04/pond-hole-rims/rim-under-before.png) | ![rim-under after](evidence/2026-11-04/pond-hole-rims/rim-under-after.png) | [Comparison](evidence/2026-11-04/pond-hole-rims/rim-under-comparison.png) |
+
+Difference metrics:
+- hole-overhead threshold `12` changed pixels `6488/2073600` (`0.3129%`) MAE `0.002278`.
+- merged-rim threshold `12` changed pixels `65122/2073600` (`3.1405%`) MAE `0.006293`.
+- rim-e01 threshold `12` changed pixels `66134/2073600` (`3.1893%`) MAE `0.006359`.
+- rim-e01-near threshold `12` changed pixels `5843/216000` (`2.7051%`) MAE `0.007486`.
+- rim-e01-night threshold `12` changed pixels `23490/2073600` (`1.1328%`) MAE `0.003182`.
+- rim-e02 threshold `12` changed pixels `337587/2073600` (`16.2802%`) MAE `0.021882`.
+- rim-shore threshold `12` changed pixels `55840/2073600` (`2.6929%`) MAE `0.005191`.
+- rim-under threshold `12` changed pixels `111105/2073600` (`5.3581%`) MAE `0.018282`.
+
+Related documents:[rendering-streaming.md](../systems/rendering-streaming.md) / [current-status.md](../current-status.md) / [polar-thin-ice-upgrade.md](../plans/polar-thin-ice-upgrade.md) / [polar-ice-edge-upgrade.md](../plans/polar-ice-edge-upgrade.md).
+
+## Gap walls: crevasses, bay ice fronts, lead rock (ice-edge M4)
+<!-- project-update-log:2026-11-04:gap-walls -->
+
+- Reason：M4 of the ice-edge plan (concepts E05, E06, E09): gap walls were straight flat quads in one tiled rock texture or flat strata shading, unlike the concepts' crevasses and ice fronts.
+- Implementation：Near chunks draw gap walls in relief (PolarWorldStreamer.GapRelief.cs, two-sided shadows): dry cracks as firn over blue ice with a snow cornice over cracks 1.5 m wide or more, coastal bays as glacier ice fronts with strata and calving columns, leads as rock; flat within .9 m of the water and .3 m of a dry crack's floor. The flat walls stay the collider as an undrawn submesh 1; distant blocks over the near window skip the segments under it; PolarGapSurface shades the three families; five memory counters count every submesh. Package 0.6.113-test, build ie-09.
+- Validation：Gameplay 390, physical 3959, performance 79 and weather 80 pass on ie-09 (Logs/PolarV7/0.6.113-test/ie-09); world hash unchanged; hut-to-hut walk P95 16.67 ms (16.69 on 0.6.110-test). Captures b8-ice-edge before ie-m4-before3 (M4 out of the tree) and after ie-m4-after5, 44 shots each. A four-lens review with adversarial checks confirmed two faults, both fixed: one-sided shadows and a slot at dry cracks' floors.
+- Decisions and scope：Bays are ice fronts, leads stay rock, dry cracks are crevasses (the user's choice of November 3); the relief never stands proud of the collider except the dry-crack cornice.
+- Remaining work：The performance mode has no gap-wall view, so the walls' own cost is not measured apart. Distant walls stay flat (bays shaded as ice). The ice-edge plan is complete.
+
+### Screenshot comparison
+
+| State | Before | After | Difference |
+|---|---|---|---|
+| ie-bay-foot | ![ie-bay-foot before](evidence/2026-11-04/gap-walls/ie-bay-foot-before.png) | ![ie-bay-foot after](evidence/2026-11-04/gap-walls/ie-bay-foot-after.png) | [Comparison](evidence/2026-11-04/gap-walls/ie-bay-foot-comparison.png) |
+| ie-bay-near | ![ie-bay-near before](evidence/2026-11-04/gap-walls/ie-bay-near-before.png) | ![ie-bay-near after](evidence/2026-11-04/gap-walls/ie-bay-near-after.png) | [Comparison](evidence/2026-11-04/gap-walls/ie-bay-near-comparison.png) |
+| ie-bay-near-along | ![ie-bay-near-along before](evidence/2026-11-04/gap-walls/ie-bay-near-along-before.png) | ![ie-bay-near-along after](evidence/2026-11-04/gap-walls/ie-bay-near-along-after.png) | [Comparison](evidence/2026-11-04/gap-walls/ie-bay-near-along-comparison.png) |
+| ie-crack-along | ![ie-crack-along before](evidence/2026-11-04/gap-walls/ie-crack-along-before.png) | ![ie-crack-along after](evidence/2026-11-04/gap-walls/ie-crack-along-after.png) | [Comparison](evidence/2026-11-04/gap-walls/ie-crack-along-comparison.png) |
+| ie-crack-down | ![ie-crack-down before](evidence/2026-11-04/gap-walls/ie-crack-down-before.png) | ![ie-crack-down after](evidence/2026-11-04/gap-walls/ie-crack-down-after.png) | [Comparison](evidence/2026-11-04/gap-walls/ie-crack-down-comparison.png) |
+| ie-crack-lip | ![ie-crack-lip before](evidence/2026-11-04/gap-walls/ie-crack-lip-before.png) | ![ie-crack-lip after](evidence/2026-11-04/gap-walls/ie-crack-lip-after.png) | [Comparison](evidence/2026-11-04/gap-walls/ie-crack-lip-comparison.png) |
+| ie-lead-near | ![ie-lead-near before](evidence/2026-11-04/gap-walls/ie-lead-near-before.png) | ![ie-lead-near after](evidence/2026-11-04/gap-walls/ie-lead-near-after.png) | [Comparison](evidence/2026-11-04/gap-walls/ie-lead-near-comparison.png) |
+| ie-lead-near-along | ![ie-lead-near-along before](evidence/2026-11-04/gap-walls/ie-lead-near-along-before.png) | ![ie-lead-near-along after](evidence/2026-11-04/gap-walls/ie-lead-near-along-after.png) | [Comparison](evidence/2026-11-04/gap-walls/ie-lead-near-along-comparison.png) |
+
+Difference metrics:
+- ie-bay-foot threshold `12` changed pixels `738577/2073600` (`35.6181%`) MAE `0.187893`.
+- ie-bay-near threshold `12` changed pixels `1584357/2073600` (`76.4061%`) MAE `0.366792`.
+- ie-bay-near-along threshold `12` changed pixels `1152627/2073600` (`55.5858%`) MAE `0.261106`.
+- ie-crack-along threshold `12` changed pixels `212857/2073600` (`10.2651%`) MAE `0.015713`.
+- ie-crack-down threshold `12` changed pixels `674451/2073600` (`32.5256%`) MAE `0.042405`.
+- ie-crack-lip threshold `12` changed pixels `420724/2073600` (`20.2895%`) MAE `0.039502`.
+- ie-lead-near threshold `12` changed pixels `264252/2073600` (`12.7436%`) MAE `0.020478`.
+- ie-lead-near-along threshold `12` changed pixels `403213/2073600` (`19.4451%`) MAE `0.025720`.
+
+Related documents:[rendering-streaming.md](../systems/rendering-streaming.md) / [current-status.md](../current-status.md) / [polar-ice-edge-upgrade.md](../plans/polar-ice-edge-upgrade.md) / [design-decisions.md](../../design-decisions.md).
+
+## Bolder pond hole rims and floating pieces
+<!-- project-update-log:2026-11-04:bolder-hole-rims -->
+
+- Reason：The user saw 0.6.112-test's rims as too subtle (the crust a smooth bead, the pieces unchanged) and asked to make them bolder.
+- Implementation：Package 0.6.114-test (rb-01), render only. The lip and chips hold over runs of about 38 cm: the lip is 1-6 cm back, and the chips undercut by up to 3.5 cm or step out up to 2.6 cm. The crust lies in its own runs (half of them bare) as faceted lumps .5-3.6 cm proud, snow or ice by run. A near-black 8-16 mm wet band sits under a brighter glaze. Floating pieces have toothed outlines and sides shaded as hole faces.
+- Validation：Gameplay 390, continue 36 and performance 79 pass on rb-01 (Logs/PolarV7/0.6.114-test/rb-01). PolarArtCapture b4-deep-water passes 70 before (bold-before, 0.6.113-test source) and after (bold-after2). Pond 33's hole views are no slower than rm-02's over the same run's intact view (not paired; the whole run was about 1 ms slower, the sea view included). FXC: 3,422 instruction slots (3,421).
+- Decisions and scope：Kept the second pass: the first pass's crust read as a wide continuous band and its wet band was heavier.
+- Remaining work：Small bright bubble ovals show on tall piece sides at a swimmer's eye. The close crust lump in the merged-waterline view is real geometry about 10 cm from the eye.
+
+### Screenshot comparison
+
+| State | Before | After | Difference |
+|---|---|---|---|
+| hole-oblique | ![hole-oblique before](evidence/2026-11-04/bolder-hole-rims/hole-oblique-before.png) | ![hole-oblique after](evidence/2026-11-04/bolder-hole-rims/hole-oblique-after.png) | [Comparison](evidence/2026-11-04/bolder-hole-rims/hole-oblique-comparison.png) |
+| hole-waterline | ![hole-waterline before](evidence/2026-11-04/bolder-hole-rims/hole-waterline-before.png) | ![hole-waterline after](evidence/2026-11-04/bolder-hole-rims/hole-waterline-after.png) | [Comparison](evidence/2026-11-04/bolder-hole-rims/hole-waterline-comparison.png) |
+| merged-rim | ![merged-rim before](evidence/2026-11-04/bolder-hole-rims/merged-rim-before.png) | ![merged-rim after](evidence/2026-11-04/bolder-hole-rims/merged-rim-after.png) | [Comparison](evidence/2026-11-04/bolder-hole-rims/merged-rim-comparison.png) |
+| rim-e01 | ![rim-e01 before](evidence/2026-11-04/bolder-hole-rims/rim-e01-before.png) | ![rim-e01 after](evidence/2026-11-04/bolder-hole-rims/rim-e01-after.png) | [Comparison](evidence/2026-11-04/bolder-hole-rims/rim-e01-comparison.png) |
+| rim-e01-near | ![rim-e01-near before](evidence/2026-11-04/bolder-hole-rims/rim-e01-near-before.png) | ![rim-e01-near after](evidence/2026-11-04/bolder-hole-rims/rim-e01-near-after.png) | [Comparison](evidence/2026-11-04/bolder-hole-rims/rim-e01-near-comparison.png) |
+| rim-e01-night | ![rim-e01-night before](evidence/2026-11-04/bolder-hole-rims/rim-e01-night-before.png) | ![rim-e01-night after](evidence/2026-11-04/bolder-hole-rims/rim-e01-night-after.png) | [Comparison](evidence/2026-11-04/bolder-hole-rims/rim-e01-night-comparison.png) |
+| rim-e02 | ![rim-e02 before](evidence/2026-11-04/bolder-hole-rims/rim-e02-before.png) | ![rim-e02 after](evidence/2026-11-04/bolder-hole-rims/rim-e02-after.png) | [Comparison](evidence/2026-11-04/bolder-hole-rims/rim-e02-comparison.png) |
+| rim-stand | ![rim-stand before](evidence/2026-11-04/bolder-hole-rims/rim-stand-before.png) | ![rim-stand after](evidence/2026-11-04/bolder-hole-rims/rim-stand-after.png) | [Comparison](evidence/2026-11-04/bolder-hole-rims/rim-stand-comparison.png) |
+| rim-under | ![rim-under before](evidence/2026-11-04/bolder-hole-rims/rim-under-before.png) | ![rim-under after](evidence/2026-11-04/bolder-hole-rims/rim-under-after.png) | [Comparison](evidence/2026-11-04/bolder-hole-rims/rim-under-comparison.png) |
+
+Difference metrics:
+- hole-oblique threshold `12` changed pixels `75333/2073600` (`3.6330%`) MAE `0.005788`.
+- hole-waterline threshold `12` changed pixels `396196/2073600` (`19.1067%`) MAE `0.026948`.
+- merged-rim threshold `12` changed pixels `91680/2073600` (`4.4213%`) MAE `0.010320`.
+- rim-e01 threshold `12` changed pixels `86381/2073600` (`4.1658%`) MAE `0.008445`.
+- rim-e01-near threshold `12` changed pixels `10238/216000` (`4.7398%`) MAE `0.013263`.
+- rim-e01-night threshold `12` changed pixels `41942/2073600` (`2.0227%`) MAE `0.005032`.
+- rim-e02 threshold `12` changed pixels `333782/2073600` (`16.0967%`) MAE `0.022219`.
+- rim-stand threshold `12` changed pixels `33818/2073600` (`1.6309%`) MAE `0.004640`.
+- rim-under threshold `12` changed pixels `103082/2073600` (`4.9712%`) MAE `0.016225`.
+
+Related documents:[rendering-streaming.md](../systems/rendering-streaming.md).

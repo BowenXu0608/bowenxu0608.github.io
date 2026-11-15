@@ -1,0 +1,84 @@
+docs/engineering/logs/evidence/2026-10-03/polar-streaming-finish/acceptance.md
+
+# Continuous terrain streaming acceptance
+
+Status: **PASS**. Separate non-Development `0.5.1-streaming` D3D11 diagnostic package; accepted Windows 0.4.0 remains preserved.
+
+The original twenty v9 gallery recipes were replayed without screening. Four real capsule walks per seed cross a local-window boundary in clear and storm weather; six scripted cross-region relocations test disposal and rebuilding separately. Seed 777 additionally exercises both production LOD directions, an actual angular-wrap walk, a true surface hole and broken thin-ice retirement/reload. Historical v8/Mono512 receives its own extended run. The walks are short boundary fixtures, not a complete-world traversal or hour-long soak.
+
+All twenty runs: 17,341 assertions. Historical v8: 1,078 assertions, world `EFAC05C15C192157`. Source fingerprint: `037457c6ce80e64039e03097b9675d909e84103cc52ed3180f06af937fb32d9c`.
+
+Independent checks: [1,297 policy/interpolation/scheduling checks](streaming-check.txt) and [364 shared-rule checks](shared-rules-check.txt) pass. The [final build receipt](candidate-build.txt) records a successful non-Development build.
+
+## Serial performance
+
+Hardware: Intel Core i7-13700H / NVIDIA RTX 4070 Laptop GPU, D3D11, maximum quality, 1600x900 and a 60fps target. No competing Unity/graphical Player or heavy disk copy/hash ran during these samples.
+
+Both baseline and candidate fixtures dispose the NPC director before measured walking to isolate deterministic terrain streaming. They keep the production scene, capsule, renderer, buildings and 21-person/324-site state. Full NPC-active gameplay performance belongs to the separately coordinated v5 acceptance.
+
+| Matched seed 777 | Before | After |
+|---|---:|---:|
+| Cached renderer/collision preparation | 27.677s | 26.382s |
+| Moving P95, same four cases | 16.827ms | 16.734ms |
+| Moving P99, same four cases | 30.799ms | 26.982ms |
+| Maximum moving frame, same four cases | 39.774ms | 31.111ms |
+| Lifetime private commit, complete run | 3.863GB | 3.655GB |
+
+Preparation ratio 0.953; gate <=1.25. Across twenty seeds, highest moving P95 16.801ms (gate <=20ms), maximum moving frame 61.473ms (investigation threshold 100ms), and Windows lifetime private commit 4.264GB (gate <=5GB). Legacy lifetime peak 3.735GB. Memory uses independent 100ms observation and Windows lifetime PeakPagefileUsage, not the final managed heap size.
+
+Preparation starts after frozen archive replay and includes the initial renderer/collision window. It excludes fresh WFC generation. It does not replace the separately measured 0.4.0 fresh-start result of 140.573 seconds. These are one-sample fixtures on this hardware; they do not establish cold-disk or universal hardware guarantees. The candidate lifetime includes extra extended cases that the baseline did not run.
+
+The 2ms main-thread scheduler is measured, not a hard real-time ceiling. Largest indivisible operation across all startup, placement and moving phases: `station_floor`, 27.557ms, seed 1158469945. Maximum recorded streaming-work frame: 28.464ms. These setup-inclusive diagnostics are preserved separately from the actual walking frame distribution.
+
+| Seed | Checks | Preparation s | Moving P95 ms | Moving P99 ms | Max ms | Private GB | Near / collision peak |
+|---:|---:|---:|---:|---:|---:|---:|---:|
+| 777 | 1001 | 26.382 | 16.742 | 26.982 | 37.045 | 3.655 | 30 / 12 |
+| 12345 | 852 | 95.222 | 16.760 | 38.413 | 44.792 | 4.264 | 30 / 12 |
+| 1158469945 | 738 | 27.821 | 16.714 | 32.573 | 41.215 | 3.619 | 29 / 12 |
+| 1549916642 | 850 | 39.729 | 16.685 | 38.543 | 38.986 | 3.686 | 30 / 12 |
+| 305107986 | 960 | 65.656 | 16.745 | 50.083 | 57.848 | 4.032 | 30 / 12 |
+| 2122134385 | 918 | 28.790 | 16.674 | 34.422 | 39.023 | 3.656 | 30 / 12 |
+| 495868281 | 846 | 30.753 | 16.801 | 34.771 | 47.326 | 3.624 | 30 / 12 |
+| 1919803738 | 844 | 97.182 | 16.705 | 44.255 | 49.522 | 4.074 | 30 / 12 |
+| 223173273 | 888 | 26.034 | 16.767 | 40.422 | 43.004 | 3.627 | 30 / 12 |
+| 1351401487 | 740 | 27.559 | 16.731 | 36.127 | 38.441 | 3.612 | 29 / 12 |
+| 361541325 | 890 | 89.678 | 16.690 | 36.605 | 51.319 | 3.959 | 30 / 12 |
+| 1356747697 | 742 | 27.388 | 16.679 | 27.943 | 29.747 | 3.601 | 29 / 12 |
+| 548164728 | 890 | 49.154 | 16.726 | 29.970 | 42.030 | 3.797 | 30 / 12 |
+| 1335335949 | 904 | 90.234 | 16.748 | 34.972 | 42.578 | 4.214 | 30 / 12 |
+| 480035711 | 894 | 28.001 | 16.738 | 22.675 | 24.843 | 3.629 | 30 / 12 |
+| 494993 | 996 | 45.069 | 16.711 | 45.807 | 48.339 | 4.007 | 30 / 12 |
+| 1403455133 | 734 | 96.306 | 16.695 | 32.465 | 36.309 | 4.207 | 29 / 12 |
+| 1148237582 | 732 | 28.937 | 16.735 | 38.333 | 61.473 | 3.647 | 29 / 12 |
+| 865209320 | 850 | 25.372 | 16.754 | 33.635 | 37.646 | 3.602 | 30 / 12 |
+| 2106235867 | 1072 | 25.125 | 16.774 | 39.702 | 47.411 | 3.639 | 30 / 12 |
+
+Completed normal local windows retain 25 terrain chunks and nine collision chunks. Peaks in the table include temporary old/new overlap during real movement. All twenty retain 672 distant blocks and release retired chunks. Raw timing samples, scheduler diagnostics, log lines, executable hashes and memory receipts are under [Player](Player/).
+
+## Geometry and visuals
+
+Six genuine before/after 1600x900 pairs use the same immutable adapter, frozen seed, cameras, hour and quality: near clear/storm, LOD refinement/coarsening midpoints and settled fine/coarse endpoints. All comparisons were inspected. Near frames are identical; settled endpoints differ by at most one channel unit. The intermediate terrain height and Global Snow replacement/depth passes now move together, removing the reproduced false blue gap. The historical baseline midpoint is its immediate target; the new midpoint is the interpolation at 0.5.
+
+![Refinement midpoint comparison](lod-refine-mid-comparison.png)
+
+All twenty actual 1600x900 [storm walking captures](Player/contact-sheet.png) were inspected for black output and missing materials. Near-ground texture and snow render normally, while storm fog obscures distant detail. These short camera fixtures do not establish every-view geometry coverage; the fixed pairs and physical assertions provide the separate geometry evidence. Exact inspected frame hashes are in [Player-inspection.json](Player-inspection.json).
+
+Each walking frame checks physical ray support and ready collision. Feature locks preserve gap-bank cells, explicit walls/floors, pond banks and local collision during distant morphing. Extended tests verify absent authoritative hole support and no false top collision, stable angle-wrap walking, and weak plates staying broken after reload. Existing long explicit pit-wall triangles can still emit PhysX >500-unit warnings; exact warnings are retained in acceptance.json and Player logs. No runtime exception, NaN or invalid-bounds log is accepted.
+
+Exact suffix vertex compaction preserves the leading sample grid and merges only bit-identical position/normal/tangent/color tuples, including signed zero. All faces and their order remain. The seven-case [ordered triangle-attribute audit](mesh-compaction-audit.json), including morph deltas, static geometry, angular wrap, gaps and a hole, matches SHA256 before/after. Some clipped meshes lose 46% of duplicate vertices. Six fixed-camera frames after static packing, lazy-normal retention and compaction are byte-identical to the earlier accepted after captures; recheck receipts are retained.
+
+## Provenance and compatibility
+
+The full candidate Assets/Packages/ProjectSettings snapshot was taken while the shared source was held unchanged after building. All 167 package files are hashed and reverified after serial validation. Later unrelated NPC source edits are allowed; production streaming inputs remain identical. Exact candidate probe/build sources are archived under [Adapters](Adapters/). The separate legacy package has its own full source/script/package seal and uses exactly the same production renderer, ice, policy and shader inputs. The baseline package is hashed separately and its renderer input hashes match the genuine baseline. Because unrelated NPC edits overlapped the earlier historical checkout snapshot, that full baseline checkout is not certified as the package source.
+
+The first v8 fixture failed: v8 intentionally returns true from the v9-specific segment check, so the generic fixture selector could choose an original non-walkable cell. Enabling the current gameplay controller also attempted to write a v2 state through the v5-only save validator. This failed run is preserved under Logs/PolarStreaming/candidate-Player/legacy-seed-777-select-save-failure. The isolated legacy probe samples original traversal flags and slopes along its selected walk, excludes thin ice from the normal ground route, disables gameplay Update and suppresses gameplay saving. Actual capsule input, collision, renderer and streaming remain active. It does not convert or continue an old save. The successful legacy package and adapter hashes are recorded in [legacy-package.json](legacy-package.json) and [legacy-source.json](legacy-source.json); all twenty v9 runs retain their original sealed package.
+
+The first separate legacy build succeeded but failed source binding when a concurrently edited acceptance-only script differed from its pre-build hash. That package is preserved as PolarStreaming-legacy-20261003-source-drift and was never accepted. The accepted compatibility build was recorded and rebuilt after the other task acknowledged the source freeze. This did not change production rendering inputs.
+
+Five non-accepted diagnostic attempts are [recorded](failed-attempts.json) with preserved package/result archives. An idle fixture setup run was interrupted at 6.465GB; seed 12345 subsequently passed function/frame checks but failed memory at 5.252, 5.239, 5.159 and 5.150GB as successive changes were tested. Stage counters identify a stable managed heap and large native terrain buffers, motivating exact vertex compaction. The graphics counter returns zero in this non-Development Player and is unavailable, not proof of zero graphics memory. Final ordinary terrain uses the original 56-byte layout; only active morph displays use 80 bytes and retire when settled. Other changes reuse worker scratch lists, allocate clipping lists lazily, retain only coarse positions, recreate coarse normals on demand, release distant-ice CPU copies and clear large upload/retirement references. The final opt-in harness permits ordinary streaming during actual walking and initial warm-up, then gates automatic selection only during idle fixture setup. All twenty final recipes use the same revised package; no failed original seed was discarded or replaced. The earlier invalid movement-state-enum baseline assertion is also preserved; final support assertions use actual collider rays.
+
+Terrain v9 and historical v8 keep their recipe identities and geometry. Gameplay save compatibility remains owned by its rule version: the current v5 source requires a fresh expedition and does not claim historical v2 continuation. Historical 0.4.0 v2/v3 acceptance remains attached to that archived production behavior. No full v5 NPC/gameplay release or exploration/resource calibration is certified here.
+
+Known accepted build diagnostic: the vendor CTI/LOD Leaves 301 duplicate LOD_FADE_CROSSFADE warning/error reported by Unity; both builds succeed without a new compilation error. The Global Snow morph bridge is a maintained vendor integration.
+
+Records: [acceptance data](acceptance.json), [candidate package](candidate-package.json), [candidate source](candidate-source.json), [baseline inputs](before-inputs.json), [visual manifest](manifest.json), [inspection](visual-inspection.json).

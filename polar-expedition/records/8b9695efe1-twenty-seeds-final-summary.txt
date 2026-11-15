@@ -1,0 +1,908 @@
+docs/engineering/logs/evidence/2026-10-16/loading-time/results/twenty-seeds-final-summary.json
+
+{
+  "seeds": [
+    777,
+    12345,
+    1158469945,
+    1549916642,
+    305107986,
+    2122134385,
+    495868281,
+    1919803738,
+    223173273,
+    1351401487,
+    361541325,
+    1356747697,
+    548164728,
+    1335335949,
+    480035711,
+    494993,
+    1403455133,
+    1148237582,
+    865209320,
+    2106235867
+  ],
+  "rows": [
+    {
+      "seed": 777,
+      "passed": true,
+      "checks": 1578,
+      "hash": "1A2F8EBB50C2FD86",
+      "metresPerCell": 17.08,
+      "nearestMedian": 993,
+      "nearestRatio": 0.1768,
+      "birthToNearest": 1264,
+      "closestPair": 360,
+      "areaRatio": 0.0177,
+      "ponds": 594,
+      "wideCracks": 286,
+      "narrowCracks": 230,
+      "walkRelief": {
+        "p10": 10.191132,
+        "median": 28.388016,
+        "p90": 64.433426,
+        "max": 149.07082
+      },
+      "hazardsPerWalk": {
+        "min": 0,
+        "median": 4,
+        "max": 11,
+        "zero": 11
+      },
+      "boulders": {
+        "count": 225179,
+        "perSquareKilometre": 117.36,
+        "areaSquareKilometres": 1919,
+        "medianSize": 2.1741175651550293,
+        "outcrops": 19887,
+        "violations": 0
+      },
+      "personFailures": 0,
+      "wideFailures": 0,
+      "walkMinutes": {
+        "birth": 4.955345269866308,
+        "median": 3.8956101646482466,
+        "p90": 6.889605674389339,
+        "max": 11.193065618301404,
+        "birthRunning": 3.3035635132442054
+      }
+    },
+    {
+      "seed": 12345,
+      "passed": true,
+      "checks": 1511,
+      "hash": "B51A1707CB8CF0D8",
+      "metresPerCell": 17.68,
+      "nearestMedian": 1035,
+      "nearestRatio": 0.1768,
+      "birthToNearest": 1795,
+      "closestPair": 360,
+      "areaRatio": 0.0195,
+      "ponds": 607,
+      "wideCracks": 264,
+      "narrowCracks": 233,
+      "walkRelief": {
+        "p10": 9.589439,
+        "median": 26.913094,
+        "p90": 65.00122,
+        "max": 189.24591
+      },
+      "hazardsPerWalk": {
+        "min": 0,
+        "median": 4,
+        "max": 13,
+        "zero": 3
+      },
+      "boulders": {
+        "count": 239070,
+        "perSquareKilometre": 118.41,
+        "areaSquareKilometres": 2019,
+        "medianSize": 2.1686275005340576,
+        "outcrops": 22281,
+        "violations": 0
+      },
+      "personFailures": 0,
+      "wideFailures": 0,
+      "walkMinutes": {
+        "birth": 7.039884166191726,
+        "median": 4.05809285902365,
+        "p90": 6.849254557857728,
+        "max": 10.051818635407045,
+        "birthRunning": 4.693256110794484
+      }
+    },
+    {
+      "seed": 1158469945,
+      "passed": true,
+      "checks": 1510,
+      "hash": "1DE9F76815282844",
+      "metresPerCell": 20.63,
+      "nearestMedian": 1139,
+      "nearestRatio": 0.1768,
+      "birthToNearest": 1134,
+      "closestPair": 460,
+      "areaRatio": 0.0217,
+      "ponds": 633,
+      "wideCracks": 262,
+      "narrowCracks": 238,
+      "walkRelief": {
+        "p10": 10.241577,
+        "median": 26.470284,
+        "p90": 62.297882,
+        "max": 130.86856
+      },
+      "hazardsPerWalk": {
+        "min": 0,
+        "median": 4,
+        "max": 11,
+        "zero": 4
+      },
+      "boulders": {
+        "count": 296649,
+        "perSquareKilometre": 124.71,
+        "areaSquareKilometres": 2379,
+        "medianSize": 2.1741175651550293,
+        "outcrops": 29280,
+        "violations": 0
+      },
+      "personFailures": 0,
+      "wideFailures": 0,
+      "walkMinutes": {
+        "birth": 4.447504444684992,
+        "median": 4.466697399740886,
+        "p90": 7.844777833381912,
+        "max": 11.269497693845617,
+        "birthRunning": 2.9650029631233283
+      }
+    },
+    {
+      "seed": 1549916642,
+      "passed": true,
+      "checks": 1558,
+      "hash": "2E2C439BE6356780",
+      "metresPerCell": 20.75,
+      "nearestMedian": 1189,
+      "nearestRatio": 0.1768,
+      "birthToNearest": 1790,
+      "closestPair": 362,
+      "areaRatio": 0.0242,
+      "ponds": 629,
+      "wideCracks": 281,
+      "narrowCracks": 223,
+      "walkRelief": {
+        "p10": 10.053772,
+        "median": 28.905396,
+        "p90": 71.474556,
+        "max": 153.48227
+      },
+      "hazardsPerWalk": {
+        "min": 0,
+        "median": 4,
+        "max": 15,
+        "zero": 7
+      },
+      "boulders": {
+        "count": 300912,
+        "perSquareKilometre": 124.51,
+        "areaSquareKilometres": 2417,
+        "medianSize": 2.1741175651550293,
+        "outcrops": 28759,
+        "violations": 0
+      },
+      "personFailures": 0,
+      "wideFailures": 0,
+      "walkMinutes": {
+        "birth": 7.020790325566023,
+        "median": 4.662206351629575,
+        "p90": 7.526379262701405,
+        "max": 11.287670459890455,
+        "birthRunning": 4.680526883710682
+      }
+    },
+    {
+      "seed": 305107986,
+      "passed": true,
+      "checks": 1555,
+      "hash": "C93504B25B512251",
+      "metresPerCell": 17.27,
+      "nearestMedian": 987,
+      "nearestRatio": 0.1768,
+      "birthToNearest": 1972,
+      "closestPair": 322,
+      "areaRatio": 0.0179,
+      "ponds": 623,
+      "wideCracks": 274,
+      "narrowCracks": 246,
+      "walkRelief": {
+        "p10": 8.905655,
+        "median": 26.232315,
+        "p90": 64.027756,
+        "max": 141.37561
+      },
+      "hazardsPerWalk": {
+        "min": 0,
+        "median": 4,
+        "max": 13,
+        "zero": 2
+      },
+      "boulders": {
+        "count": 238096,
+        "perSquareKilometre": 122.83,
+        "areaSquareKilometres": 1938,
+        "medianSize": 2.1741175651550293,
+        "outcrops": 22816,
+        "violations": 0
+      },
+      "personFailures": 0,
+      "wideFailures": 0,
+      "walkMinutes": {
+        "birth": 7.733509276813002,
+        "median": 3.8713540972184988,
+        "p90": 6.265612966474985,
+        "max": 10.493510447122198,
+        "birthRunning": 5.155672851208668
+      }
+    },
+    {
+      "seed": 2122134385,
+      "passed": true,
+      "checks": 1529,
+      "hash": "90E3FC157C79262B",
+      "metresPerCell": 18.84,
+      "nearestMedian": 1030,
+      "nearestRatio": 0.1768,
+      "birthToNearest": 1116,
+      "closestPair": 340,
+      "areaRatio": 0.0203,
+      "ponds": 624,
+      "wideCracks": 267,
+      "narrowCracks": 236,
+      "walkRelief": {
+        "p10": 9.139389,
+        "median": 24.811485,
+        "p90": 59.627747,
+        "max": 128.19916
+      },
+      "hazardsPerWalk": {
+        "min": 0,
+        "median": 4,
+        "max": 14,
+        "zero": 3
+      },
+      "boulders": {
+        "count": 247268,
+        "perSquareKilometre": 116.77,
+        "areaSquareKilometres": 2118,
+        "medianSize": 2.17960786819458,
+        "outcrops": 24046,
+        "violations": 0
+      },
+      "personFailures": 0,
+      "wideFailures": 0,
+      "walkMinutes": {
+        "birth": 4.37471066807809,
+        "median": 4.039754769555478,
+        "p90": 6.955539820801272,
+        "max": 11.11125244502181,
+        "birthRunning": 2.9164737787187267
+      }
+    },
+    {
+      "seed": 495868281,
+      "passed": true,
+      "checks": 1600,
+      "hash": "425C3DCC3765EE2C",
+      "metresPerCell": 18.49,
+      "nearestMedian": 1064,
+      "nearestRatio": 0.1768,
+      "birthToNearest": 1037,
+      "closestPair": 332,
+      "areaRatio": 0.0199,
+      "ponds": 598,
+      "wideCracks": 292,
+      "narrowCracks": 230,
+      "walkRelief": {
+        "p10": 8.55957,
+        "median": 24.020996,
+        "p90": 59.87645,
+        "max": 137.9404
+      },
+      "hazardsPerWalk": {
+        "min": 0,
+        "median": 4,
+        "max": 15,
+        "zero": 5
+      },
+      "boulders": {
+        "count": 251687,
+        "perSquareKilometre": 123.04,
+        "areaSquareKilometres": 2046,
+        "medianSize": 2.1741175651550293,
+        "outcrops": 24096,
+        "violations": 0
+      },
+      "personFailures": 0,
+      "wideFailures": 0,
+      "walkMinutes": {
+        "birth": 4.067363779335912,
+        "median": 4.171489649017984,
+        "p90": 6.552619197245276,
+        "max": 9.727508754591916,
+        "birthRunning": 2.7115758528906078
+      }
+    },
+    {
+      "seed": 1919803738,
+      "passed": true,
+      "checks": 1507,
+      "hash": "3F2B991A94353E34",
+      "metresPerCell": 17.81,
+      "nearestMedian": 1039,
+      "nearestRatio": 0.1768,
+      "birthToNearest": 1637,
+      "closestPair": 380,
+      "areaRatio": 0.0201,
+      "ponds": 613,
+      "wideCracks": 267,
+      "narrowCracks": 224,
+      "walkRelief": {
+        "p10": 9.170441,
+        "median": 27.152458,
+        "p90": 62.75148,
+        "max": 145.37958
+      },
+      "hazardsPerWalk": {
+        "min": 0,
+        "median": 4,
+        "max": 9,
+        "zero": 1
+      },
+      "boulders": {
+        "count": 254782,
+        "perSquareKilometre": 125.84,
+        "areaSquareKilometres": 2025,
+        "medianSize": 2.17960786819458,
+        "outcrops": 26381,
+        "violations": 0
+      },
+      "personFailures": 0,
+      "wideFailures": 0,
+      "walkMinutes": {
+        "birth": 6.41842193042841,
+        "median": 4.075627082213061,
+        "p90": 6.868148761365404,
+        "max": 10.461573587739286,
+        "birthRunning": 4.27894795361894
+      }
+    },
+    {
+      "seed": 223173273,
+      "passed": true,
+      "checks": 1506,
+      "hash": "49BA98A0A17186E9",
+      "metresPerCell": 18.82,
+      "nearestMedian": 1064,
+      "nearestRatio": 0.1768,
+      "birthToNearest": 1246,
+      "closestPair": 371,
+      "areaRatio": 0.0201,
+      "ponds": 600,
+      "wideCracks": 263,
+      "narrowCracks": 230,
+      "walkRelief": {
+        "p10": 9.667618,
+        "median": 28.386475,
+        "p90": 65.913925,
+        "max": 157.52792
+      },
+      "hazardsPerWalk": {
+        "min": 0,
+        "median": 4,
+        "max": 12,
+        "zero": 5
+      },
+      "boulders": {
+        "count": 280342,
+        "perSquareKilometre": 125.22,
+        "areaSquareKilometres": 2239,
+        "medianSize": 2.1686275005340576,
+        "outcrops": 24763,
+        "violations": 0
+      },
+      "personFailures": 0,
+      "wideFailures": 0,
+      "walkMinutes": {
+        "birth": 4.885345049356906,
+        "median": 4.172596697345541,
+        "p90": 7.14433102543116,
+        "max": 11.810530638899637,
+        "birthRunning": 3.2568966995712705
+      }
+    },
+    {
+      "seed": 1351401487,
+      "passed": true,
+      "checks": 1480,
+      "hash": "197155A43ADC23AE",
+      "metresPerCell": 18.86,
+      "nearestMedian": 1077,
+      "nearestRatio": 0.1768,
+      "birthToNearest": 1402,
+      "closestPair": 367,
+      "areaRatio": 0.02,
+      "ponds": 585,
+      "wideCracks": 257,
+      "narrowCracks": 222,
+      "walkRelief": {
+        "p10": 9.924591,
+        "median": 27.621658,
+        "p90": 68.16286,
+        "max": 149.63322
+      },
+      "hazardsPerWalk": {
+        "min": 0,
+        "median": 4,
+        "max": 10,
+        "zero": 13
+      },
+      "boulders": {
+        "count": 252065,
+        "perSquareKilometre": 118.74,
+        "areaSquareKilometres": 2123,
+        "medianSize": 2.1686275005340576,
+        "outcrops": 22693,
+        "violations": 0
+      },
+      "personFailures": 0,
+      "wideFailures": 0,
+      "walkMinutes": {
+        "birth": 5.499140208659384,
+        "median": 4.2246433360364355,
+        "p90": 7.130244150684107,
+        "max": 12.185251118990045,
+        "birthRunning": 3.666093472439589
+      }
+    },
+    {
+      "seed": 361541325,
+      "passed": true,
+      "checks": 1513,
+      "hash": "9E1D8192FF564070",
+      "metresPerCell": 20.06,
+      "nearestMedian": 1072,
+      "nearestRatio": 0.1768,
+      "birthToNearest": 1947,
+      "closestPair": 355,
+      "areaRatio": 0.0241,
+      "ponds": 561,
+      "wideCracks": 262,
+      "narrowCracks": 237,
+      "walkRelief": {
+        "p10": 9.779877,
+        "median": 25.672813,
+        "p90": 62.103836,
+        "max": 169.29686
+      },
+      "hazardsPerWalk": {
+        "min": 0,
+        "median": 3,
+        "max": 12,
+        "zero": 10
+      },
+      "boulders": {
+        "count": 279963,
+        "perSquareKilometre": 116.63,
+        "areaSquareKilometres": 2400,
+        "medianSize": 2.17960786819458,
+        "outcrops": 26923,
+        "violations": 0
+      },
+      "personFailures": 0,
+      "wideFailures": 0,
+      "walkMinutes": {
+        "birth": 7.636547348304336,
+        "median": 4.205082739512856,
+        "p90": 7.429868148475581,
+        "max": 11.204526049890857,
+        "birthRunning": 5.091031565536223
+      }
+    },
+    {
+      "seed": 1356747697,
+      "passed": true,
+      "checks": 1521,
+      "hash": "B2AF54C7C20B7777",
+      "metresPerCell": 19.53,
+      "nearestMedian": 1031,
+      "nearestRatio": 0.1768,
+      "birthToNearest": 1576,
+      "closestPair": 325,
+      "areaRatio": 0.0211,
+      "ponds": 624,
+      "wideCracks": 267,
+      "narrowCracks": 233,
+      "walkRelief": {
+        "p10": 8.928879,
+        "median": 27.221508,
+        "p90": 67.60898,
+        "max": 147.00635
+      },
+      "hazardsPerWalk": {
+        "min": 0,
+        "median": 4,
+        "max": 10,
+        "zero": 7
+      },
+      "boulders": {
+        "count": 289002,
+        "perSquareKilometre": 126.79,
+        "areaSquareKilometres": 2279,
+        "medianSize": 2.1741175651550293,
+        "outcrops": 27362,
+        "violations": 0
+      },
+      "personFailures": 0,
+      "wideFailures": 0,
+      "walkMinutes": {
+        "birth": 6.181142956829948,
+        "median": 4.041605924893366,
+        "p90": 7.193939132052743,
+        "max": 13.14970832327108,
+        "birthRunning": 4.120761971219966
+      }
+    },
+    {
+      "seed": 548164728,
+      "passed": true,
+      "checks": 1530,
+      "hash": "584430BD10E07C05",
+      "metresPerCell": 18.74,
+      "nearestMedian": 1090,
+      "nearestRatio": 0.1768,
+      "birthToNearest": 1703,
+      "closestPair": 333,
+      "areaRatio": 0.0187,
+      "ponds": 603,
+      "wideCracks": 270,
+      "narrowCracks": 229,
+      "walkRelief": {
+        "p10": 9.766121,
+        "median": 27.200531,
+        "p90": 61.24182,
+        "max": 148.42188
+      },
+      "hazardsPerWalk": {
+        "min": 0,
+        "median": 4,
+        "max": 15,
+        "zero": 6
+      },
+      "boulders": {
+        "count": 259867,
+        "perSquareKilometre": 119.27,
+        "areaSquareKilometres": 2179,
+        "medianSize": 2.1741175651550293,
+        "outcrops": 25025,
+        "violations": 0
+      },
+      "personFailures": 0,
+      "wideFailures": 0,
+      "walkMinutes": {
+        "birth": 6.679109384913962,
+        "median": 4.275321016745945,
+        "p90": 6.890790428333088,
+        "max": 10.952818512407335,
+        "birthRunning": 4.452739589942642
+      }
+    },
+    {
+      "seed": 1335335949,
+      "passed": true,
+      "checks": 1569,
+      "hash": "73BCD4877CF5F9EC",
+      "metresPerCell": 17.22,
+      "nearestMedian": 1013,
+      "nearestRatio": 0.1768,
+      "birthToNearest": 1582,
+      "closestPair": 341,
+      "areaRatio": 0.0181,
+      "ponds": 604,
+      "wideCracks": 290,
+      "narrowCracks": 213,
+      "walkRelief": {
+        "p10": 10.076042,
+        "median": 29.420658,
+        "p90": 66.31534,
+        "max": 146.65172
+      },
+      "hazardsPerWalk": {
+        "min": 0,
+        "median": 4,
+        "max": 12,
+        "zero": 4
+      },
+      "boulders": {
+        "count": 236505,
+        "perSquareKilometre": 122.36,
+        "areaSquareKilometres": 1933,
+        "medianSize": 2.163137197494507,
+        "outcrops": 20598,
+        "violations": 0
+      },
+      "personFailures": 0,
+      "wideFailures": 0,
+      "walkMinutes": {
+        "birth": 6.205728407409362,
+        "median": 3.9733038373460254,
+        "p90": 6.707722405370605,
+        "max": 10.353103318458334,
+        "birthRunning": 4.137152271606242
+      }
+    },
+    {
+      "seed": 480035711,
+      "passed": true,
+      "checks": 1575,
+      "hash": "42045F4C6AD03679",
+      "metresPerCell": 18.96,
+      "nearestMedian": 1046,
+      "nearestRatio": 0.1768,
+      "birthToNearest": 1414,
+      "closestPair": 344,
+      "areaRatio": 0.021,
+      "ponds": 598,
+      "wideCracks": 283,
+      "narrowCracks": 240,
+      "walkRelief": {
+        "p10": 9.503464,
+        "median": 28.541115,
+        "p90": 63.07898,
+        "max": 150.13538
+      },
+      "hazardsPerWalk": {
+        "min": 0,
+        "median": 4,
+        "max": 16,
+        "zero": 5
+      },
+      "boulders": {
+        "count": 258764,
+        "perSquareKilometre": 118.89,
+        "areaSquareKilometres": 2177,
+        "medianSize": 2.1741175651550293,
+        "outcrops": 23957,
+        "violations": 0
+      },
+      "personFailures": 0,
+      "wideFailures": 0,
+      "walkMinutes": {
+        "birth": 5.546247233586615,
+        "median": 4.103534278100652,
+        "p90": 7.4106977813730115,
+        "max": 12.716861737960727,
+        "birthRunning": 3.69749815572441
+      }
+    },
+    {
+      "seed": 494993,
+      "passed": true,
+      "checks": 1539,
+      "hash": "003FA7E92486E51F",
+      "metresPerCell": 18.35,
+      "nearestMedian": 1037,
+      "nearestRatio": 0.1768,
+      "birthToNearest": 1272,
+      "closestPair": 358,
+      "areaRatio": 0.0193,
+      "ponds": 594,
+      "wideCracks": 273,
+      "narrowCracks": 238,
+      "walkRelief": {
+        "p10": 9.312271,
+        "median": 26.469398,
+        "p90": 66.35248,
+        "max": 132.56354
+      },
+      "hazardsPerWalk": {
+        "min": 0,
+        "median": 4,
+        "max": 13,
+        "zero": 10
+      },
+      "boulders": {
+        "count": 255236,
+        "perSquareKilometre": 123.21,
+        "areaSquareKilometres": 2072,
+        "medianSize": 2.163137197494507,
+        "outcrops": 22265,
+        "violations": 0
+      },
+      "personFailures": 0,
+      "wideFailures": 0,
+      "walkMinutes": {
+        "birth": 4.989473774398096,
+        "median": 4.064879579133477,
+        "p90": 6.760628470463762,
+        "max": 10.104742035835137,
+        "birthRunning": 3.326315849598731
+      }
+    },
+    {
+      "seed": 1403455133,
+      "passed": true,
+      "checks": 1522,
+      "hash": "911F6C0B67CE4FA7",
+      "metresPerCell": 17.27,
+      "nearestMedian": 1019,
+      "nearestRatio": 0.1768,
+      "birthToNearest": 2004,
+      "closestPair": 340,
+      "areaRatio": 0.0175,
+      "ponds": 618,
+      "wideCracks": 270,
+      "narrowCracks": 223,
+      "walkRelief": {
+        "p10": 9.403122,
+        "median": 25.005623,
+        "p90": 63.167213,
+        "max": 123.823296
+      },
+      "hazardsPerWalk": {
+        "min": 0,
+        "median": 4,
+        "max": 16,
+        "zero": 19
+      },
+      "boulders": {
+        "count": 230442,
+        "perSquareKilometre": 120.92,
+        "areaSquareKilometres": 1906,
+        "medianSize": 2.1741175651550293,
+        "outcrops": 21657,
+        "violations": 0
+      },
+      "personFailures": 0,
+      "wideFailures": 0,
+      "walkMinutes": {
+        "birth": 7.858452931468565,
+        "median": 3.995571465694245,
+        "p90": 7.017407987385371,
+        "max": 9.028686951820218,
+        "birthRunning": 5.238968620979044
+      }
+    },
+    {
+      "seed": 1148237582,
+      "passed": true,
+      "checks": 1561,
+      "hash": "AF91FDDA78883386",
+      "metresPerCell": 18.57,
+      "nearestMedian": 951,
+      "nearestRatio": 0.1768,
+      "birthToNearest": 1679,
+      "closestPair": 318,
+      "areaRatio": 0.0257,
+      "ponds": 590,
+      "wideCracks": 280,
+      "narrowCracks": 232,
+      "walkRelief": {
+        "p10": 9.195999,
+        "median": 24.724045,
+        "p90": 58.24965,
+        "max": 129.03436
+      },
+      "hazardsPerWalk": {
+        "min": 0,
+        "median": 3,
+        "max": 11,
+        "zero": 7
+      },
+      "boulders": {
+        "count": 254343,
+        "perSquareKilometre": 120.72,
+        "areaSquareKilometres": 2107,
+        "medianSize": 2.1686275005340576,
+        "outcrops": 23772,
+        "violations": 0
+      },
+      "personFailures": 0,
+      "wideFailures": 0,
+      "walkMinutes": {
+        "birth": 6.584166544790844,
+        "median": 3.728525591276093,
+        "p90": 7.029755337086418,
+        "max": 11.860409861051089,
+        "birthRunning": 4.389444363193896
+      }
+    },
+    {
+      "seed": 865209320,
+      "passed": true,
+      "checks": 1541,
+      "hash": "9E1079D6C9E684E5",
+      "metresPerCell": 18.59,
+      "nearestMedian": 1091,
+      "nearestRatio": 0.1768,
+      "birthToNearest": 1383,
+      "closestPair": 379,
+      "areaRatio": 0.0196,
+      "ponds": 616,
+      "wideCracks": 274,
+      "narrowCracks": 234,
+      "walkRelief": {
+        "p10": 10.197502,
+        "median": 26.966904,
+        "p90": 67.74696,
+        "max": 172.45113
+      },
+      "hazardsPerWalk": {
+        "min": 0,
+        "median": 4,
+        "max": 14,
+        "zero": 10
+      },
+      "boulders": {
+        "count": 271657,
+        "perSquareKilometre": 125.94,
+        "areaSquareKilometres": 2157,
+        "medianSize": 2.1741175651550293,
+        "outcrops": 26587,
+        "violations": 0
+      },
+      "personFailures": 0,
+      "wideFailures": 0,
+      "walkMinutes": {
+        "birth": 5.42211813186462,
+        "median": 4.278206813939108,
+        "p90": 6.740424798184033,
+        "max": 11.697666705627709,
+        "birthRunning": 3.61474542124308
+      }
+    },
+    {
+      "seed": 2106235867,
+      "passed": true,
+      "checks": 1560,
+      "hash": "118149CA74024C51",
+      "metresPerCell": 20.8,
+      "nearestMedian": 1162,
+      "nearestRatio": 0.1768,
+      "birthToNearest": 1555,
+      "closestPair": 353,
+      "areaRatio": 0.0208,
+      "ponds": 592,
+      "wideCracks": 275,
+      "narrowCracks": 249,
+      "walkRelief": {
+        "p10": 9.600319,
+        "median": 27.496246,
+        "p90": 65.21965,
+        "max": 155.6926
+      },
+      "hazardsPerWalk": {
+        "min": 0,
+        "median": 3,
+        "max": 10,
+        "zero": 8
+      },
+      "boulders": {
+        "count": 309836,
+        "perSquareKilometre": 123.74,
+        "areaSquareKilometres": 2504,
+        "medianSize": 2.1741175651550293,
+        "outcrops": 29275,
+        "violations": 0
+      },
+      "personFailures": 0,
+      "wideFailures": 0,
+      "walkMinutes": {
+        "birth": 6.098615785802108,
+        "median": 4.558266250722699,
+        "p90": 7.230592282902625,
+        "max": 11.748882023280515,
+        "birthRunning": 4.065743857201406
+      }
+    }
+  ]
+}

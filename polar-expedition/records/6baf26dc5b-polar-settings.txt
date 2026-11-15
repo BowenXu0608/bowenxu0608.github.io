@@ -1,0 +1,242 @@
+docs/engineering/systems/polar-settings.md
+
+# Player settings
+
+Settings reachable from the front page and from Pause ([plan](../plans/polar-front-page.md), [UI](polar-ui.md#front-page-and-settings-october-8-2026)). Gameplay rules and saves are unchanged.
+
+Tabs since 0.6.130-test (November 8, 2026): Picture, Graphics, Sound, Display, Mouse, Controls and Credits. Credits, the sounds' authors and licences, moved here from its own front-page page; like Controls it has no Restore defaults ([UI](polar-ui.md#credits-in-settings-benchmark-off-the-front-page-november-8-2026-06130-test)).
+
+## Model and storage
+
+- **First-launch brightness (October 10, 2026).** `PolarSettingsData.calibrated` (file field `calibrated`, a boolean) is false by default and in any file written before it, so the brightness page shows once on a Player's first launch (`PolarSettingsService.NeedsCalibration`; `FinishCalibration` sets it and writes the file). Restore defaults on the Picture tab leaves it set. `Tools/PolarSettingsCheck`: 67 checks.
+
+- **Model.** `PolarSettings.cs` is pure data and rules, with no engine types. It covers defaults, ranges and steps, the settings file format, the sound and brightness curves, the look rate, the resolutions offered and the 15-second display confirmation. `Tools/PolarSettingsCheck` tests it offline (65 checks), including other cultures and damaged or newer files.
+- **File.** `persistentDataPath/PolarSettings/settings-v1.json` (version 2 since 0.6.120-test): a flat object of whole numbers and booleans, written in the invariant culture through `PolarSaveFile.Write`. It stays clear of the vendor's `Options/` folder and of the versioned save folders, so it survives rule-version changes.
+  - A damaged file gives the defaults with a plain warning. A newer version is read but never overwritten.
+  - It is written only when something changed: on leaving Settings, on keeping a display change, and on quitting.
+- **Who reads it** (`PolarSettingsService.ActivePath`):
+  - a `ValidationPath`, when one is set, uses that file;
+  - the Editor, batch runs and any Player started with a `-polar` flag keep settings in memory only, so tests and captures neither read nor change the player's file;
+  - otherwise the player's own file is used.
+- **Statics.** All of them reset at subsystem registration, because Play Mode runs without a domain reload.
+
+## What each setting changes
+
+| Setting | Range | Default | How it applies |
+|---|---|---|---|
+| Brightness | -10 to +10 | 0 | `PolarBrightness` on the world camera turns each pixel into pow(c, e), with e from 1.25 to 0.80. It is added only when the value is not 0 and is disabled at 0, never left running as a pass-through. The held rifle, hands, handbook and interface are drawn by later cameras or the overlay, so they do not change. The range is narrow because night visibility is a rule, not a picture setting. |
+| Field of view | 50–80° vertical | 60 | Written to each new world camera, and on a change. Never written at 60. |
+| Footprints | Off, Player, Everyone | Everyone | Graphics tab (Picture tab until 0.6.120-test). Short-lived visual prints in the drawn snow near the viewer (thick snow Stage 3, 0.6.36-test): none, only the player's, or everyone's; a change clears the prints. File field `footprints` (0-2); older files read Everyone. |
+| Master, music, ambience, effects, rifle, interface | 0–100% in steps of 5 | 100 | `PolarAudio` gains are (p/100)² times master, read where each sound plays. Ambience is wind, snow on the roof, the hut in the wind, water, route flags, tent canvas and distant ice (`PolarAtmosphere`, `PolarSoundscape`). Effects are what people do: footsteps (the player's and explorers'), clothing, ice, water, doors, containers and things handled, stoves, fuel, food, tents, rest, the harpoon, strikes, pain and breathing. The rifle has its own Rifle slider (October 8, user request): shots, loading, the bolt and dry fire. Interface is button clicks and toggles (the canvas source), slider ticks, notices, the backpack, the map, the roster's pages and the pencil (`PolarAudio.Ui`) and the handbook (`MvpUiAudio`); see [polar audio](polar-audio.md) (0.6.65-test to 0.6.69-test). `AudioListener.volume` is never written, so the automated-test mute holds. Measured levels are below. |
+| Window mode, resolution | Borderless, exclusive full screen, window; `Screen.resolutions` from 1280x720 | As launched | Wait for Apply, then revert after 15 seconds unless kept. Exclusive full screen is offered only at listed sizes; anything else falls back to the borderless desktop. |
+| Vertical sync, frame rate limit | On/off; no limit, 30, 60, 120, 144 | As launched | Apply at once. The limit is unavailable while vertical sync is on. |
+| Graphics preset and options | Low, Medium, High, Ultra, Extreme, Custom | High | Graphics tab, applies at once; see below. Replaced the Display tab's Graphics quality stepper (Unity's five quality levels) in 0.6.120-test. |
+| Look sensitivity, invert vertical look | 0.25–3.00x; on/off | 1.00x; off | `PolarLook` rates replace the original fixed 2 in `PolarSurveyPlayer`. |
+
+A sixth tab, **Controls** (October 11, 2026, 0.6.10-test), lists every key and what it does, in two columns; it stores nothing and has no Restore defaults. The pause page names it "Settings and controls" and also opens the handbook.
+
+Since October 26, 2026 (UI upgrade M3, [UI](polar-ui.md#typography-and-motion-system-screens-october-26-2026-m3-in-0660-test)) a tab's rows fade in and rise 8 px when the tab changes, and the display confirmation is its own layer above the rows (`Confirm`), fading in with its shade, so the rows no longer rebuild when it opens or closes. The Footprints hint reads "Choose whose footprints are visible".
+
+"As launched" means what the vendor `GraphicsOptions` boot code and the controller's borderless window left. Only values the player changes are stored. An `AfterSceneLoad` bootstrap applies stored display values after both, so they hold; command-line `-screen-*` or `-window-mode` arguments leave the display alone.
+
+## Ultra and Extreme interiors as High (November 6, 2026, 0.6.124-test)
+
+The user's preset comparison (`Logs/PresetComparison/sheets`) showed hut rooms at Ultra and Extreme lit differently from High: a room by day with the heater out at 49% (Ultra) and 30% (Extreme) of High's mean brightness, and a damaged hut's moonlit snow at night whiter and brighter. Asked whether Ultra and Extreme should keep High's interior brightness, the user chose to match High.
+- **Change.** Ultra and Extreme take High's levels of three options (`PolarGraphicsProfile.Options`): ambient occlusion (HDRP's Medium SSAO tier), global illumination (Medium SSGI tier, 64 ray steps) and volumetric fog (Medium tier). Their higher levels stay in the Graphics tab as Custom choices. Everything else that sets Ultra and Extreme apart is unchanged: sun shadows at 4096 px with High contact shadows, lamp shadows, reflections, clouds, water, weather particles and terrain detail.
+- **Why these three.** Each darkens rooms that High's lower tiers lit with sky light (rays and voxels that miss the walls). One option at a time, at Ultra with bounce light already at High's level, the room by day with the heater out (mean brightness, High .267) went from .186 to .217 with High's occlusion, .205 with High's fog and .218 with High's shadows. Extreme's custom fog tier took it to .101; with Ultra's fog .180.
+- **Result** (`PolarArtCapture` b6-habitat, 34 views, Editor at 1920x1080; before `pi-before-*`, after `pi-final-ultra` and `pi-final2-extreme`): with all three at High's level, every interior view matches High's mean brightness within the night views' run-to-run noise (about .03, from the heater's flicker) except the corner with the heater out by day: .251 at Ultra and .228 at Extreme against High's .267 (before .130 and .081). That view, taken right after a night view, varies at Extreme from run to run with the same settings: .153, .228 and .237 in three runs. Ultra's sharper sun shadows were kept; High's would add only .001 there. The damaged hut's moonlit snow at night is back to High's (.192 and .194 against .189; before .241 and .319). Exteriors are unchanged.
+- **Benchmark** on `pi-01` (1600x900 windowed, TAA, `Logs/PolarBenchmark/0.6.124-test`):
+  - Ultra: 99 fps (79 on `gb-05`), 1% low 73, P95 12.9 ms, mean GPU 9.80 ms (1.11 times High's), peak video memory 2.30 GB.
+  - Extreme: 89 fps (59 on `gb-04`), 1% low 66, P95 14.4 ms, mean GPU 11.01 ms (1.24 times High's), 2.49 GB.
+  - The GPU held 97% of frames in both. Neither suggests a change: Ultra's P95 lies between 70% of the 60 fps budget and the budget, and Extreme's is under the budget.
+  - The player's data folder hashed the same before and after (19 files).
+- **Checks.** `Tools/PolarSettingsCheck` 101 (one new: Ultra and Extreme take High's three levels). Evidence `docs/engineering/logs/evidence/2026-11-06/preset-interiors`.
+
+## Benchmark (November 6, 2026, graphics core M1d, 0.6.123-test)
+
+The last part of M1, after Forza Horizon 6's benchmark ([graphics core plan](../plans/polar-graphics-core.md)). `PolarBenchmarkRun` runs it and `PolarMvpUi.Benchmark.cs` draws its results.
+- **Where.** "Run benchmark" at the foot of the Graphics tab while no expedition is open (it leaves Settings first, writing any change); Back on the results page returns to the Graphics tab. The front page's own Benchmark button was removed in 0.6.130-test at the user's request, as a duplicate ([UI](polar-ui.md#credits-in-settings-benchmark-off-the-front-page-november-8-2026-06130-test)). In Pause the Graphics tab keeps only the video memory meter.
+- **The run.** A new expedition on seed 777, in slot 1 of its own folder (`persistentDataPath/PolarBenchmarks/expedition`, through `PolarSaveService.ValidationDirectory`), so the player's saves, slots and world caches are never read, written or deleted. No explorers' director is made (`PolarMvpController.BindRules`), so no model is called.
+  - Loading always runs to its end. The player's keys do nothing, Esc stops the run, and the body stays warm, fed and unhurt.
+  - It waits for the distant refinement (up to 240 s), then runs uncapped (vertical sync off, no frame limit), each part after an unmeasured second:
+    1. **Open snow, clear day** (30 s): walking the explorers' route from the home hut toward its nearest neighbour at 14:00.
+    2. **Hut at night, stove lit** (20 s): midnight inside the home hut, its stove lit, the view turning from the stove.
+    3. **Pond** (10 s): from the bank of the pond nearest the home hut.
+    4. **Coast** (10 s): from ground above the nearest waterline. A world without a pond or a coast in reach gives the other 20 s.
+    5. **Into a blizzard** (30 s): back on the route at 14:00 while the weather blends from clear to a blizzard.
+  - A caption at the top of the screen names the part and its seconds. Afterwards the expedition is saved into its own folder, the game returns to the front page and opens the results, and vertical sync and the frame limit are as before.
+- **Results.**
+  - Shown: the average frame rate, the 1% low (from the 99th-percentile frame), the frame time 95% of frames stay within (P95; the page says "95% of frames within", since the interface's wording rule rejects "P95"), the share of frames the GPU or the CPU held back, the peak video memory of its budget (DXGI), each part's rate and P95, and the settings: preset, anti-aliasing, render scale, size, GPU and every option's level.
+  - Saved: each run as `persistentDataPath/PolarBenchmarks/<yyyyMMdd-HHmmss>.json`, with each part's mean main-thread, render-thread and GPU times too. The page lists the last three.
+  - Since 0.6.126-test each saved run also names the graphics API (`api`, "DirectX 11"); the results page does not show it.
+- **What held the frames.** A frame counts as the GPU's when the GPU was busy for 90% of it or more (`FrameTimingManager`). On D3D11 the threads' own times cannot tell: the main thread waits on a busy GPU outside its present wait. From Low to Extreme, main and GPU rose together (6.1 to 17.7 ms and 5.7 to 17.6 ms) while the render thread stayed near 1.8 ms, so comparing the GPU with the slower CPU thread split Extreme's frames about evenly (43% GPU on `gb-02`). Since 0.6.123-test the performance overlay's "Limited by" uses the same 90% rule.
+- **Suggestion** (`PolarGraphicsProfile.Recommend`).
+  - The budget is 1000 ms over the frame limit when vertical sync is off and a limit is set, otherwise 60 fps's 16.7 ms.
+  - If the GPU held at least half the frames and P95 is over the budget, it suggests one preset lower. If P95 is under 70% of the budget, it suggests one higher.
+  - There is no suggestion from Custom, below Low or above Extreme.
+  - "Apply <preset>" picks it, keeping anti-aliasing, render scale and sharpness as any preset does, and writes the settings file. Nothing changes without it.
+- **Argument.** `-polarRunBenchmark <folder>` starts the benchmark from the first front page, copies the result (`result.json`) and a capture of the results page (`results.png`) to the folder, and quits (exit 1 without a result). Any `-polar` flag keeps settings in memory, as before, so `-polarGraphicsPreset` picks the preset.
+- **Memory snapshots (November 10, 2026).** With `-polarMemorySnapshots <folder>` beside `-polarRunBenchmark`, the run writes a Memory Profiler snapshot at ten points (`PolarMemoryCapture.Take`): the front page before, the expedition loaded, the distant terrain sharpened, the end of each of the five parts, the front page after, and the front page again after unloading unused assets and a collection (each of those two waits two seconds first: captures straight after the return to the front page crashed inside Unity's snapshot code in two of five runs). Beside each `.snap` a JSON holds the game's own readings: private memory, Unity's totals, the managed heap, the graphics driver's memory, DXGI video memory and the managed allocation per frame over the part (`PolarMemoryCapture.Mark` restarts that count after each part's settling second). Captures happen between the measured parts, each holds the game for about a second, and the run is muted (`PolarTestAudioBootstrap`). Without the argument nothing runs. Meant for a Development build (`PolarHdrpBuild -polarHdrpDevelopment`); `Tools/polar_memory_profile.py` runs it with a 100 ms private-memory timeline and `Tools/PolarMemoryReport` (a small Unity project pinning `com.unity.memoryprofiler` 1.2.0, so the game's manifest is unchanged) writes each snapshot's tables. First results: [memory profile](../logs/evidence/2026-11-10/memory-profile/report.md).
+- **Profiler logs and allocation call stacks (November 10, 2026).** With `-polarProfilerLogs <folder>` beside `-polarRunBenchmark`, each of the five measured parts writes Unity Profiler logs (`<part>-<n>.raw`, 1,000 frames each, under the Editor's 2,000-frame history; `PolarMemoryCapture.Mark`, `Tick` and `Take`). With `-polarAllocationStacks` as well, every managed allocation carries its call stack. That names the allocating code but slows every allocating frame (on the walk the main thread took 9.8 ms a frame with the stacks and 7.1 ms without), so frame times are read from a run without it. `Tools/polar_memory_profile.py --allocations` (stacks) or `--frames` (no stacks) runs it, and `PolarAllocationReport` in `Tools/PolarMemoryReport` writes for each part: the allocation counted to the innermost game method on each stack, the whole stacks, each frame's time, collection time and bytes, and the largest and the longest frames. The samples add up to Unity's "GC Allocated In Frame" counter in full, worker threads included. Without the argument nothing runs, and the run is muted. First results: [allocations named](../logs/evidence/2026-11-10/allocation-stacks/report.md).
+- **A release build, a second expedition and the handbook's first opening (November 10, 2026).** In a release build `-polarMemorySnapshots` takes no snapshot and writes the readings alone; they now hold the managed heap's growth from frame to frame as well (`heapGrowthMeanBytes`, falls left out), a lower bound of the allocation that needs no profiler counter (69 to 97% of the counter in a Development run). `-polarSecondExpedition` adds, after the route, a return to the front page and a second new expedition (seed 778) loaded and refined; `-polarHandbookTiming` times the handbook's first and second opening after the last part. `Tools/polar_memory_profile.py --second-expedition --handbook` passes both. Results: [profiling follow-ups](../logs/evidence/2026-11-10/profiling-follow-ups/results.md).
+- **How often an expedition saves (November 10, 2026).** `-polarSaveRate <folder>` (`PolarSaveRateRun`, alone; not part of the benchmark) starts a new seed-777 expedition in the folder's own save directory and leaves it running for `-polarSaveRateSeconds <n>` real seconds (900, one game day and night), with the player's body kept warm, fed and unhurt and nothing else staged. It counts the autosaves, the changes of the state and the code that called `Changed` (`PolarGameplayState.ChangedProbe`, empty in play), minute by minute, and writes `save-rate.json`. The explorers' director is the game's own: with a model key in the environment the explorers act and the run costs API calls, without one they only wait. `Tools/polar_save_rate.py --stage <build> --run-id <id> [--live]` runs it and withholds the key unless `--live` is given; a live run must be the only game or Editor running, since all share one request ledger. `-polarSaveRateChurn` (`--churn`) marks the state changed every frame, which shows the shortest time the game leaves between autosaves (5 s since 0.6.135-test). With `-polarProfilerLogs <folder>` on a Development build (`--profile`) the day also writes Unity Profiler logs: `live-times` over its minutes 2 to 6 without allocation call stacks, whose frame times are true, and `live-stacks` over its minutes 6 to 10 with them (`PolarMemoryCapture.Mark(part, stacks)`), and since 0.6.140-test `live-late` over minutes 10 to 15 without them, so every frame after the second minute is in a profile but the first of each log. Starting a log (every 1,000 frames, `PolarMemoryCapture.Starts`) makes that frame slow and the tables skip it, so the report counts such frames apart (`logStart` on a slow frame, `framesOver25AtLogStart` a minute and for the day). It also lists each frame over 25 ms by its time in the run (`slowFrames`), the wall clock the run started at (`startUnixSeconds`) and each minute's changes by the code that made them (`minutes[].sources`: which actions fell in which stretch; since 0.6.148-test a profiled run names them only in the call-stack stretch, since a stack trace takes 40 to 150 µs). Beside the Player, `Tools/polar_machine_monitor.py` reads the rest of the machine once a second into `machine.json`, from one `NtQuerySystemInformation` snapshot:
+  - available memory, and the CPU and disks in all;
+  - the processes that used the most CPU or read and write calls (`ioMB`, cached reads included, so not disk traffic), marking those started within the second (`started`; a process that starts and ends between two readings is not seen);
+  - each busy process's command line.
+
+  The runner then writes `machine-at-slow-frames.csv`, each slow frame beside the reading of the second it fell in. First use: [whole-day profiles](../logs/evidence/2026-11-11/whole-day-profile/results.md). `Tools/PolarMemoryReport`'s `PolarFrameTimeReport` (`-profiles <folder> [-slow <ms>]`) then gives each profiler marker's own time as a mean over the frames longer than 25 ms and over the others, and lists every slow frame with its largest markers; `PolarAllocationReport` names the allocating code as before. The runner sums a live run's requests and cost from the ledger's entries (`model` in `run-result.json`): the report's own `spentYuan` is a difference of last-hour sums and reads low when another live run ended within the hour before. First use: [a live day's slow frames](../logs/evidence/2026-11-11/live-slow-frames/results.md). `PolarLoadReport` (November 11, 2026) is a third table set of the same logs, written with the others to `<run>/loads`: every main-thread frame with a load of 0.5 ms or more, each load's time, the markers above it (the code that asked), the Unity objects read by name and type and the files read. First use: [what loads from disk on first use](../logs/evidence/2026-11-11/first-use-loads/results.md). Results: [save rate](../logs/evidence/2026-11-10/save-rate/results.md).
+- **Verification.**
+  - `Tools/PolarSettingsCheck` passes 99, four of them new for the suggestion's rule.
+  - `PolarFrontPageValidation` checks:
+    - the front page's Benchmark button and the Graphics tab's;
+    - a made-up result's page (numbers, five parts, the suggestion);
+    - its layouts at four sizes;
+    - Apply storing and writing Ultra, and Back.
+  - In the Player on `gb-04` (1600x900 windowed, TAA, `Logs/PolarBenchmark/0.6.123-test`):
+    - Low: 167 fps, P95 8.3 ms, GPU 74%, suggesting Medium.
+    - Extreme: 59 fps, P95 20.0 ms, GPU 95%, suggesting Ultra.
+    - Both follow the rule.
+  - The player's data folder hashed the same before and after every run: saves, settings, world caches and the explorers' ledger, 19 files. The benchmark's own folder holds about 105 MB for its one world, which every run reuses.
+  - The front page passes 172 on `gb-05`, with startup 4 and screen-args 3 (`Logs/PolarFront/0.6.123-test/gb-05`). The window held focus, so the display confirm and M1c's per-method GPU times ran too. At Quality 67%, 1600x900:
+    - TAA 7.72 ms and SMAA 7.74 ms;
+    - TAA upscale 5.70 ms and FSR 1 5.69 ms;
+    - DLSS 5.91 ms and FSR 2 6.16 ms.
+  - `gb-05` differs from `gb-04` in two ways:
+    - the results page now clears its flag when drawn. On `gb-04`'s front page run, which shows a made-up result on the front page, the results page opened again after an expedition instead of home.
+    - Apply sits 14 px lower.
+  - A Low run on `gb-05` matches: 156 fps, suggesting Medium.
+  - Gameplay passes 390 on `gb-05` (`Logs/PolarV7/0.6.123-test/gb-05`).
+  - The results pages are in the evidence folder (`results-low.png`, `results-extreme.png`).
+- **Every preset** (November 6, at the user's request; Ultra and Extreme as they were before 0.6.124-test gave them High's occlusion, bounce light and fog, whose numbers are in the section above), on this laptop's RTX 4070 on AC power at 1600x900, windowed, with TAA. Medium, High, Ultra and Low ran on `gb-05`; Extreme ran on `gb-04`, whose benchmark is the same. GPU is the mean GPU time per frame over all parts. The plan's gate holds: Ultra costs 1.41 times High's GPU time, within about 1.5. Low and Medium were aimed at about .6 and .8 of High, report only, and came in at .66 and .83.
+
+  | Preset | Average | 1% low | P95 | GPU-held | GPU | Peak video memory | Suggests |
+  |---|---|---|---|---|---|---|---|
+  | Low | 157 fps | 94 fps | 8.8 ms | 74% | 5.84 ms | 1.56 GB | Medium |
+  | Medium | 127 fps | 69 fps | 10.6 ms | 87% | 7.32 ms | 1.84 GB | High |
+  | High | 109 fps | 73 fps | 12.2 ms | 95% | 8.85 ms | 1.89 GB | nothing |
+  | Ultra | 79 fps | 62 fps | 15.3 ms | 99% | 12.46 ms | 2.22 GB | nothing |
+  | Extreme | 59 fps | 49 fps | 20.0 ms | 95% | 16.68 ms | 2.39 GB | Ultra |
+
+  - At a 60 fps budget the suggestions lead from Low and Medium up to High, and from Extreme down to Ultra. High and Ultra are left alone, since their P95 falls between 70% of the budget and the budget.
+  - The same preset varies by about 7% from run to run: Low ran at 167 fps on `gb-04` and 156 on `gb-05`.
+  - Medium's 1% low is below High's, from a few long frames.
+  - The pond is the slowest part at every preset.
+  - The data folder hashed the same after these runs too (`Logs/PolarBenchmark/0.6.123-test/gb-05-*`).
+
+## Anti-aliasing, render scale and sharpness (November 6, 2026, graphics core M1c, 0.6.122-test)
+
+The third part of M1, after Forza Horizon 6's anti-aliasing and upscaling choices ([graphics core plan](../plans/polar-graphics-core.md)). The rendering side is in [rendering and streaming](rendering-streaming.md#anti-aliasing-and-upscaling-november-6-2026-06122-test).
+- **Three rows on the Graphics tab**, under Preset and Footprints. A preset never changes them, as in Forza Horizon 6, and Custom does not count them.
+  - **Anti-aliasing:** TAA (the default, the game as before), SMAA, TAA upscale, FSR 1, DLSS and FSR 2 (file field `antiAliasing`, 0-5). The stepper skips DLSS where HDRP finds no NVIDIA support, and FSR 2 where it finds no AMD module support (`PolarGraphics.Has`). A stored method that is missing draws as TAA (`PolarGraphics.Method`).
+  - **Render scale:** Quality 67% (the default), Balanced 58% and Performance 50% (`renderScale`, 1-3; 0 is native). It shows "Native 100%", greyed, while no upscaler is chosen.
+  - **Sharpness:** Off, Low, Medium (the default) and High (`sharpness`, 0-3). It is greyed for SMAA.
+  - Each hint names the cost, as the other options do. Restore defaults returns TAA, Quality 67% and Medium.
+- **File.** A file without these fields reads the defaults, and the file stays version 2.
+- **Arguments.** `-polarAntiAliasing <TAA|SMAA|TAAUpscale|FSR1|DLSS|FSR2>` and `-polarRenderScale <100|67|58|50>` are read on every settings load, as `-polarGraphicsPreset` is, and logged. `Tools/polar_v7_player_run.py` passes them with `--anti-aliasing <name> [--render-scale <n>]`.
+- **Left out of the plan's list.**
+  - **STP.** On DX11, HDRP runs STP only with hardware dynamic resolution or the asset's forced percentage. Following the setting would mean writing the HDRP asset and rebuilding the pipeline at run time.
+  - **A free 50-100% render scale.** The three steps are kept, and no custom value was added.
+  - **Dynamic resolution, "Hold the frame limit".** D3D11 has only software dynamic resolution. The GPU time under vertical sync counts its wait, so a controller would read every capped frame as full.
+  - **Frame generation.** Not available on DX11.
+- **Verification.** `Tools/PolarSettingsCheck` passes 95, covering:
+  - defaults and missing fields;
+  - ranges;
+  - a file round trip;
+  - SMAA at full size, and a preset keeping the method;
+  - wording.
+  `PolarFrontPageValidation` checks:
+  - the three rows' first state;
+  - SMAA greying Sharpness;
+  - an upscaler offering Quality 67% first;
+  - a preset keeping the method and scale;
+  - the layouts at four sizes;
+  - Restore defaults.
+  In the Player on `aa-01` these passed among 104 front page checks; the run then stopped at the display confirm, whose exclusive full screen needs the window in front.
+
+## Performance overlay and video memory (November 6, 2026, graphics core M1b, 0.6.121-test)
+
+The second part of M1, after Forza Horizon 6's live readout and video memory meter ([graphics core plan](../plans/polar-graphics-core.md)). Interface only: nothing in the world, the rules or the rendering changes, and both are off the screen by default.
+- **Performance overlay.** Display's fifth row: Off (default), Frame rate, Full (file field `performanceOverlay`, 0-2, held to that range; a file without it reads Off; the file stays version 2). `PolarPerformanceOverlay` is the last layer of the player UI's canvas, a plate in the top right corner under the compass and clear of the settings window, with no raycast targets; it hides with the UI (tests and captures that disable `PolarMvpUi`, and under the handbook). Frame rate shows frames a second. Full adds the mean frame time, CPU main thread (less the wait for Present) and render thread and GPU from `FrameTimingManager` (the performance mode's own source), what limits the frame (vsync or "cap" while frames keep within 10% of its interval, since under vertical sync the GPU time counts its wait; else the GPU when it is busy for 90% of the frame or more, otherwise the CPU; until 0.6.123-test it compared the GPU with the busier CPU thread, which a busy GPU's waits lengthen too, see the benchmark above), video memory of its budget and the process's private memory. Times are averaged over half a second and the text is rebuilt twice a second (one string each time), so nothing is allocated in other frames. Where no GPU time is given (the Editor, some drivers) the GPU line and the limit show a dash. The readout never wraps: a line too wide fails the front page's layout check.
+- **Video memory meter.** Beside Restore defaults on the Graphics tab: "Video memory 3.4 of 7.0 GB" over a thin bar, amber with a note past 90%. It is DXGI's reading of this process's local video memory and the budget Windows gives it now (`PolarGpuMemoryBudget.TryRead`, through `PolarPerformanceOverlay.VideoMemory`, which the overlay shares, at most once a second). Every option applies at once, so the reading follows each change within a second; this replaces the plan's estimate from measured per-level deltas, which only a settings page with pending changes needs. On the front page it reads the front page's use.
+- **Verification.** `Tools/PolarSettingsCheck` passes 91 (the field's default, range, round trip and wording). `PolarFrontPageValidation` checks the meter's reading, the overlay at Full, Frame rate and Off over the Display tab with the layout check at Full, and the overlay over a running expedition: 148 in the Player on `po-03`. TMP 2.0 keeps `text` empty after `SetText(StringBuilder)` (it draws the buffer), so the readout sets `text`, or the layout check would never see it. In the Editor, whose Game view does not wait for vertical sync, the limit can read vsync above the refresh rate. Captures: `PolarSettingsCapture` (now also the Graphics tab, and the front page with the overlay at Full where the settings have one), evidence `docs/engineering/logs/evidence/2026-11-06/performance-overlay`.
+
+## Graphics tab (November 6, 2026, graphics core M1a, 0.6.120-test)
+
+The user asked for settings like Forza Horizon 6's PC settings ([graphics core plan](../plans/polar-graphics-core.md), M1). Render only: no level changes rules, colliders, saves, world hashes, the near window, `SnowAt`, the visibility table or fog density.
+
+- **Model.** `PolarGraphicsProfile` (pure, no engine types): five presets and twelve options. Each option has its own level (file fields `textureQuality` ... `motionBlur`, -1 following the preset) beside `graphicsPreset` (0-4). An option set to a level other than its preset's makes the preset Custom; choosing a preset clears them. `Resolve` turns the settings into one `Effective` struct of the values the owners draw with.
+- **High is the game as it drew before presets.** HDRP's volume tiers stay Medium (their default), and every scale on the art settings is 1. Checks in `Tools/PolarSettingsCheck` hold High's resolved values at the old constants.
+- **Unity's quality level.** It is held at the top one (Ultra), which every Player has drawn with: the vendor `GraphicsOptions` sets it at boot, and the captures force it. `PolarGraphics.Set` re-applies it through `PolarSettingsService.ApplyQuality`, which keeps the forced shadows and vertical sync. The five levels stay in `QualitySettings.asset`, unused.
+- **Applying.** `PolarSettingsService.Push` calls `PolarGraphics.Set`, which applies the engine-wide values (mip limit, anisotropic filtering, the stove lamps' shadow size) and raises `Changed`. Each owner reads `PolarGraphics.Current` where it sets its value: `PolarHdrpPresentation.Graphics` on `Changed`, the snow tracks, snow layers and sea every frame.
+- **Older files.** Version 1 files (with `quality`) read as Very Low/Low → Low, Medium → Medium, High/Ultra or none → High. The old Ultra drew as High does. The file keeps its name `settings-v1.json` and is written as version 2; earlier builds read it as newer and never overwrite it.
+- **Tests.** `-polarGraphicsPreset <Low|Medium|High|Ultra|Extreme>` sets the preset for runs that keep settings in memory (`PolarGraphics.FromArguments`).
+
+| Option | Levels | Presets Low-Extreme | What it sets (High in bold) |
+|---|---|---|---|
+| Texture quality | Low, High | L H H H H | Low: `globalTextureMipmapLimit` 1 and per-texture anisotropic filtering; **High: full mips, anisotropic filtering forced on** |
+| Terrain detail | Low-Extreme | L M H U E | Snow relief reach ×0 (flat), .55, **1**, 1.45, 2; the twins' tessellation segment ×1.4, **1**, .8, .6 (`PolarSnowTracks`, `PolarWorldStreamer.ReliefDetail`) |
+| Shadow quality | Low-Ultra | L M H U U | Sun shadow ×.5, .75, **1** (2048 px), 2; contact shadows off, HDRP Low, **Medium**, High |
+| Lamp shadows | Low, High, Ultra, Extreme | L H H U E | Stove and tent burner shadow 256, **512**, 768, 1024 px (`PolarGraphics.Lamp`) |
+| Ambient occlusion | Low-High | L L M M M | HDRP SSAO tier Low, **Medium**, High (Custom only since 0.6.124-test) |
+| Global illumination | Off, Low, Medium, High | O L M M M | SSGI off, Low at half resolution, **Medium**, High (Custom only since 0.6.124-test) |
+| Reflections | Off, Low, Medium, High | O L M H H | SSR off (probes and sky only), Low, **Medium**, High |
+| Volumetric fog | Low-Ultra | L L M M M | HDRP fog tier Low, **Medium**, High, custom (budget .85, depth ratio .5); density unchanged; High and Ultra Custom only since 0.6.124-test |
+| Clouds | Low-Extreme | L M H U E | Cloud steps ×.5, .67, **1** (48 and 8), 1.33, 2 |
+| Water | Low-Extreme | L M H U E | Sea tessellation off, factor 2, **3**, 5, 8 |
+| Weather particles | Low-Extreme | L M H U E | `PolarSnowLayers` rate and cap ×.5, .75, **1**, 1.25, 1.5 (roof powder unscaled) |
+| Motion blur | Off, Short, Long | O S L L L | HDRP motion blur intensity 0, .25, **.5** (the default profile's) |
+
+- **Tab.** Between Picture and Sound: the preset and Footprints on the first row, then the twelve options in two columns of `<` value `>` steppers. Pointing at a row shows its description and cost (GPU, CPU, video memory) in the hint line below them, as Forza Horizon 6 does. Restore defaults returns High and everyone's footprints.
+- **HDRP asset.** `maxDirectionalShadowMapResolution` 2048 → 4096 in `PolarPipeline.asset`, so Ultra's sun shadows are not clamped. Nothing else in the asset changed.
+- **Not in M1a.** The live readout and video memory meter (M1b, the section above), anti-aliasing and upscaling choices and flag motion vectors (M1c), and the benchmark (M1d). Distant rings, the far-shadow map, storm-fog masks, the print field and the hut probe keep one size at every level.
+
+## Sound around the front page
+
+- **Front-page listener.** `PolarSettingsHost` keeps its own listener on the controller object. It is on only while no world listener is on, which makes the first front page audible without ever leaving two listeners active.
+- **World sound behind the menu.** While no expedition is active, ambience and effects fade to 0 over a second (0.6.65-test), so a world left loaded after Save and return to menu is silent.
+- **Music.** `Resources/PolarFrontPageMusic.asset` references the Dark UI pack's `Audio/Background Ambient.wav` in place (vendor file unchanged; about 130 s, about 24 MB once decoded).
+  - It loads asynchronously, plays on the front page and while an expedition loads, and fades out and unloads when the expedition starts.
+  - It never loads in the Editor or in test runs unless a validator opts in.
+  - Its base level is 1, so at the default Music setting (100%) the track plays as mastered.
+- **Rifle report.** The rifle report plays through its own 2D source at its own Rifle level (master times the Rifle slider), at a scale of 0.5. Before October 8 it played through the player's first source, the wind, at 0.8, so its loudness followed the weather: about 0.06 in clear weather and 0.56 in a blizzard.
+
+## Measured levels (October 8, 2026)
+
+`Assets/Editor/PolarFrontPageReview.cs` measures every sound at the default settings, in place of listening: each clip's peak and loudest 100 ms, times the level it is played at. It also renders night views at brightness -10, 0 and +10.
+
+| Sound at default settings | Heard peak (dBFS) | Heard loudest 100 ms (dBFS) |
+|---|---|---|
+| Front page music (base 1, Music 100%) | -3.2 | -14.2 |
+| Wind outdoors: clear, medium snow, blizzard | -24.5, -13.8, -4.5 | -36.0, -25.3, -16.0 |
+| Wind indoors, blizzard | -16.2 | -27.7 |
+| Rifle report (scale 0.5, Rifle 100%) | -6.3 | -16.6 |
+| Ice crack, splash (at the source) | -5.0, -8.3 | -18.8, -17.6 |
+| Button click; handbook page | -18.5; -10.6 | -29.6; -34.7 |
+| Cold breathing | -31.7 | -42.2 |
+
+The two levels were set from these measurements:
+- **Music** was raised from 0.35, where it measured -29.5, about as quiet as a button click, to 0.6 at a default Music setting of 70% (-24.8, beside medium-snow wind). The user still found that too quiet. The music now plays at full level (base 1, default Music 100%): the track as mastered, 10.6 dB louder than at 0.6 and 70%. Nothing else sounds on the front page, so it need not sit below the other categories.
+- **The rifle** was lowered from 0.8. Its own source had made it peak at -2.2, louder than a blizzard and close to clipping when mixed with wind. Its loudest moments now match blizzard wind, about 9 dB above medium snow, with 6 dB of headroom.
+
+**Night brightness.** At 23:00, 30 m in front of the lit home hut, the mean frame level is about 21, 33 and 48 of 255 at brightness -10, 0 and +10, in clear weather or snow.
+- The lit hut and its window stay visible at every setting.
+- +10 lifts mid tones without turning night into day.
+- -10 takes the night sky to black.
+
+No change was needed.
+
+## Hooks in shared files
+
+One-line edits, recorded with their exact text in `Tools/polar_front_page_manifest.json`:
+- `PolarSurveyPlayer` (look rates);
+- `PolarAtmosphere` (wind level);
+- `PolarWeaponView` (rifle source);
+- `PolarThinIceRuntime` and `PolarWetFeedback` (effects level);
+- `MvpHandbookBookView` (interface level);
+- `PolarMvpController` (Escape).
+
+## Verification
+
+- **Offline.** `Tools/PolarSettingsCheck` passes 91 checks (graphics presets, Custom, migration of version 1 files including a copy of the player's own `settings-v1.json`, `Tools/PolarSettingsCheck/user-settings-v1.json`, and High's values, 0.6.120-test; the performance overlay field, 0.6.121-test).
+- **`PolarFrontPageValidation`.** In the Editor through `PolarFrontPageVerification`; in the Player through `Tools/polar_front_page_run.py`. Every setting and its effect on real sources and cameras, persistence, startup and the command-line exemption. Since 0.6.69-test the Player run allows the approved 8 GiB HDRP memory budget (it allowed 5 GB, from before HDRP; 0.6.69-test peaked at 6.1 GB) and passes 133 checks. The display confirm asks for exclusive full screen, which Windows refuses to a window that is not in front: run `Tools/polar_window_front.ps1 -name SurvivalLotteryMVP` beside it (it only raises the game's window). Since November 10, 2026 the wind check waits 2 s after pausing: the wind also dips for the player's own landing step (`PolarAudio.Own`) and is back 1.08 s after the pause begins, which a 1.1 s wait met by about 20 ms until the faster save of 0.6.133-test moved the read inside the dip; the mode passes 173, startup 4 and screen-args 3 on `sv-02`.
+- **The Player run needs the game window in front.** Windows grants exclusive full screen only to the window with keyboard focus. On this PC the foreground lock timeout is effectively unlimited, so a test window opened in the background does not take focus from someone using the PC. Without focus the switch fails (DXGI `887a0022`), the game falls back to a borderless window, and the display checks fail; the driver then records `windowLostFocus` and says so. When someone is using the PC, click the right half of the picture once as the window opens; a click on the menu changes what the validator is driving. Packages 0.6.1-test and 0.6.2-test passed without a click while nobody used the PC.

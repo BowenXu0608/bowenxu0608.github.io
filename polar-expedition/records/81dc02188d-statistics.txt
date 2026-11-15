@@ -1,0 +1,2296 @@
+docs/engineering/logs/evidence/2026-10-01/polar-fractured-world/maps/statistics.json
+
+{
+  "sampleCount": 20,
+  "pairCount": 190,
+  "minimumTileDifference": 0.7756696428571429,
+  "medianTileDifference": 0.8251488095238095,
+  "maximumTileDifference": 0.8573288690476191,
+  "pairwise": [
+    {
+      "a": 1,
+      "b": 2,
+      "tileDifferenceAfterBestCyclicShift": 0.8376116071428571,
+      "portMaskDifference": 0.35714285714285715
+    },
+    {
+      "a": 1,
+      "b": 3,
+      "tileDifferenceAfterBestCyclicShift": 0.83203125,
+      "portMaskDifference": 0.40476190476190477
+    },
+    {
+      "a": 1,
+      "b": 4,
+      "tileDifferenceAfterBestCyclicShift": 0.82421875,
+      "portMaskDifference": 0.3333333333333333
+    },
+    {
+      "a": 1,
+      "b": 5,
+      "tileDifferenceAfterBestCyclicShift": 0.8175223214285714,
+      "portMaskDifference": 0.40476190476190477
+    },
+    {
+      "a": 1,
+      "b": 6,
+      "tileDifferenceAfterBestCyclicShift": 0.8297991071428571,
+      "portMaskDifference": 0.09523809523809523
+    },
+    {
+      "a": 1,
+      "b": 7,
+      "tileDifferenceAfterBestCyclicShift": 0.8450520833333334,
+      "portMaskDifference": 0.38095238095238093
+    },
+    {
+      "a": 1,
+      "b": 8,
+      "tileDifferenceAfterBestCyclicShift": 0.8370535714285714,
+      "portMaskDifference": 0.14285714285714285
+    },
+    {
+      "a": 1,
+      "b": 9,
+      "tileDifferenceAfterBestCyclicShift": 0.8240327380952381,
+      "portMaskDifference": 0.23809523809523808
+    },
+    {
+      "a": 1,
+      "b": 10,
+      "tileDifferenceAfterBestCyclicShift": 0.8550967261904762,
+      "portMaskDifference": 0.09523809523809523
+    },
+    {
+      "a": 1,
+      "b": 11,
+      "tileDifferenceAfterBestCyclicShift": 0.84765625,
+      "portMaskDifference": 0.40476190476190477
+    },
+    {
+      "a": 1,
+      "b": 12,
+      "tileDifferenceAfterBestCyclicShift": 0.8145461309523809,
+      "portMaskDifference": 0.09523809523809523
+    },
+    {
+      "a": 1,
+      "b": 13,
+      "tileDifferenceAfterBestCyclicShift": 0.8381696428571429,
+      "portMaskDifference": 0.3333333333333333
+    },
+    {
+      "a": 1,
+      "b": 14,
+      "tileDifferenceAfterBestCyclicShift": 0.8428199404761905,
+      "portMaskDifference": 0.14285714285714285
+    },
+    {
+      "a": 1,
+      "b": 15,
+      "tileDifferenceAfterBestCyclicShift": 0.8290550595238095,
+      "portMaskDifference": 0.40476190476190477
+    },
+    {
+      "a": 1,
+      "b": 16,
+      "tileDifferenceAfterBestCyclicShift": 0.8273809523809523,
+      "portMaskDifference": 0.30952380952380953
+    },
+    {
+      "a": 1,
+      "b": 17,
+      "tileDifferenceAfterBestCyclicShift": 0.8487723214285714,
+      "portMaskDifference": 0.42857142857142855
+    },
+    {
+      "a": 1,
+      "b": 18,
+      "tileDifferenceAfterBestCyclicShift": 0.8484002976190477,
+      "portMaskDifference": 0.40476190476190477
+    },
+    {
+      "a": 1,
+      "b": 19,
+      "tileDifferenceAfterBestCyclicShift": 0.8430059523809523,
+      "portMaskDifference": 0.40476190476190477
+    },
+    {
+      "a": 1,
+      "b": 20,
+      "tileDifferenceAfterBestCyclicShift": 0.8236607142857143,
+      "portMaskDifference": 0.42857142857142855
+    },
+    {
+      "a": 2,
+      "b": 3,
+      "tileDifferenceAfterBestCyclicShift": 0.8329613095238095,
+      "portMaskDifference": 0.30952380952380953
+    },
+    {
+      "a": 2,
+      "b": 4,
+      "tileDifferenceAfterBestCyclicShift": 0.8156622023809523,
+      "portMaskDifference": 0.35714285714285715
+    },
+    {
+      "a": 2,
+      "b": 5,
+      "tileDifferenceAfterBestCyclicShift": 0.7898065476190477,
+      "portMaskDifference": 0.21428571428571427
+    },
+    {
+      "a": 2,
+      "b": 6,
+      "tileDifferenceAfterBestCyclicShift": 0.8249627976190477,
+      "portMaskDifference": 0.35714285714285715
+    },
+    {
+      "a": 2,
+      "b": 7,
+      "tileDifferenceAfterBestCyclicShift": 0.8020833333333334,
+      "portMaskDifference": 0.38095238095238093
+    },
+    {
+      "a": 2,
+      "b": 8,
+      "tileDifferenceAfterBestCyclicShift": 0.8229166666666666,
+      "portMaskDifference": 0.23809523809523808
+    },
+    {
+      "a": 2,
+      "b": 9,
+      "tileDifferenceAfterBestCyclicShift": 0.8190104166666666,
+      "portMaskDifference": 0.35714285714285715
+    },
+    {
+      "a": 2,
+      "b": 10,
+      "tileDifferenceAfterBestCyclicShift": 0.7771577380952381,
+      "portMaskDifference": 0.35714285714285715
+    },
+    {
+      "a": 2,
+      "b": 11,
+      "tileDifferenceAfterBestCyclicShift": 0.8104538690476191,
+      "portMaskDifference": 0.2857142857142857
+    },
+    {
+      "a": 2,
+      "b": 12,
+      "tileDifferenceAfterBestCyclicShift": 0.8249627976190477,
+      "portMaskDifference": 0.35714285714285715
+    },
+    {
+      "a": 2,
+      "b": 13,
+      "tileDifferenceAfterBestCyclicShift": 0.7978050595238095,
+      "portMaskDifference": 0.2619047619047619
+    },
+    {
+      "a": 2,
+      "b": 14,
+      "tileDifferenceAfterBestCyclicShift": 0.8400297619047619,
+      "portMaskDifference": 0.23809523809523808
+    },
+    {
+      "a": 2,
+      "b": 15,
+      "tileDifferenceAfterBestCyclicShift": 0.8377976190476191,
+      "portMaskDifference": 0.30952380952380953
+    },
+    {
+      "a": 2,
+      "b": 16,
+      "tileDifferenceAfterBestCyclicShift": 0.8338913690476191,
+      "portMaskDifference": 0.30952380952380953
+    },
+    {
+      "a": 2,
+      "b": 17,
+      "tileDifferenceAfterBestCyclicShift": 0.7996651785714286,
+      "portMaskDifference": 0.23809523809523808
+    },
+    {
+      "a": 2,
+      "b": 18,
+      "tileDifferenceAfterBestCyclicShift": 0.7992931547619048,
+      "portMaskDifference": 0.30952380952380953
+    },
+    {
+      "a": 2,
+      "b": 19,
+      "tileDifferenceAfterBestCyclicShift": 0.8076636904761905,
+      "portMaskDifference": 0.38095238095238093
+    },
+    {
+      "a": 2,
+      "b": 20,
+      "tileDifferenceAfterBestCyclicShift": 0.8376116071428571,
+      "portMaskDifference": 0.38095238095238093
+    },
+    {
+      "a": 3,
+      "b": 4,
+      "tileDifferenceAfterBestCyclicShift": 0.8236607142857143,
+      "portMaskDifference": 0.3333333333333333
+    },
+    {
+      "a": 3,
+      "b": 5,
+      "tileDifferenceAfterBestCyclicShift": 0.8132440476190477,
+      "portMaskDifference": 0.3333333333333333
+    },
+    {
+      "a": 3,
+      "b": 6,
+      "tileDifferenceAfterBestCyclicShift": 0.8251488095238095,
+      "portMaskDifference": 0.40476190476190477
+    },
+    {
+      "a": 3,
+      "b": 7,
+      "tileDifferenceAfterBestCyclicShift": 0.8244047619047619,
+      "portMaskDifference": 0.35714285714285715
+    },
+    {
+      "a": 3,
+      "b": 8,
+      "tileDifferenceAfterBestCyclicShift": 0.8357514880952381,
+      "portMaskDifference": 0.38095238095238093
+    },
+    {
+      "a": 3,
+      "b": 9,
+      "tileDifferenceAfterBestCyclicShift": 0.8456101190476191,
+      "portMaskDifference": 0.38095238095238093
+    },
+    {
+      "a": 3,
+      "b": 10,
+      "tileDifferenceAfterBestCyclicShift": 0.8152901785714286,
+      "portMaskDifference": 0.40476190476190477
+    },
+    {
+      "a": 3,
+      "b": 11,
+      "tileDifferenceAfterBestCyclicShift": 0.8457961309523809,
+      "portMaskDifference": 0.3333333333333333
+    },
+    {
+      "a": 3,
+      "b": 12,
+      "tileDifferenceAfterBestCyclicShift": 0.8223586309523809,
+      "portMaskDifference": 0.40476190476190477
+    },
+    {
+      "a": 3,
+      "b": 13,
+      "tileDifferenceAfterBestCyclicShift": 0.8435639880952381,
+      "portMaskDifference": 0.23809523809523808
+    },
+    {
+      "a": 3,
+      "b": 14,
+      "tileDifferenceAfterBestCyclicShift": 0.8450520833333334,
+      "portMaskDifference": 0.38095238095238093
+    },
+    {
+      "a": 3,
+      "b": 15,
+      "tileDifferenceAfterBestCyclicShift": 0.8134300595238095,
+      "portMaskDifference": 0.09523809523809523
+    },
+    {
+      "a": 3,
+      "b": 16,
+      "tileDifferenceAfterBestCyclicShift": 0.8351934523809523,
+      "portMaskDifference": 0.38095238095238093
+    },
+    {
+      "a": 3,
+      "b": 17,
+      "tileDifferenceAfterBestCyclicShift": 0.8111979166666666,
+      "portMaskDifference": 0.42857142857142855
+    },
+    {
+      "a": 3,
+      "b": 18,
+      "tileDifferenceAfterBestCyclicShift": 0.8247767857142857,
+      "portMaskDifference": 0.0
+    },
+    {
+      "a": 3,
+      "b": 19,
+      "tileDifferenceAfterBestCyclicShift": 0.8054315476190477,
+      "portMaskDifference": 0.23809523809523808
+    },
+    {
+      "a": 3,
+      "b": 20,
+      "tileDifferenceAfterBestCyclicShift": 0.8052455357142857,
+      "portMaskDifference": 0.40476190476190477
+    },
+    {
+      "a": 4,
+      "b": 5,
+      "tileDifferenceAfterBestCyclicShift": 0.8128720238095238,
+      "portMaskDifference": 0.35714285714285715
+    },
+    {
+      "a": 4,
+      "b": 6,
+      "tileDifferenceAfterBestCyclicShift": 0.8253348214285714,
+      "portMaskDifference": 0.3333333333333333
+    },
+    {
+      "a": 4,
+      "b": 7,
+      "tileDifferenceAfterBestCyclicShift": 0.8329613095238095,
+      "portMaskDifference": 0.21428571428571427
+    },
+    {
+      "a": 4,
+      "b": 8,
+      "tileDifferenceAfterBestCyclicShift": 0.8275669642857143,
+      "portMaskDifference": 0.2857142857142857
+    },
+    {
+      "a": 4,
+      "b": 9,
+      "tileDifferenceAfterBestCyclicShift": 0.8370535714285714,
+      "portMaskDifference": 0.42857142857142855
+    },
+    {
+      "a": 4,
+      "b": 10,
+      "tileDifferenceAfterBestCyclicShift": 0.8311011904761905,
+      "portMaskDifference": 0.3333333333333333
+    },
+    {
+      "a": 4,
+      "b": 11,
+      "tileDifferenceAfterBestCyclicShift": 0.8178943452380952,
+      "portMaskDifference": 0.40476190476190477
+    },
+    {
+      "a": 4,
+      "b": 12,
+      "tileDifferenceAfterBestCyclicShift": 0.8236607142857143,
+      "portMaskDifference": 0.3333333333333333
+    },
+    {
+      "a": 4,
+      "b": 13,
+      "tileDifferenceAfterBestCyclicShift": 0.8229166666666666,
+      "portMaskDifference": 0.42857142857142855
+    },
+    {
+      "a": 4,
+      "b": 14,
+      "tileDifferenceAfterBestCyclicShift": 0.8214285714285714,
+      "portMaskDifference": 0.2857142857142857
+    },
+    {
+      "a": 4,
+      "b": 15,
+      "tileDifferenceAfterBestCyclicShift": 0.8299851190476191,
+      "portMaskDifference": 0.23809523809523808
+    },
+    {
+      "a": 4,
+      "b": 16,
+      "tileDifferenceAfterBestCyclicShift": 0.8260788690476191,
+      "portMaskDifference": 0.21428571428571427
+    },
+    {
+      "a": 4,
+      "b": 17,
+      "tileDifferenceAfterBestCyclicShift": 0.8087797619047619,
+      "portMaskDifference": 0.38095238095238093
+    },
+    {
+      "a": 4,
+      "b": 18,
+      "tileDifferenceAfterBestCyclicShift": 0.8177083333333334,
+      "portMaskDifference": 0.3333333333333333
+    },
+    {
+      "a": 4,
+      "b": 19,
+      "tileDifferenceAfterBestCyclicShift": 0.7952008928571429,
+      "portMaskDifference": 0.3333333333333333
+    },
+    {
+      "a": 4,
+      "b": 20,
+      "tileDifferenceAfterBestCyclicShift": 0.8052455357142857,
+      "portMaskDifference": 0.40476190476190477
+    },
+    {
+      "a": 5,
+      "b": 6,
+      "tileDifferenceAfterBestCyclicShift": 0.8162202380952381,
+      "portMaskDifference": 0.42857142857142855
+    },
+    {
+      "a": 5,
+      "b": 7,
+      "tileDifferenceAfterBestCyclicShift": 0.7872023809523809,
+      "portMaskDifference": 0.40476190476190477
+    },
+    {
+      "a": 5,
+      "b": 8,
+      "tileDifferenceAfterBestCyclicShift": 0.8361235119047619,
+      "portMaskDifference": 0.2857142857142857
+    },
+    {
+      "a": 5,
+      "b": 9,
+      "tileDifferenceAfterBestCyclicShift": 0.8110119047619048,
+      "portMaskDifference": 0.38095238095238093
+    },
+    {
+      "a": 5,
+      "b": 10,
+      "tileDifferenceAfterBestCyclicShift": 0.8232886904761905,
+      "portMaskDifference": 0.42857142857142855
+    },
+    {
+      "a": 5,
+      "b": 11,
+      "tileDifferenceAfterBestCyclicShift": 0.8071056547619048,
+      "portMaskDifference": 0.21428571428571427
+    },
+    {
+      "a": 5,
+      "b": 12,
+      "tileDifferenceAfterBestCyclicShift": 0.8457961309523809,
+      "portMaskDifference": 0.42857142857142855
+    },
+    {
+      "a": 5,
+      "b": 13,
+      "tileDifferenceAfterBestCyclicShift": 0.8074776785714286,
+      "portMaskDifference": 0.2857142857142857
+    },
+    {
+      "a": 5,
+      "b": 14,
+      "tileDifferenceAfterBestCyclicShift": 0.8199404761904762,
+      "portMaskDifference": 0.2857142857142857
+    },
+    {
+      "a": 5,
+      "b": 15,
+      "tileDifferenceAfterBestCyclicShift": 0.7976190476190477,
+      "portMaskDifference": 0.3333333333333333
+    },
+    {
+      "a": 5,
+      "b": 16,
+      "tileDifferenceAfterBestCyclicShift": 0.8303571428571429,
+      "portMaskDifference": 0.35714285714285715
+    },
+    {
+      "a": 5,
+      "b": 17,
+      "tileDifferenceAfterBestCyclicShift": 0.8018973214285714,
+      "portMaskDifference": 0.35714285714285715
+    },
+    {
+      "a": 5,
+      "b": 18,
+      "tileDifferenceAfterBestCyclicShift": 0.7862723214285714,
+      "portMaskDifference": 0.3333333333333333
+    },
+    {
+      "a": 5,
+      "b": 19,
+      "tileDifferenceAfterBestCyclicShift": 0.7961309523809523,
+      "portMaskDifference": 0.42857142857142855
+    },
+    {
+      "a": 5,
+      "b": 20,
+      "tileDifferenceAfterBestCyclicShift": 0.828125,
+      "portMaskDifference": 0.23809523809523808
+    },
+    {
+      "a": 6,
+      "b": 7,
+      "tileDifferenceAfterBestCyclicShift": 0.8346354166666666,
+      "portMaskDifference": 0.38095238095238093
+    },
+    {
+      "a": 6,
+      "b": 8,
+      "tileDifferenceAfterBestCyclicShift": 0.8045014880952381,
+      "portMaskDifference": 0.23809523809523808
+    },
+    {
+      "a": 6,
+      "b": 9,
+      "tileDifferenceAfterBestCyclicShift": 0.8149181547619048,
+      "portMaskDifference": 0.23809523809523808
+    },
+    {
+      "a": 6,
+      "b": 10,
+      "tileDifferenceAfterBestCyclicShift": 0.8311011904761905,
+      "portMaskDifference": 0.0
+    },
+    {
+      "a": 6,
+      "b": 11,
+      "tileDifferenceAfterBestCyclicShift": 0.8173363095238095,
+      "portMaskDifference": 0.42857142857142855
+    },
+    {
+      "a": 6,
+      "b": 12,
+      "tileDifferenceAfterBestCyclicShift": 0.8394717261904762,
+      "portMaskDifference": 0.0
+    },
+    {
+      "a": 6,
+      "b": 13,
+      "tileDifferenceAfterBestCyclicShift": 0.8297991071428571,
+      "portMaskDifference": 0.35714285714285715
+    },
+    {
+      "a": 6,
+      "b": 14,
+      "tileDifferenceAfterBestCyclicShift": 0.8422619047619048,
+      "portMaskDifference": 0.23809523809523808
+    },
+    {
+      "a": 6,
+      "b": 15,
+      "tileDifferenceAfterBestCyclicShift": 0.8318452380952381,
+      "portMaskDifference": 0.40476190476190477
+    },
+    {
+      "a": 6,
+      "b": 16,
+      "tileDifferenceAfterBestCyclicShift": 0.8251488095238095,
+      "portMaskDifference": 0.30952380952380953
+    },
+    {
+      "a": 6,
+      "b": 17,
+      "tileDifferenceAfterBestCyclicShift": 0.8225446428571429,
+      "portMaskDifference": 0.42857142857142855
+    },
+    {
+      "a": 6,
+      "b": 18,
+      "tileDifferenceAfterBestCyclicShift": 0.8255208333333334,
+      "portMaskDifference": 0.40476190476190477
+    },
+    {
+      "a": 6,
+      "b": 19,
+      "tileDifferenceAfterBestCyclicShift": 0.828125,
+      "portMaskDifference": 0.40476190476190477
+    },
+    {
+      "a": 6,
+      "b": 20,
+      "tileDifferenceAfterBestCyclicShift": 0.8210565476190477,
+      "portMaskDifference": 0.42857142857142855
+    },
+    {
+      "a": 7,
+      "b": 8,
+      "tileDifferenceAfterBestCyclicShift": 0.8245907738095238,
+      "portMaskDifference": 0.35714285714285715
+    },
+    {
+      "a": 7,
+      "b": 9,
+      "tileDifferenceAfterBestCyclicShift": 0.8089657738095238,
+      "portMaskDifference": 0.42857142857142855
+    },
+    {
+      "a": 7,
+      "b": 10,
+      "tileDifferenceAfterBestCyclicShift": 0.8171502976190477,
+      "portMaskDifference": 0.38095238095238093
+    },
+    {
+      "a": 7,
+      "b": 11,
+      "tileDifferenceAfterBestCyclicShift": 0.8296130952380952,
+      "portMaskDifference": 0.4523809523809524
+    },
+    {
+      "a": 7,
+      "b": 12,
+      "tileDifferenceAfterBestCyclicShift": 0.8260788690476191,
+      "portMaskDifference": 0.38095238095238093
+    },
+    {
+      "a": 7,
+      "b": 13,
+      "tileDifferenceAfterBestCyclicShift": 0.8363095238095238,
+      "portMaskDifference": 0.4523809523809524
+    },
+    {
+      "a": 7,
+      "b": 14,
+      "tileDifferenceAfterBestCyclicShift": 0.8329613095238095,
+      "portMaskDifference": 0.35714285714285715
+    },
+    {
+      "a": 7,
+      "b": 15,
+      "tileDifferenceAfterBestCyclicShift": 0.8340773809523809,
+      "portMaskDifference": 0.3333333333333333
+    },
+    {
+      "a": 7,
+      "b": 16,
+      "tileDifferenceAfterBestCyclicShift": 0.8275669642857143,
+      "portMaskDifference": 0.2857142857142857
+    },
+    {
+      "a": 7,
+      "b": 17,
+      "tileDifferenceAfterBestCyclicShift": 0.8143601190476191,
+      "portMaskDifference": 0.23809523809523808
+    },
+    {
+      "a": 7,
+      "b": 18,
+      "tileDifferenceAfterBestCyclicShift": 0.7985491071428571,
+      "portMaskDifference": 0.35714285714285715
+    },
+    {
+      "a": 7,
+      "b": 19,
+      "tileDifferenceAfterBestCyclicShift": 0.7756696428571429,
+      "portMaskDifference": 0.38095238095238093
+    },
+    {
+      "a": 7,
+      "b": 20,
+      "tileDifferenceAfterBestCyclicShift": 0.8216145833333334,
+      "portMaskDifference": 0.40476190476190477
+    },
+    {
+      "a": 8,
+      "b": 9,
+      "tileDifferenceAfterBestCyclicShift": 0.8108258928571429,
+      "portMaskDifference": 0.2857142857142857
+    },
+    {
+      "a": 8,
+      "b": 10,
+      "tileDifferenceAfterBestCyclicShift": 0.8489583333333334,
+      "portMaskDifference": 0.23809523809523808
+    },
+    {
+      "a": 8,
+      "b": 11,
+      "tileDifferenceAfterBestCyclicShift": 0.8340773809523809,
+      "portMaskDifference": 0.35714285714285715
+    },
+    {
+      "a": 8,
+      "b": 12,
+      "tileDifferenceAfterBestCyclicShift": 0.8377976190476191,
+      "portMaskDifference": 0.23809523809523808
+    },
+    {
+      "a": 8,
+      "b": 13,
+      "tileDifferenceAfterBestCyclicShift": 0.8091517857142857,
+      "portMaskDifference": 0.3333333333333333
+    },
+    {
+      "a": 8,
+      "b": 14,
+      "tileDifferenceAfterBestCyclicShift": 0.8404017857142857,
+      "portMaskDifference": 0.0
+    },
+    {
+      "a": 8,
+      "b": 15,
+      "tileDifferenceAfterBestCyclicShift": 0.8279389880952381,
+      "portMaskDifference": 0.38095238095238093
+    },
+    {
+      "a": 8,
+      "b": 16,
+      "tileDifferenceAfterBestCyclicShift": 0.8283110119047619,
+      "portMaskDifference": 0.23809523809523808
+    },
+    {
+      "a": 8,
+      "b": 17,
+      "tileDifferenceAfterBestCyclicShift": 0.8500744047619048,
+      "portMaskDifference": 0.30952380952380953
+    },
+    {
+      "a": 8,
+      "b": 18,
+      "tileDifferenceAfterBestCyclicShift": 0.8234747023809523,
+      "portMaskDifference": 0.38095238095238093
+    },
+    {
+      "a": 8,
+      "b": 19,
+      "tileDifferenceAfterBestCyclicShift": 0.8216145833333334,
+      "portMaskDifference": 0.38095238095238093
+    },
+    {
+      "a": 8,
+      "b": 20,
+      "tileDifferenceAfterBestCyclicShift": 0.8156622023809523,
+      "portMaskDifference": 0.35714285714285715
+    },
+    {
+      "a": 9,
+      "b": 10,
+      "tileDifferenceAfterBestCyclicShift": 0.8420758928571429,
+      "portMaskDifference": 0.23809523809523808
+    },
+    {
+      "a": 9,
+      "b": 11,
+      "tileDifferenceAfterBestCyclicShift": 0.8404017857142857,
+      "portMaskDifference": 0.35714285714285715
+    },
+    {
+      "a": 9,
+      "b": 12,
+      "tileDifferenceAfterBestCyclicShift": 0.83203125,
+      "portMaskDifference": 0.23809523809523808
+    },
+    {
+      "a": 9,
+      "b": 13,
+      "tileDifferenceAfterBestCyclicShift": 0.8072916666666666,
+      "portMaskDifference": 0.2857142857142857
+    },
+    {
+      "a": 9,
+      "b": 14,
+      "tileDifferenceAfterBestCyclicShift": 0.8216145833333334,
+      "portMaskDifference": 0.2857142857142857
+    },
+    {
+      "a": 9,
+      "b": 15,
+      "tileDifferenceAfterBestCyclicShift": 0.8136160714285714,
+      "portMaskDifference": 0.40476190476190477
+    },
+    {
+      "a": 9,
+      "b": 16,
+      "tileDifferenceAfterBestCyclicShift": 0.8091517857142857,
+      "portMaskDifference": 0.38095238095238093
+    },
+    {
+      "a": 9,
+      "b": 17,
+      "tileDifferenceAfterBestCyclicShift": 0.8322172619047619,
+      "portMaskDifference": 0.3333333333333333
+    },
+    {
+      "a": 9,
+      "b": 18,
+      "tileDifferenceAfterBestCyclicShift": 0.7903645833333334,
+      "portMaskDifference": 0.38095238095238093
+    },
+    {
+      "a": 9,
+      "b": 19,
+      "tileDifferenceAfterBestCyclicShift": 0.8344494047619048,
+      "portMaskDifference": 0.30952380952380953
+    },
+    {
+      "a": 9,
+      "b": 20,
+      "tileDifferenceAfterBestCyclicShift": 0.8277529761904762,
+      "portMaskDifference": 0.38095238095238093
+    },
+    {
+      "a": 10,
+      "b": 11,
+      "tileDifferenceAfterBestCyclicShift": 0.8184523809523809,
+      "portMaskDifference": 0.42857142857142855
+    },
+    {
+      "a": 10,
+      "b": 12,
+      "tileDifferenceAfterBestCyclicShift": 0.8301711309523809,
+      "portMaskDifference": 0.0
+    },
+    {
+      "a": 10,
+      "b": 13,
+      "tileDifferenceAfterBestCyclicShift": 0.8232886904761905,
+      "portMaskDifference": 0.35714285714285715
+    },
+    {
+      "a": 10,
+      "b": 14,
+      "tileDifferenceAfterBestCyclicShift": 0.8573288690476191,
+      "portMaskDifference": 0.23809523809523808
+    },
+    {
+      "a": 10,
+      "b": 15,
+      "tileDifferenceAfterBestCyclicShift": 0.8290550595238095,
+      "portMaskDifference": 0.40476190476190477
+    },
+    {
+      "a": 10,
+      "b": 16,
+      "tileDifferenceAfterBestCyclicShift": 0.8203125,
+      "portMaskDifference": 0.30952380952380953
+    },
+    {
+      "a": 10,
+      "b": 17,
+      "tileDifferenceAfterBestCyclicShift": 0.8071056547619048,
+      "portMaskDifference": 0.42857142857142855
+    },
+    {
+      "a": 10,
+      "b": 18,
+      "tileDifferenceAfterBestCyclicShift": 0.8035714285714286,
+      "portMaskDifference": 0.40476190476190477
+    },
+    {
+      "a": 10,
+      "b": 19,
+      "tileDifferenceAfterBestCyclicShift": 0.7903645833333334,
+      "portMaskDifference": 0.40476190476190477
+    },
+    {
+      "a": 10,
+      "b": 20,
+      "tileDifferenceAfterBestCyclicShift": 0.8361235119047619,
+      "portMaskDifference": 0.42857142857142855
+    },
+    {
+      "a": 11,
+      "b": 12,
+      "tileDifferenceAfterBestCyclicShift": 0.8283110119047619,
+      "portMaskDifference": 0.42857142857142855
+    },
+    {
+      "a": 11,
+      "b": 13,
+      "tileDifferenceAfterBestCyclicShift": 0.7885044642857143,
+      "portMaskDifference": 0.16666666666666666
+    },
+    {
+      "a": 11,
+      "b": 14,
+      "tileDifferenceAfterBestCyclicShift": 0.8404017857142857,
+      "portMaskDifference": 0.35714285714285715
+    },
+    {
+      "a": 11,
+      "b": 15,
+      "tileDifferenceAfterBestCyclicShift": 0.8311011904761905,
+      "portMaskDifference": 0.35714285714285715
+    },
+    {
+      "a": 11,
+      "b": 16,
+      "tileDifferenceAfterBestCyclicShift": 0.8335193452380952,
+      "portMaskDifference": 0.38095238095238093
+    },
+    {
+      "a": 11,
+      "b": 17,
+      "tileDifferenceAfterBestCyclicShift": 0.8214285714285714,
+      "portMaskDifference": 0.42857142857142855
+    },
+    {
+      "a": 11,
+      "b": 18,
+      "tileDifferenceAfterBestCyclicShift": 0.8093377976190477,
+      "portMaskDifference": 0.3333333333333333
+    },
+    {
+      "a": 11,
+      "b": 19,
+      "tileDifferenceAfterBestCyclicShift": 0.8214285714285714,
+      "portMaskDifference": 0.40476190476190477
+    },
+    {
+      "a": 11,
+      "b": 20,
+      "tileDifferenceAfterBestCyclicShift": 0.8154761904761905,
+      "portMaskDifference": 0.38095238095238093
+    },
+    {
+      "a": 12,
+      "b": 13,
+      "tileDifferenceAfterBestCyclicShift": 0.8487723214285714,
+      "portMaskDifference": 0.35714285714285715
+    },
+    {
+      "a": 12,
+      "b": 14,
+      "tileDifferenceAfterBestCyclicShift": 0.8333333333333334,
+      "portMaskDifference": 0.23809523809523808
+    },
+    {
+      "a": 12,
+      "b": 15,
+      "tileDifferenceAfterBestCyclicShift": 0.8389136904761905,
+      "portMaskDifference": 0.40476190476190477
+    },
+    {
+      "a": 12,
+      "b": 16,
+      "tileDifferenceAfterBestCyclicShift": 0.8311011904761905,
+      "portMaskDifference": 0.30952380952380953
+    },
+    {
+      "a": 12,
+      "b": 17,
+      "tileDifferenceAfterBestCyclicShift": 0.8264508928571429,
+      "portMaskDifference": 0.42857142857142855
+    },
+    {
+      "a": 12,
+      "b": 18,
+      "tileDifferenceAfterBestCyclicShift": 0.8067336309523809,
+      "portMaskDifference": 0.40476190476190477
+    },
+    {
+      "a": 12,
+      "b": 19,
+      "tileDifferenceAfterBestCyclicShift": 0.8271949404761905,
+      "portMaskDifference": 0.40476190476190477
+    },
+    {
+      "a": 12,
+      "b": 20,
+      "tileDifferenceAfterBestCyclicShift": 0.8411458333333334,
+      "portMaskDifference": 0.42857142857142855
+    },
+    {
+      "a": 13,
+      "b": 14,
+      "tileDifferenceAfterBestCyclicShift": 0.8244047619047619,
+      "portMaskDifference": 0.3333333333333333
+    },
+    {
+      "a": 13,
+      "b": 15,
+      "tileDifferenceAfterBestCyclicShift": 0.8337053571428571,
+      "portMaskDifference": 0.2619047619047619
+    },
+    {
+      "a": 13,
+      "b": 16,
+      "tileDifferenceAfterBestCyclicShift": 0.8337053571428571,
+      "portMaskDifference": 0.38095238095238093
+    },
+    {
+      "a": 13,
+      "b": 17,
+      "tileDifferenceAfterBestCyclicShift": 0.8318452380952381,
+      "portMaskDifference": 0.40476190476190477
+    },
+    {
+      "a": 13,
+      "b": 18,
+      "tileDifferenceAfterBestCyclicShift": 0.8145461309523809,
+      "portMaskDifference": 0.23809523809523808
+    },
+    {
+      "a": 13,
+      "b": 19,
+      "tileDifferenceAfterBestCyclicShift": 0.8361235119047619,
+      "portMaskDifference": 0.38095238095238093
+    },
+    {
+      "a": 13,
+      "b": 20,
+      "tileDifferenceAfterBestCyclicShift": 0.82421875,
+      "portMaskDifference": 0.40476190476190477
+    },
+    {
+      "a": 14,
+      "b": 15,
+      "tileDifferenceAfterBestCyclicShift": 0.8424479166666666,
+      "portMaskDifference": 0.38095238095238093
+    },
+    {
+      "a": 14,
+      "b": 16,
+      "tileDifferenceAfterBestCyclicShift": 0.8223586309523809,
+      "portMaskDifference": 0.23809523809523808
+    },
+    {
+      "a": 14,
+      "b": 17,
+      "tileDifferenceAfterBestCyclicShift": 0.8409598214285714,
+      "portMaskDifference": 0.30952380952380953
+    },
+    {
+      "a": 14,
+      "b": 18,
+      "tileDifferenceAfterBestCyclicShift": 0.8299851190476191,
+      "portMaskDifference": 0.38095238095238093
+    },
+    {
+      "a": 14,
+      "b": 19,
+      "tileDifferenceAfterBestCyclicShift": 0.8495163690476191,
+      "portMaskDifference": 0.38095238095238093
+    },
+    {
+      "a": 14,
+      "b": 20,
+      "tileDifferenceAfterBestCyclicShift": 0.8348214285714286,
+      "portMaskDifference": 0.35714285714285715
+    },
+    {
+      "a": 15,
+      "b": 16,
+      "tileDifferenceAfterBestCyclicShift": 0.8316592261904762,
+      "portMaskDifference": 0.38095238095238093
+    },
+    {
+      "a": 15,
+      "b": 17,
+      "tileDifferenceAfterBestCyclicShift": 0.8262648809523809,
+      "portMaskDifference": 0.42857142857142855
+    },
+    {
+      "a": 15,
+      "b": 18,
+      "tileDifferenceAfterBestCyclicShift": 0.8097098214285714,
+      "portMaskDifference": 0.09523809523809523
+    },
+    {
+      "a": 15,
+      "b": 19,
+      "tileDifferenceAfterBestCyclicShift": 0.8288690476190477,
+      "portMaskDifference": 0.23809523809523808
+    },
+    {
+      "a": 15,
+      "b": 20,
+      "tileDifferenceAfterBestCyclicShift": 0.8058035714285714,
+      "portMaskDifference": 0.40476190476190477
+    },
+    {
+      "a": 16,
+      "b": 17,
+      "tileDifferenceAfterBestCyclicShift": 0.8292410714285714,
+      "portMaskDifference": 0.38095238095238093
+    },
+    {
+      "a": 16,
+      "b": 18,
+      "tileDifferenceAfterBestCyclicShift": 0.8277529761904762,
+      "portMaskDifference": 0.38095238095238093
+    },
+    {
+      "a": 16,
+      "b": 19,
+      "tileDifferenceAfterBestCyclicShift": 0.8106398809523809,
+      "portMaskDifference": 0.35714285714285715
+    },
+    {
+      "a": 16,
+      "b": 20,
+      "tileDifferenceAfterBestCyclicShift": 0.8180803571428571,
+      "portMaskDifference": 0.40476190476190477
+    },
+    {
+      "a": 17,
+      "b": 18,
+      "tileDifferenceAfterBestCyclicShift": 0.8043154761904762,
+      "portMaskDifference": 0.42857142857142855
+    },
+    {
+      "a": 17,
+      "b": 19,
+      "tileDifferenceAfterBestCyclicShift": 0.77734375,
+      "portMaskDifference": 0.35714285714285715
+    },
+    {
+      "a": 17,
+      "b": 20,
+      "tileDifferenceAfterBestCyclicShift": 0.8461681547619048,
+      "portMaskDifference": 0.42857142857142855
+    },
+    {
+      "a": 18,
+      "b": 19,
+      "tileDifferenceAfterBestCyclicShift": 0.7847842261904762,
+      "portMaskDifference": 0.23809523809523808
+    },
+    {
+      "a": 18,
+      "b": 20,
+      "tileDifferenceAfterBestCyclicShift": 0.8208705357142857,
+      "portMaskDifference": 0.40476190476190477
+    },
+    {
+      "a": 19,
+      "b": 20,
+      "tileDifferenceAfterBestCyclicShift": 0.8368675595238095,
+      "portMaskDifference": 0.40476190476190477
+    }
+  ],
+  "limits": "Twenty samples, not a statistical proof of uniformity. The 21-sector radial structure and shared centre are intentional. Tile comparisons do not cover all fine-height or gameplay difficulty differences. Overlapping first-pass worker times are not startup benchmarks.",
+  "fractures": {
+    "removedFraction": [
+      0.09218700230121613,
+      0.09702346473932266,
+      0.12910111248493195,
+      0.11715089529752731,
+      0.12940910458564758,
+      0.12283636629581451,
+      0.13911278545856476,
+      0.08502645045518875,
+      0.08842783421278,
+      0.1336728185415268,
+      0.12246785312891006,
+      0.13072125613689423,
+      0.12677966058254242,
+      0.08927158266305923,
+      0.13009034097194672,
+      0.08799872547388077,
+      0.12562990188598633,
+      0.11008277535438538,
+      0.08432788401842117,
+      0.08448713272809982
+    ],
+    "coastCuts": [
+      3,
+      2,
+      3,
+      4,
+      4,
+      3,
+      4,
+      2,
+      2,
+      3,
+      4,
+      3,
+      4,
+      2,
+      3,
+      2,
+      3,
+      3,
+      2,
+      3
+    ],
+    "holes": [
+      8,
+      6,
+      5,
+      8,
+      4,
+      6,
+      8,
+      5,
+      4,
+      8,
+      4,
+      4,
+      5,
+      8,
+      4,
+      3,
+      6,
+      3,
+      7,
+      3
+    ],
+    "cutDepths": [
+      [
+        0.6253931522369385,
+        0.6496883630752563,
+        0.5009477138519287
+      ],
+      [
+        0.662337064743042,
+        0.683451771736145
+      ],
+      [
+        0.6856194138526917,
+        0.5679539442062378,
+        0.6801660060882568
+      ],
+      [
+        0.5681480765342712,
+        0.48430752754211426,
+        0.4669063687324524,
+        0.37210607528686523
+      ],
+      [
+        0.4452288746833801,
+        0.5551813840866089,
+        0.5010589957237244,
+        0.5562461614608765
+      ],
+      [
+        0.6919111609458923,
+        0.5267413258552551,
+        0.5606085062026978
+      ],
+      [
+        0.5657026767730713,
+        0.3570385277271271,
+        0.49495136737823486,
+        0.6736958026885986
+      ],
+      [
+        0.6645033955574036,
+        0.6895579695701599
+      ],
+      [
+        0.6959370374679565,
+        0.661363422870636
+      ],
+      [
+        0.6241530776023865,
+        0.570321261882782,
+        0.5668667554855347
+      ],
+      [
+        0.5278804302215576,
+        0.5827814340591431,
+        0.4369331896305084,
+        0.4447665810585022
+      ],
+      [
+        0.5603739619255066,
+        0.5305959582328796,
+        0.6418898105621338
+      ],
+      [
+        0.3894418776035309,
+        0.6397430300712585,
+        0.5382591485977173,
+        0.4587874412536621
+      ],
+      [
+        0.6954858303070068,
+        0.6635546684265137
+      ],
+      [
+        0.6943148970603943,
+        0.5015825629234314,
+        0.6834099292755127
+      ],
+      [
+        0.6799411773681641,
+        0.6667386889457703
+      ],
+      [
+        0.5514631271362305,
+        0.5339840650558472,
+        0.6092060804367065
+      ],
+      [
+        0.5712739825248718,
+        0.5876675844192505,
+        0.5967439413070679
+      ],
+      [
+        0.6896812915802002,
+        0.6685997247695923
+      ],
+      [
+        0.6866768002510071,
+        0.5228523015975952,
+        0.5472334027290344
+      ]
+    ],
+    "meanRouteDetour": [
+      1.462186574935913,
+      1.8501827716827393,
+      1.5580456256866455,
+      1.3869024515151978,
+      1.4419862031936646,
+      1.429519772529602,
+      1.3835344314575195,
+      1.7278010845184326,
+      1.5203105211257935,
+      1.4496785402297974,
+      1.3810755014419556,
+      1.5337514877319336,
+      1.4068496227264404,
+      1.8180968761444092,
+      1.4819146394729614,
+      1.6389811038970947,
+      1.4891985654830933,
+      1.4399876594543457,
+      1.61827552318573,
+      1.4099910259246826
+    ],
+    "pairwiseSurfaceCoverage": [
+      {
+        "a": 1,
+        "b": 2,
+        "surfaceDifferenceAfterBestAngularShift": 0.09109933035714286
+      },
+      {
+        "a": 1,
+        "b": 3,
+        "surfaceDifferenceAfterBestAngularShift": 0.029343377976190476
+      },
+      {
+        "a": 1,
+        "b": 4,
+        "surfaceDifferenceAfterBestAngularShift": 0.11030505952380952
+      },
+      {
+        "a": 1,
+        "b": 5,
+        "surfaceDifferenceAfterBestAngularShift": 0.11555989583333333
+      },
+      {
+        "a": 1,
+        "b": 6,
+        "surfaceDifferenceAfterBestAngularShift": 0.026692708333333332
+      },
+      {
+        "a": 1,
+        "b": 7,
+        "surfaceDifferenceAfterBestAngularShift": 0.10942150297619048
+      },
+      {
+        "a": 1,
+        "b": 8,
+        "surfaceDifferenceAfterBestAngularShift": 0.08942522321428571
+      },
+      {
+        "a": 1,
+        "b": 9,
+        "surfaceDifferenceAfterBestAngularShift": 0.0927734375
+      },
+      {
+        "a": 1,
+        "b": 10,
+        "surfaceDifferenceAfterBestAngularShift": 0.025437127976190476
+      },
+      {
+        "a": 1,
+        "b": 11,
+        "surfaceDifferenceAfterBestAngularShift": 0.11630394345238096
+      },
+      {
+        "a": 1,
+        "b": 12,
+        "surfaceDifferenceAfterBestAngularShift": 0.028506324404761904
+      },
+      {
+        "a": 1,
+        "b": 13,
+        "surfaceDifferenceAfterBestAngularShift": 0.12058221726190477
+      },
+      {
+        "a": 1,
+        "b": 14,
+        "surfaceDifferenceAfterBestAngularShift": 0.09109933035714286
+      },
+      {
+        "a": 1,
+        "b": 15,
+        "surfaceDifferenceAfterBestAngularShift": 0.02683221726190476
+      },
+      {
+        "a": 1,
+        "b": 16,
+        "surfaceDifferenceAfterBestAngularShift": 0.08909970238095238
+      },
+      {
+        "a": 1,
+        "b": 17,
+        "surfaceDifferenceAfterBestAngularShift": 0.028599330357142856
+      },
+      {
+        "a": 1,
+        "b": 18,
+        "surfaceDifferenceAfterBestAngularShift": 0.025251116071428572
+      },
+      {
+        "a": 1,
+        "b": 19,
+        "surfaceDifferenceAfterBestAngularShift": 0.08858816964285714
+      },
+      {
+        "a": 1,
+        "b": 20,
+        "surfaceDifferenceAfterBestAngularShift": 0.024832589285714284
+      },
+      {
+        "a": 2,
+        "b": 3,
+        "surfaceDifferenceAfterBestAngularShift": 0.09347098214285714
+      },
+      {
+        "a": 2,
+        "b": 4,
+        "surfaceDifferenceAfterBestAngularShift": 0.06319754464285714
+      },
+      {
+        "a": 2,
+        "b": 5,
+        "surfaceDifferenceAfterBestAngularShift": 0.06919642857142858
+      },
+      {
+        "a": 2,
+        "b": 6,
+        "surfaceDifferenceAfterBestAngularShift": 0.08775111607142858
+      },
+      {
+        "a": 2,
+        "b": 7,
+        "surfaceDifferenceAfterBestAngularShift": 0.07003348214285714
+      },
+      {
+        "a": 2,
+        "b": 8,
+        "surfaceDifferenceAfterBestAngularShift": 0.014229910714285714
+      },
+      {
+        "a": 2,
+        "b": 9,
+        "surfaceDifferenceAfterBestAngularShift": 0.013671875
+      },
+      {
+        "a": 2,
+        "b": 10,
+        "surfaceDifferenceAfterBestAngularShift": 0.08826264880952381
+      },
+      {
+        "a": 2,
+        "b": 11,
+        "surfaceDifferenceAfterBestAngularShift": 0.07161458333333333
+      },
+      {
+        "a": 2,
+        "b": 12,
+        "surfaceDifferenceAfterBestAngularShift": 0.09272693452380952
+      },
+      {
+        "a": 2,
+        "b": 13,
+        "surfaceDifferenceAfterBestAngularShift": 0.07077752976190477
+      },
+      {
+        "a": 2,
+        "b": 14,
+        "surfaceDifferenceAfterBestAngularShift": 0.018229166666666668
+      },
+      {
+        "a": 2,
+        "b": 15,
+        "surfaceDifferenceAfterBestAngularShift": 0.09012276785714286
+      },
+      {
+        "a": 2,
+        "b": 16,
+        "surfaceDifferenceAfterBestAngularShift": 0.015764508928571428
+      },
+      {
+        "a": 2,
+        "b": 17,
+        "surfaceDifferenceAfterBestAngularShift": 0.09458705357142858
+      },
+      {
+        "a": 2,
+        "b": 18,
+        "surfaceDifferenceAfterBestAngularShift": 0.09133184523809523
+      },
+      {
+        "a": 2,
+        "b": 19,
+        "surfaceDifferenceAfterBestAngularShift": 0.015718005952380952
+      },
+      {
+        "a": 2,
+        "b": 20,
+        "surfaceDifferenceAfterBestAngularShift": 0.08458891369047619
+      },
+      {
+        "a": 3,
+        "b": 4,
+        "surfaceDifferenceAfterBestAngularShift": 0.11090959821428571
+      },
+      {
+        "a": 3,
+        "b": 5,
+        "surfaceDifferenceAfterBestAngularShift": 0.12258184523809523
+      },
+      {
+        "a": 3,
+        "b": 6,
+        "surfaceDifferenceAfterBestAngularShift": 0.023297991071428572
+      },
+      {
+        "a": 3,
+        "b": 7,
+        "surfaceDifferenceAfterBestAngularShift": 0.11486235119047619
+      },
+      {
+        "a": 3,
+        "b": 8,
+        "surfaceDifferenceAfterBestAngularShift": 0.09058779761904762
+      },
+      {
+        "a": 3,
+        "b": 9,
+        "surfaceDifferenceAfterBestAngularShift": 0.08891369047619048
+      },
+      {
+        "a": 3,
+        "b": 10,
+        "surfaceDifferenceAfterBestAngularShift": 0.02780877976190476
+      },
+      {
+        "a": 3,
+        "b": 11,
+        "surfaceDifferenceAfterBestAngularShift": 0.1189546130952381
+      },
+      {
+        "a": 3,
+        "b": 12,
+        "surfaceDifferenceAfterBestAngularShift": 0.022321428571428572
+      },
+      {
+        "a": 3,
+        "b": 13,
+        "surfaceDifferenceAfterBestAngularShift": 0.12137276785714286
+      },
+      {
+        "a": 3,
+        "b": 14,
+        "surfaceDifferenceAfterBestAngularShift": 0.091796875
+      },
+      {
+        "a": 3,
+        "b": 15,
+        "surfaceDifferenceAfterBestAngularShift": 0.019624255952380952
+      },
+      {
+        "a": 3,
+        "b": 16,
+        "surfaceDifferenceAfterBestAngularShift": 0.0929594494047619
+      },
+      {
+        "a": 3,
+        "b": 17,
+        "surfaceDifferenceAfterBestAngularShift": 0.023623511904761904
+      },
+      {
+        "a": 3,
+        "b": 18,
+        "surfaceDifferenceAfterBestAngularShift": 0.021205357142857144
+      },
+      {
+        "a": 3,
+        "b": 19,
+        "surfaceDifferenceAfterBestAngularShift": 0.09337797619047619
+      },
+      {
+        "a": 3,
+        "b": 20,
+        "surfaceDifferenceAfterBestAngularShift": 0.02292596726190476
+      },
+      {
+        "a": 4,
+        "b": 5,
+        "surfaceDifferenceAfterBestAngularShift": 0.03231956845238095
+      },
+      {
+        "a": 4,
+        "b": 6,
+        "surfaceDifferenceAfterBestAngularShift": 0.10481770833333333
+      },
+      {
+        "a": 4,
+        "b": 7,
+        "surfaceDifferenceAfterBestAngularShift": 0.03380766369047619
+      },
+      {
+        "a": 4,
+        "b": 8,
+        "surfaceDifferenceAfterBestAngularShift": 0.0632905505952381
+      },
+      {
+        "a": 4,
+        "b": 9,
+        "surfaceDifferenceAfterBestAngularShift": 0.06422061011904762
+      },
+      {
+        "a": 4,
+        "b": 10,
+        "surfaceDifferenceAfterBestAngularShift": 0.10607328869047619
+      },
+      {
+        "a": 4,
+        "b": 11,
+        "surfaceDifferenceAfterBestAngularShift": 0.023111979166666668
+      },
+      {
+        "a": 4,
+        "b": 12,
+        "surfaceDifferenceAfterBestAngularShift": 0.10281808035714286
+      },
+      {
+        "a": 4,
+        "b": 13,
+        "surfaceDifferenceAfterBestAngularShift": 0.0361328125
+      },
+      {
+        "a": 4,
+        "b": 14,
+        "surfaceDifferenceAfterBestAngularShift": 0.06143043154761905
+      },
+      {
+        "a": 4,
+        "b": 15,
+        "surfaceDifferenceAfterBestAngularShift": 0.1101655505952381
+      },
+      {
+        "a": 4,
+        "b": 16,
+        "surfaceDifferenceAfterBestAngularShift": 0.06101190476190476
+      },
+      {
+        "a": 4,
+        "b": 17,
+        "surfaceDifferenceAfterBestAngularShift": 0.10365513392857142
+      },
+      {
+        "a": 4,
+        "b": 18,
+        "surfaceDifferenceAfterBestAngularShift": 0.10356212797619048
+      },
+      {
+        "a": 4,
+        "b": 19,
+        "surfaceDifferenceAfterBestAngularShift": 0.05901227678571429
+      },
+      {
+        "a": 4,
+        "b": 20,
+        "surfaceDifferenceAfterBestAngularShift": 0.10360863095238096
+      },
+      {
+        "a": 5,
+        "b": 6,
+        "surfaceDifferenceAfterBestAngularShift": 0.11100260416666667
+      },
+      {
+        "a": 5,
+        "b": 7,
+        "surfaceDifferenceAfterBestAngularShift": 0.03162202380952381
+      },
+      {
+        "a": 5,
+        "b": 8,
+        "surfaceDifferenceAfterBestAngularShift": 0.06705729166666667
+      },
+      {
+        "a": 5,
+        "b": 9,
+        "surfaceDifferenceAfterBestAngularShift": 0.06733630952380952
+      },
+      {
+        "a": 5,
+        "b": 10,
+        "surfaceDifferenceAfterBestAngularShift": 0.11532738095238096
+      },
+      {
+        "a": 5,
+        "b": 11,
+        "surfaceDifferenceAfterBestAngularShift": 0.023623511904761904
+      },
+      {
+        "a": 5,
+        "b": 12,
+        "surfaceDifferenceAfterBestAngularShift": 0.1115141369047619
+      },
+      {
+        "a": 5,
+        "b": 13,
+        "surfaceDifferenceAfterBestAngularShift": 0.021763392857142856
+      },
+      {
+        "a": 5,
+        "b": 14,
+        "surfaceDifferenceAfterBestAngularShift": 0.06891741071428571
+      },
+      {
+        "a": 5,
+        "b": 15,
+        "surfaceDifferenceAfterBestAngularShift": 0.115234375
+      },
+      {
+        "a": 5,
+        "b": 16,
+        "surfaceDifferenceAfterBestAngularShift": 0.06496465773809523
+      },
+      {
+        "a": 5,
+        "b": 17,
+        "surfaceDifferenceAfterBestAngularShift": 0.11058407738095238
+      },
+      {
+        "a": 5,
+        "b": 18,
+        "surfaceDifferenceAfterBestAngularShift": 0.11197916666666667
+      },
+      {
+        "a": 5,
+        "b": 19,
+        "surfaceDifferenceAfterBestAngularShift": 0.07040550595238096
+      },
+      {
+        "a": 5,
+        "b": 20,
+        "surfaceDifferenceAfterBestAngularShift": 0.11174665178571429
+      },
+      {
+        "a": 6,
+        "b": 7,
+        "surfaceDifferenceAfterBestAngularShift": 0.10486421130952381
+      },
+      {
+        "a": 6,
+        "b": 8,
+        "surfaceDifferenceAfterBestAngularShift": 0.0849609375
+      },
+      {
+        "a": 6,
+        "b": 9,
+        "surfaceDifferenceAfterBestAngularShift": 0.0871000744047619
+      },
+      {
+        "a": 6,
+        "b": 10,
+        "surfaceDifferenceAfterBestAngularShift": 0.019856770833333332
+      },
+      {
+        "a": 6,
+        "b": 11,
+        "surfaceDifferenceAfterBestAngularShift": 0.11304873511904762
+      },
+      {
+        "a": 6,
+        "b": 12,
+        "surfaceDifferenceAfterBestAngularShift": 0.023297991071428572
+      },
+      {
+        "a": 6,
+        "b": 13,
+        "surfaceDifferenceAfterBestAngularShift": 0.11723400297619048
+      },
+      {
+        "a": 6,
+        "b": 14,
+        "surfaceDifferenceAfterBestAngularShift": 0.08756510416666667
+      },
+      {
+        "a": 6,
+        "b": 15,
+        "surfaceDifferenceAfterBestAngularShift": 0.022367931547619048
+      },
+      {
+        "a": 6,
+        "b": 16,
+        "surfaceDifferenceAfterBestAngularShift": 0.08482142857142858
+      },
+      {
+        "a": 6,
+        "b": 17,
+        "surfaceDifferenceAfterBestAngularShift": 0.023577008928571428
+      },
+      {
+        "a": 6,
+        "b": 18,
+        "surfaceDifferenceAfterBestAngularShift": 0.022367931547619048
+      },
+      {
+        "a": 6,
+        "b": 19,
+        "surfaceDifferenceAfterBestAngularShift": 0.0808686755952381
+      },
+      {
+        "a": 6,
+        "b": 20,
+        "surfaceDifferenceAfterBestAngularShift": 0.014787946428571428
+      },
+      {
+        "a": 7,
+        "b": 8,
+        "surfaceDifferenceAfterBestAngularShift": 0.06919642857142858
+      },
+      {
+        "a": 7,
+        "b": 9,
+        "surfaceDifferenceAfterBestAngularShift": 0.06863839285714286
+      },
+      {
+        "a": 7,
+        "b": 10,
+        "surfaceDifferenceAfterBestAngularShift": 0.11039806547619048
+      },
+      {
+        "a": 7,
+        "b": 11,
+        "surfaceDifferenceAfterBestAngularShift": 0.036923363095238096
+      },
+      {
+        "a": 7,
+        "b": 12,
+        "surfaceDifferenceAfterBestAngularShift": 0.11235119047619048
+      },
+      {
+        "a": 7,
+        "b": 13,
+        "surfaceDifferenceAfterBestAngularShift": 0.041294642857142856
+      },
+      {
+        "a": 7,
+        "b": 14,
+        "surfaceDifferenceAfterBestAngularShift": 0.0701264880952381
+      },
+      {
+        "a": 7,
+        "b": 15,
+        "surfaceDifferenceAfterBestAngularShift": 0.10853794642857142
+      },
+      {
+        "a": 7,
+        "b": 16,
+        "surfaceDifferenceAfterBestAngularShift": 0.06840587797619048
+      },
+      {
+        "a": 7,
+        "b": 17,
+        "surfaceDifferenceAfterBestAngularShift": 0.1091889880952381
+      },
+      {
+        "a": 7,
+        "b": 18,
+        "surfaceDifferenceAfterBestAngularShift": 0.11188616071428571
+      },
+      {
+        "a": 7,
+        "b": 19,
+        "surfaceDifferenceAfterBestAngularShift": 0.06417410714285714
+      },
+      {
+        "a": 7,
+        "b": 20,
+        "surfaceDifferenceAfterBestAngularShift": 0.1044921875
+      },
+      {
+        "a": 8,
+        "b": 9,
+        "surfaceDifferenceAfterBestAngularShift": 0.013392857142857142
+      },
+      {
+        "a": 8,
+        "b": 10,
+        "surfaceDifferenceAfterBestAngularShift": 0.09077380952380952
+      },
+      {
+        "a": 8,
+        "b": 11,
+        "surfaceDifferenceAfterBestAngularShift": 0.06770833333333333
+      },
+      {
+        "a": 8,
+        "b": 12,
+        "surfaceDifferenceAfterBestAngularShift": 0.09077380952380952
+      },
+      {
+        "a": 8,
+        "b": 13,
+        "surfaceDifferenceAfterBestAngularShift": 0.06863839285714286
+      },
+      {
+        "a": 8,
+        "b": 14,
+        "surfaceDifferenceAfterBestAngularShift": 0.01711309523809524
+      },
+      {
+        "a": 8,
+        "b": 15,
+        "surfaceDifferenceAfterBestAngularShift": 0.087890625
+      },
+      {
+        "a": 8,
+        "b": 16,
+        "surfaceDifferenceAfterBestAngularShift": 0.014462425595238096
+      },
+      {
+        "a": 8,
+        "b": 17,
+        "surfaceDifferenceAfterBestAngularShift": 0.09458705357142858
+      },
+      {
+        "a": 8,
+        "b": 18,
+        "surfaceDifferenceAfterBestAngularShift": 0.08947172619047619
+      },
+      {
+        "a": 8,
+        "b": 19,
+        "surfaceDifferenceAfterBestAngularShift": 0.016462053571428572
+      },
+      {
+        "a": 8,
+        "b": 20,
+        "surfaceDifferenceAfterBestAngularShift": 0.08021763392857142
+      },
+      {
+        "a": 9,
+        "b": 10,
+        "surfaceDifferenceAfterBestAngularShift": 0.09142485119047619
+      },
+      {
+        "a": 9,
+        "b": 11,
+        "surfaceDifferenceAfterBestAngularShift": 0.06994047619047619
+      },
+      {
+        "a": 9,
+        "b": 12,
+        "surfaceDifferenceAfterBestAngularShift": 0.09086681547619048
+      },
+      {
+        "a": 9,
+        "b": 13,
+        "surfaceDifferenceAfterBestAngularShift": 0.068359375
+      },
+      {
+        "a": 9,
+        "b": 14,
+        "surfaceDifferenceAfterBestAngularShift": 0.016183035714285716
+      },
+      {
+        "a": 9,
+        "b": 15,
+        "surfaceDifferenceAfterBestAngularShift": 0.0857514880952381
+      },
+      {
+        "a": 9,
+        "b": 16,
+        "surfaceDifferenceAfterBestAngularShift": 0.013532366071428572
+      },
+      {
+        "a": 9,
+        "b": 17,
+        "surfaceDifferenceAfterBestAngularShift": 0.0919828869047619
+      },
+      {
+        "a": 9,
+        "b": 18,
+        "surfaceDifferenceAfterBestAngularShift": 0.08844866071428571
+      },
+      {
+        "a": 9,
+        "b": 19,
+        "surfaceDifferenceAfterBestAngularShift": 0.01832217261904762
+      },
+      {
+        "a": 9,
+        "b": 20,
+        "surfaceDifferenceAfterBestAngularShift": 0.0812406994047619
+      },
+      {
+        "a": 10,
+        "b": 11,
+        "surfaceDifferenceAfterBestAngularShift": 0.11197916666666667
+      },
+      {
+        "a": 10,
+        "b": 12,
+        "surfaceDifferenceAfterBestAngularShift": 0.025204613095238096
+      },
+      {
+        "a": 10,
+        "b": 13,
+        "surfaceDifferenceAfterBestAngularShift": 0.11848958333333333
+      },
+      {
+        "a": 10,
+        "b": 14,
+        "surfaceDifferenceAfterBestAngularShift": 0.09226190476190477
+      },
+      {
+        "a": 10,
+        "b": 15,
+        "surfaceDifferenceAfterBestAngularShift": 0.02585565476190476
+      },
+      {
+        "a": 10,
+        "b": 16,
+        "surfaceDifferenceAfterBestAngularShift": 0.09026227678571429
+      },
+      {
+        "a": 10,
+        "b": 17,
+        "surfaceDifferenceAfterBestAngularShift": 0.025204613095238096
+      },
+      {
+        "a": 10,
+        "b": 18,
+        "surfaceDifferenceAfterBestAngularShift": 0.022321428571428572
+      },
+      {
+        "a": 10,
+        "b": 19,
+        "surfaceDifferenceAfterBestAngularShift": 0.08872767857142858
+      },
+      {
+        "a": 10,
+        "b": 20,
+        "surfaceDifferenceAfterBestAngularShift": 0.02292596726190476
+      },
+      {
+        "a": 11,
+        "b": 12,
+        "surfaceDifferenceAfterBestAngularShift": 0.10835193452380952
+      },
+      {
+        "a": 11,
+        "b": 13,
+        "surfaceDifferenceAfterBestAngularShift": 0.024274553571428572
+      },
+      {
+        "a": 11,
+        "b": 14,
+        "surfaceDifferenceAfterBestAngularShift": 0.07217261904761904
+      },
+      {
+        "a": 11,
+        "b": 15,
+        "surfaceDifferenceAfterBestAngularShift": 0.11142113095238096
+      },
+      {
+        "a": 11,
+        "b": 16,
+        "surfaceDifferenceAfterBestAngularShift": 0.0671968005952381
+      },
+      {
+        "a": 11,
+        "b": 17,
+        "surfaceDifferenceAfterBestAngularShift": 0.111328125
+      },
+      {
+        "a": 11,
+        "b": 18,
+        "surfaceDifferenceAfterBestAngularShift": 0.11086309523809523
+      },
+      {
+        "a": 11,
+        "b": 19,
+        "surfaceDifferenceAfterBestAngularShift": 0.07087053571428571
+      },
+      {
+        "a": 11,
+        "b": 20,
+        "surfaceDifferenceAfterBestAngularShift": 0.10811941964285714
+      },
+      {
+        "a": 12,
+        "b": 13,
+        "surfaceDifferenceAfterBestAngularShift": 0.11263020833333333
+      },
+      {
+        "a": 12,
+        "b": 14,
+        "surfaceDifferenceAfterBestAngularShift": 0.09254092261904762
+      },
+      {
+        "a": 12,
+        "b": 15,
+        "surfaceDifferenceAfterBestAngularShift": 0.022414434523809524
+      },
+      {
+        "a": 12,
+        "b": 16,
+        "surfaceDifferenceAfterBestAngularShift": 0.0886811755952381
+      },
+      {
+        "a": 12,
+        "b": 17,
+        "surfaceDifferenceAfterBestAngularShift": 0.017671130952380952
+      },
+      {
+        "a": 12,
+        "b": 18,
+        "surfaceDifferenceAfterBestAngularShift": 0.013671875
+      },
+      {
+        "a": 12,
+        "b": 19,
+        "surfaceDifferenceAfterBestAngularShift": 0.09402901785714286
+      },
+      {
+        "a": 12,
+        "b": 20,
+        "surfaceDifferenceAfterBestAngularShift": 0.019205729166666668
+      },
+      {
+        "a": 13,
+        "b": 14,
+        "surfaceDifferenceAfterBestAngularShift": 0.07170758928571429
+      },
+      {
+        "a": 13,
+        "b": 15,
+        "surfaceDifferenceAfterBestAngularShift": 0.11430431547619048
+      },
+      {
+        "a": 13,
+        "b": 16,
+        "surfaceDifferenceAfterBestAngularShift": 0.06673177083333333
+      },
+      {
+        "a": 13,
+        "b": 17,
+        "surfaceDifferenceAfterBestAngularShift": 0.11077008928571429
+      },
+      {
+        "a": 13,
+        "b": 18,
+        "surfaceDifferenceAfterBestAngularShift": 0.11653645833333333
+      },
+      {
+        "a": 13,
+        "b": 19,
+        "surfaceDifferenceAfterBestAngularShift": 0.07189360119047619
+      },
+      {
+        "a": 13,
+        "b": 20,
+        "surfaceDifferenceAfterBestAngularShift": 0.11258370535714286
+      },
+      {
+        "a": 14,
+        "b": 15,
+        "surfaceDifferenceAfterBestAngularShift": 0.08993675595238096
+      },
+      {
+        "a": 14,
+        "b": 16,
+        "surfaceDifferenceAfterBestAngularShift": 0.016508556547619048
+      },
+      {
+        "a": 14,
+        "b": 17,
+        "surfaceDifferenceAfterBestAngularShift": 0.09449404761904762
+      },
+      {
+        "a": 14,
+        "b": 18,
+        "surfaceDifferenceAfterBestAngularShift": 0.09077380952380952
+      },
+      {
+        "a": 14,
+        "b": 19,
+        "surfaceDifferenceAfterBestAngularShift": 0.019438244047619048
+      },
+      {
+        "a": 14,
+        "b": 20,
+        "surfaceDifferenceAfterBestAngularShift": 0.08458891369047619
+      },
+      {
+        "a": 15,
+        "b": 16,
+        "surfaceDifferenceAfterBestAngularShift": 0.08700706845238096
+      },
+      {
+        "a": 15,
+        "b": 17,
+        "surfaceDifferenceAfterBestAngularShift": 0.022414434523809524
+      },
+      {
+        "a": 15,
+        "b": 18,
+        "surfaceDifferenceAfterBestAngularShift": 0.022879464285714284
+      },
+      {
+        "a": 15,
+        "b": 19,
+        "surfaceDifferenceAfterBestAngularShift": 0.08928571428571429
+      },
+      {
+        "a": 15,
+        "b": 20,
+        "surfaceDifferenceAfterBestAngularShift": 0.017531622023809524
+      },
+      {
+        "a": 16,
+        "b": 17,
+        "surfaceDifferenceAfterBestAngularShift": 0.09268043154761904
+      },
+      {
+        "a": 16,
+        "b": 18,
+        "surfaceDifferenceAfterBestAngularShift": 0.08747209821428571
+      },
+      {
+        "a": 16,
+        "b": 19,
+        "surfaceDifferenceAfterBestAngularShift": 0.015485491071428572
+      },
+      {
+        "a": 16,
+        "b": 20,
+        "surfaceDifferenceAfterBestAngularShift": 0.07877604166666667
+      },
+      {
+        "a": 17,
+        "b": 18,
+        "surfaceDifferenceAfterBestAngularShift": 0.015811011904761904
+      },
+      {
+        "a": 17,
+        "b": 19,
+        "surfaceDifferenceAfterBestAngularShift": 0.09430803571428571
+      },
+      {
+        "a": 17,
+        "b": 20,
+        "surfaceDifferenceAfterBestAngularShift": 0.022367931547619048
+      },
+      {
+        "a": 18,
+        "b": 19,
+        "surfaceDifferenceAfterBestAngularShift": 0.09375
+      },
+      {
+        "a": 18,
+        "b": 20,
+        "surfaceDifferenceAfterBestAngularShift": 0.018368675595238096
+      },
+      {
+        "a": 19,
+        "b": 20,
+        "surfaceDifferenceAfterBestAngularShift": 0.08170572916666667
+      }
+    ],
+    "method": "Actual surface samples on a 336 by 64 angular/radial grid; every angular shift is compensated. Area contracts use the projected Jacobian. Route detour is the mean physical start-to-centre path length divided by straight distance across all 21 starts. All 420 regional audits are retained. No seed is screened."
+  }
+}

@@ -1,0 +1,904 @@
+docs/engineering/systems/polar-cloud-npcs.md
+
+# Polar cloud NPCs
+
+## Urgent notices that come while a decision is under way, November 12, 2026 (0.6.144-test)
+
+The question 0.6.141-test left open: should an explorer whose request was in flight at night fall be told again? Yes ([results](../logs/evidence/2026-11-12/dawn-wrap-notices/results.md)).
+
+- **Before.** When a reply came, `Apply` removed every notice that had come while it was decided. Night fall, hunger, cold, a fall, a wound or a failed step in that time was not in the decision's input, so the explorer acted on a plan made without it until the idle notice, up to 60 real seconds (about 1.6 game hours) after the request started.
+- **The rule.** A notice keeps its latest urgent reason that is not words (`Notice.alert`), even when words are merged into it. A reply answers the waiting notice as before, unless it holds an alert. Then the explorer is asked again at once. When the reply answered words and the notice also holds words, the explorer is asked about the alert alone, on the planning lane, so words are not answered twice. A notice the reply did not answer because words overtook it (no words answered, words waiting) stays whole, as before.
+- **Cost.** One more request for each explorer whose request was in flight when such a notice came: at night fall at most the requests in flight, 3 planning and 10 conversation slots.
+- **Checked** (`Tools/CloudNpcCheck`, 211): night fall during a decision asks again with "Night has fallen."; a plain notice during a decision is answered by it; night fall merged with words while the explorer answers words asks again about night fall alone, on the planning lane. The director before the change fails the first check, and the change's first version (keeping only urgent notices that are not social) fails the third.
+
+## Route searches keep their grids, November 12, 2026 (0.6.143-test)
+
+The user's "Yes, fix it here" on the route-search buffers ([results](../logs/evidence/2026-11-12/route-search-grids/results.md)). Routes, their straightening and when explorers search are unchanged.
+
+- **`PolarPathfinder.FindLocal`** takes a set of grids (`Grids`: path costs, parents, the closed set and the search's heap) from a stack of spare sets under a lock, or makes one when none is spare. It clears the set, searches as before, and gives the set back in a `finally`. A set is never used by two searches at once.
+- **Why.** Each call allocated the three 512 by 512 arrays anew, 2.3 MB on the worker thread of an explorer's route search (`PolarNpcSimulation`, `Task.Run`). In a walk day that was 127 MB of the 469 MB the game allocated, and it brought Mono's garbage collections sooner, on the main thread or on a worker.
+- **Kept for the session:** as many sets as searches ever ran at once. When every explorer searches at a new game or a Continue, about 19 sets, 43 MB. The player's selected route, the suite's checks and the benchmark use the same sets.
+- **Measured.** 898 walks on seed 777 give the same routes cell for cell, one after another and on 16 threads at once; a search allocates 22 KB where it allocated 2,603 KB. In a free walk day the workers allocate 5.1 MB where they allocated 127.2 MB over the profiled stretches, and collections fall from 34 to 21, none of them on a worker.
+
+## One request start a frame, November 12, 2026 (0.6.141-test)
+
+The user's "Yes, fix it here" on spreading the explorers' night decisions ([results](../logs/evidence/2026-11-12/night-fall-frames/results.md); the shelter part is in [gameplay](polar-gameplay.md)). What explorers are asked, in what order, and what they decide is unchanged.
+
+- **`PolarNpcDirector.Pump`** starts at most one request a call: the first eligible notice in its usual order (urgent first, then the oldest, then by id). The next frame starts the next one. Pump runs once a frame, so a bunch of ten starts over ten frames, about 0.17 s at 60 fps. These are as they were:
+  - the lanes: 10 planning and 3 conversation requests in flight, 60 a minute each;
+  - the turn-taking rule;
+  - retries and pauses;
+  - the 60 s question.
+- **Why.** As night falls every awake explorer is told "Night has fallen." in the same rules step, and the next `Pump` started ten requests in one frame. It built the snapshots, prompts and first payloads on the main thread: 7.4 ms of its own time and 1.15 MB allocated, a frame of about 19 ms without the profiler's call stacks. The same happened at a new game, at Continue and at 06:00. Without a key it happened once a minute, with ten requests failing together.
+- **Known and left.** An offer or promise change that arrives in the few frames right after such a bunch waits behind the planning starts, at most about ten frames. Before, it started at once on its own lane.
+- **Checks.**
+  - `Tools/CloudNpcCheck` now checks that one decision starts a frame, the first in order: after one `Pump` the first explorer is busy and the second is not. The old director fails this check.
+  - The paid scene bench (`--scenes`) pumps once per cast member before clearing the queue, so its scenes open as before.
+
+## The director no longer allocates every frame, November 11, 2026 (0.6.137-test)
+
+One of the known items the user asked to be solved after 0.6.136-test ([results](../logs/evidence/2026-11-11/known-items/results.md)). What the director notices is unchanged.
+
+- **`PolarNpcDirector.Current`**, read for every explorer every frame to notice what it newly received, looks for an open offer or protection proposal of the explorer's with plain loops and builds the joined text (`Offers`) only when there is one; with none, which is nearly always, the text is the constant `";"` the joins gave. It allocated 10.8 KB a frame for nineteen explorers.
+- **`Pump`** walks the explorers with a plain loop and sorts the queue only when something is queued.
+- **Measured** in a scripted walk without the model (`Tools/polar_save_rate.py --walk --profile`): `Current` no longer appears among the allocating methods; managed allocation over the whole game fell from 50.6 to 18.0 KB a frame with the step's and the save's fixes ([gameplay](polar-gameplay.md), [rendering and streaming](rendering-streaming.md)).
+- **A live day** (November 11, at the user's word, [results](../logs/evidence/2026-11-11/live-day-0137/results.md); 4.40 yuan) confirms this package and 0.6.136-test's ledger write together. Against the profiled live day on 0.6.135-test:
+  - frames over 25 ms: 85 to 6 in the four minutes timed without call stacks, 557 to 57 over the whole day;
+  - the director is the largest part of none of those frames (74 of 85 before), and its longest frame is 4.6 ms (46.3);
+  - `Current` and the ledger's main-thread write no longer appear among the allocating methods;
+  - managed allocation is 62.5 to 37.4 KB a frame.
+
+## The request ledger's file is written by a worker thread, November 11, 2026 (0.6.136-test)
+
+The user's "Fix it" after the live profile (the section below; [results](../logs/evidence/2026-11-11/ledger-write/results.md)). What the ledger records is unchanged; no rule, save or drawn pixel changes.
+
+- **`NpcApiBudget.Persist`** (called under the ledger's lock by `Reserve` and `Settle`) only notes that the file is behind and, if no write is running, starts one on a worker thread (`Write`). The worker serializes the charges under the lock, then writes the temporary file and moves it over `hourly-ledger.json` outside the lock; a change made during a write is written straight after it. One write runs at a time.
+- **A write that fails** (the file held by another program) is dropped and the next change writes again; the charges are in memory either way. Before, the exception went into the request.
+- **`Flush()`** waits until no write is running. `ArkNpcClient.Dispose` calls it, so leaving an expedition or quitting leaves every charge in the file; a tool that reads the file while a client is open calls `Flush` first.
+- **Measured** on the packages' own compiled code under Unity's Mono, a ledger of 480 charges: `Reserve`, the call a request's start makes on the main thread, takes a median of 0.026 ms where it took 26.0 ms (longest 0.08 ms, was 51.8 ms), and the file holds every charge at the end as before.
+- **Verified.** Explorer checks 208 (two new ones read the file back after a flush and after a client is closed), shared rules 2748. The full suite passes on `lw-01`: gameplay 390, physical 3959, physical-resume 18, continue 36, performance 79, buildings 395, fractured 31, handbook 353, weather 84, weather-resume 10, ui 463, handbook-revision 619 (`Logs/PolarV7/0.6.136-test/lw-01`), and so do front page 173, startup 4 and screen-args 3 (`Logs/PolarFront/0.6.136-test/lw-01`).
+- **Not measured.** A live day on this package (API calls): the slow frames themselves were not counted again. They were counted on 0.6.137-test, which carries this change (the section above).
+
+## A live day's slow frames: the request ledger's write, November 11, 2026 (profiled, no fix yet)
+
+A profiler run of a live day ([results](../logs/evidence/2026-11-11/live-slow-frames/results.md)), at the user's word after the save cadence change left the slow frames where they were. Nothing here is changed.
+
+- **Finding.** 74 of 85 frames over 25 ms (four minutes of daylight at 60 frames a second) spend a median of 25 ms in `PolarNpcDirector.Pump`, against 0.07 ms in other frames. `Start` calls `ArkNpcClient.CompleteAsync`, which runs on the main thread up to its first wait; with a free slot it goes straight on to `NpcApiBudget.Reserve`, whose `Persist` serializes the last hour's charges and writes and replaces `PolarNpcApi/hourly-ledger.json`. Timed alone under Unity's Mono, that write takes a median of 23 ms with an hour's 480 charges and 19 ms with ten: it is the file's write and replace, not its size.
+- **How often.** At every request's start, about one every two seconds in a live day. The second write of a request, when the reply is charged, runs on a worker thread.
+- **Also seen.** `PolarNpcDirector.Current()` allocates 10.8 KB in every frame (it reads each explorer's situation every frame, about 39 MB a minute). The explorers' step is the largest marker in 7 of the 85 slow frames; `PolarMvpController.PrepareDoorPassage` allocates up to 240 KB in a frame there.
+- **Markers** now round this work: `Polar.Npc.Pump`, `Polar.Simulation.Advance`, `Polar.Npc.Step`, `Polar.Npc.Senses`, `Polar.Npc.Views`, `Polar.Autosave` (`PolarMvpController`, `PolarNpcSimulation`; the director and the client are engine-free and carry none).
+- **Fixed** in 0.6.136-test (the section above): the ledger's file is written by a worker thread.
+
+## A watch no longer holds an explorer's plan: November 3, 2026
+
+The supply trial report (`st-a50h10n4`) showed Grant keeping watch at Hut 01 from 22:40 on day 2 while his later orders stood still. A wait of about 1.6 game hours (`wait n=60`) ran 9.4, then the meal he ordered three times waited 14.4 game hours. The hunger reflex could not feed him either, until satiety fell under 8 and ended the watch: satiety 68 to 9, health 100 to 92. `PolarNpcSimulation.Step` skipped the plan and the reflexes while any action ran, and a watch has no end of its own.
+- **Change.** A watch now goes on while the plan waits: the waits and the reflexes run during it, and any other step ends it (`A.Cancel`) before that step runs. Sleep and timed actions still hold the plan.
+- **Checks.** Offline compile 0 errors. An in-Editor check on a new seed-777 expedition passes both cases. Adler keeps watch, his wait ends on time during it, and his meal ends the watch and is eaten (satiety 50 to 64). Hungry while watching through a long wait, he is fed by the reflex (satiety 30 to 44) and keeps watching (`Logs/NpcAgency/watch-check.txt`, copied to the evidence folder). The older Editor rehearsal (`PolarNpcAgencyRehearsal`) no longer runs: its October 18 camp save fails to load ("Unsupported or incomplete polar save"). No package of its own; it rides in the next one.
+
+## Supply trial under the new rules: November 2, 2026
+
+The user asked for the 50% area, 10-hut trial again under the new rules: the Acts I-II knowledge (0.6.94-test), Pole Station listed among the places (0.6.97-test) and world v23. As before, Grant alone decides, on DeepSeek, at seed 777, speed 10 and 3 (`st-a50h10n4`, $0.09; against `st-a50h10b`; `-npcDiagnosticArea 0.5 -npcDiagnosticHuts 10`). His ten huts lie where they did, the nearest 421 m from home. The world hash differs only by v23's ponds.
+- **What changed.** No goal named Pole Station (54% before), and 57% spoke of searching (28% before). His first goal: "Search Hut 01 for food, fuel and gear before nightfall, then decide whether to push toward another hut or hold here."
+- **What did not.** He searched his home hut on day 1 and sat by its stove for four days, eating when hungry and "holding my supplies". At satiety 18 he set out for the nearest hut (421 m), was knocked down by a gust, turned back, and reached it on day 6.8 (5.8 before) with 54 health. It held four tins and no oil, and his own flask lacked a full portion for the burner. He died of hunger at 7.42 days (7.51 before), with 2 of 10 huts searched, as before.
+- **Reading.** The handbook and view no longer draw him toward Pole Station, but they never did keep him alive. He stays where food is until it runs out and then walks out starving, as in the November 1 trials. The handbook gives facts only (user, November 2), so moving on earlier needs another means, such as richer near huts or the body's own warning.
+- Three earlier attempts (`st-a50h10n` to `n3`) crashed while Unity started up. The ChatGPT desktop app's repeated `git diff 60febe20 --find-renames --numstat` processes (up to 25 at once, up to 6.4 GB each) had left no free memory. With the user's leave they were stopped every 5 s during the fourth run.
+
+## Pole Station listed among the places: November 2, 2026 (0.6.97-test)
+
+After `kd-live-01` the remaining draw toward Pole Station was its name and the line of its own in the view. The user chose to list it plainly among the charted places, like any hut.
+- **View** (`PolarNpcMind.Snapshot`). The station line (`station`, set from `PolarNpcMind.Station`) is gone. An explorer with no record of Pole Station gets an entry for it among the places, sorted by distance with the rest: "#135 Pole Station, 9.76 km NNE 23, 104.1 h on foot, on the chart, not yet seen" (source `Charted`, printed by the `Lines` converter in `ArkNpcClient.cs`). It is added after the nearest eight records, so it is always listed, unless an oversized request trims the farthest places. Once the explorer holds a record of it, that record replaces the entry.
+- **Travel** (`PolarNpcSimulation.Travel`). Every listed place is a valid travel target, so a walk to Pole Station no longer needs a record of it ("I know no such place" otherwise).
+- **Handbook** (`PolarNpcManual.Text`). Maps: "Pole Station stands in a district of its own on the ring and is on everyone's chart." ("your view gives its bearing and distance" is gone).
+- **Checks.** CloudNpcCheck 206: the station is listed once as charted and may be travelled to, and once seen it is listed by its record alone. The bench and scenes world (`Bench.World`) now has Pole Station as a site 7 km north-east, in place of the scenes' station position.
+- **Live check** (`ps-live-01`: the whole game on DeepSeek, seed 777, speed 10 and 3, four days, $1.22, all 20 alive; against `kd-live-01`, the same seed and start):
+  - Goals naming Pole Station over days 1-4: 13.5% (31% before), by 14 explorers (12 before); 8 named it on day 1 (11 before). Most give it as one choice after a search: "open the crates in this hut ..., then decide whether to stay or head for Pole Station". None named a ship, an assembly or a base. One hoped "for food or rescue by morning" (Reed, day 4.7, starving).
+  - Two ordered a walk there, and neither order failed. Quinn, the nearest at 5.2 km, emptied his hut on day 1 and set out, then pitched his tent on the way; he was 290 m closer on day 4. Carter ordered it on day 3. By the end of day 4, 3 of 20 were over 300 m closer to Pole Station (2 before), and 7 had not left home (13 before).
+  - Failed commands: 103 of 916 decisions (57 of 752 before). None involve Pole Station; most are eating something that is not food, taking what is gone, and fuel that does not fit.
+
+## What explorers know at the start: November 2, 2026 (0.6.94-test)
+
+The user asked that explorers know Pole Station's place without thinking to go there, and nothing of a rescue, in Acts I and II (GDD 2.2, 3.3 and the top section). In `st-a50h10b` Grant stayed home five days aiming for Pole Station, which the handbook called "the expedition's base and assembly point and stocked beyond any hut".
+- **Handbook** (`PolarNpcManual.Text`). Weather: "Clear skies are rare." replaces the forecast (eases from day 6, a quarter clear from day 10). Maps: "Pole Station stands in a district of its own on the ring; your view gives its bearing and distance. What it holds and what stands near it are on nobody's chart until seen." The radio line stays: it gives only static unless someone calls.
+- **View** (`PolarNpcMind`). The station line is "Pole Station: X km bearing, about H h on foot", without "expedition base and assembly point".
+- **Rescue** (`NpcModelPrompts`, in `ArkNpcClient.cs`). The shared commands list leaves out `rescue`, and the shared schema's command enum leaves it out too (`DecisionSchema`). A request whose possible commands include `rescue` (only after hearing the broadcast, as before) uses `HeardSchema` and has the command's words after "Possible now". The heard line (`s.rescue`) is unchanged.
+- **Checks.** CloudNpcCheck 204: the shared instructions carry every command but `rescue`, the word "ship" never, and the shared schema no `rescue`. A live run followed (below).
+- **Live check** (`kd-live-01`, November 2: the whole game on DeepSeek, seed 777, speed 10 and 3, four days, $1.02, all 20 alive; against `wg-live-06`, November 1, the same seed and start with the old wording). Measured from the explorers' goals and positions:
+  - Goals naming Pole Station over days 1-4: 31% (28% before), by 12 explorers (16 before); 11 named it in their first hour (10 before). None named a rescue, a ship, an assembly or a base, before or after.
+  - Most of those goals put it after survival: "rest warm in this hut through the storm, and slip out toward Pole Station once the weather breaks". By the end of day 4, 2 of 20 were over 300 m closer to it (3 before); 13 had not left home (9 before).
+  - So the role words were not what drew them: the name, and its being the one far place their view gives on a line of its own, still make it the place explorers mean to go later. Listing it among the charted places like a hut would take away the last of that; it is not done.
+
+## An objective handbook, and half the area with ten huts: November 2, 2026
+
+The user asked that the explorers' handbook hold no strategy, only facts and rules, and then for one explorer's run in a world of half the area with 10 supply points in every district.
+- **Handbook** (`PolarNpcManual.Text`). Every piece of advice is gone; the rules and numbers stay, as plain facts.
+  - Removed: eat before satiety reaches the danger line; get to a fire first; pitch the tent and fuel its burner when a walk would end below 35 C; reach shelter before night; a walk of days as a chain of walks; go round edges; get under a roof before a blizzard; swim to the nearest edge and get to a fire; move on from a hut while still fed; search a box again only when someone else has been there; put a stove out when leaving; strike the tent and carry it when moving on.
+  - Facts kept or added in their place: you climb out of water only at a firm edge and come out wet; stores are never refilled; a stove put out keeps its oil; adding a day of oil to a tent burner lights it; a pitched tent stays where it stands and a struck one is carried; away from huts the only fire is a tent burner.
+  - The cold-walk sentence was the 0.6.84-test fix that brought judged-wrong decisions from 9% to 2%. The policy before the handbook (`NpcModelPrompts.Policy`) still says to put first what warnings need and to take what a journey needs before setting out.
+- **World.** `AreaShare` .5 with `Huts` 10 ([polar-world](polar-world.md) top section): seed 777's game world 72E027A69E698C8B, 206 sites. Food and oil are dealt over the world as before, so the same total over 183 district huts instead of 123 leaves a district hut a mean 27 food units instead of 40.
+- **Run** `st-a50h10b` (Grant alone on DeepSeek, speed 10 and 3, `Logs/NpcDayDiagnostic`; $0.13). `st-a50h10` did not start: the game's world for these switches had no room for one district's cracks (fixed for trial worlds).
+  - His huts lie 421, 608, 1245, 1508 and 2391 m from home, and five more at 2.7-4 km. Home held 16 food tins and 4 days of oil; Hut 09 (421 m) 4 tins; Hut 08 (608 m) 4 tins; the huts from 1.2 km held 44-76 tins, except Hut 10 (8) and Hut 07 (none).
+  - Days 1-5 he stayed home. His goal from the first hour was Pole Station; from day 2 it read "rest until nightfall, then head for Pole Station" and he never left. He ate only by reflex, when hunger drained health.
+  - On day 5 at 22:00, starving, he walked to Hut 09 and took its 4 tins. Over days 6-8 he went back and forth between Hut 09 and home and started twice for Hut 08, turning back after 20-50 m.
+  - He died of hunger after 7.5 days, having searched 2 of his 10 huts.
+- **Compared with the November 1 runs** (old handbook): those ended after 6.9 to 11.1 days, or alive after 12 days in the 70% area world, with 0-2 other huts reached. This run ends inside that range. One run cannot separate the handbook from the world. What did repeat: he stays where food is until it is gone, and he leaves only when starving.
+- Shared rules 2748 and CloudNpcCheck 204 pass. No package was built; the next free label stays `0.6.92-test`.
+
+## Supply-walk trials with one explorer: November 1, 2026
+
+The user asked which change would let an explorer seek supply points as intended: (1) half the distance between supply points, (2) 30% less area, or both. The world switches and each world's distances are in [polar-world](polar-world.md).
+- **Diagnostic.** `PolarNpcDayDiagnostic -npcDiagnosticOnly <name>` asks the model for that person alone (`PolarNpcDirector.Decides`; the rest only wait) and ends the run when they die. Run it with `-npcDiagnosticAll`: the diagnostic's speeds apply only in the whole game, so without it a game day takes 15 real minutes.
+- **Runs.** Seed 777, Grant (district P08, whose home-to-nearest-hut walk is close to the twenty districts' median in every world), DeepSeek, speed 10 and 3 while he waits, up to 12 days (`Logs/NpcDayDiagnostic/st-b0`, `st-p50b`, `st-a70b`, `st-both`; $0.64).
+
+  | World | His huts from home | Other huts reached | End |
+  |---|---|---|---|
+  | v21 | 859, 1760 m | None. From day 5.6 five starts toward 0.86 and 1.75 km turned back, the nearest 268 m short | Cold after 6.9 days |
+  | Half distances | 425, 918 m | None. He turned back 150 m out on day 1, waited at home on days 2-5 "to move at first light", and left on day 7.7 starving | Hunger after 7.5 days |
+  | 70% area | 719, 1473, 1784 m | Hut 07 on day 1.6. He left it fed on day 5.4, slept in his tent on the way and reached Hut 04 (1.8 km) on day 9.4 | Alive after 12 days, heard the ship after 10 |
+  | Both | 356, 768 m | Hut 07 on day 1.3. He stayed until its food was gone, then left for Hut 05 (757 m) on day 11.3 at 29 health | Cold after 11.1 days, 184 m short |
+
+- **Findings.**
+  - His timing decided each run more than the distance did. Three times he stayed where the food was until it ran out and then walked out starving, making 35 m of straight progress an hour or less; fed, he made 70-80 m an hour. Only in the 70% area run did he move on while fed.
+  - One run per world cannot rank the worlds: the model's choices vary more than the worlds do. With half distances the nearest hut was nearer than in the 70% area world, yet he never went.
+  - Shorter walks still help when he does go. At 75 m an hour the nearest hut is 11 h away in v21, 6 h with half distances, 10 h with 70% area and 5 h with both.
+- **Recommendation given to the user.** Both changes for the distances: the two runs that reached other huts had 30% less area, and 30% less area also shortens the walks to Pole Station and the cairn, which half distances leave as they are. Add a rule to move on while a day's food is left, since neither change makes explorers leave in time. Confirm with all 20 explorers in each world before a world version (about $3 and an hour a world).
+- **Attempts that did not count.** `st-base` lost its state when another session's script edit recompiled the Editor mid-run. `st-base2` ran at real time (no `-npcDiagnosticAll`). `st-p50` and `st-a70` failed because the pond floor first raised the library reference world's minimum (fixed).
+- Shared rules 2748 pass. No package was built; the next free label stays `0.6.92-test`.
+
+## Explorers' survival fixes and whole-game reruns: November 1, 2026
+
+At the user's request after `wg-live-03` (below), on DeepSeek, the causes of death that were the explorers' or the engine's fault, with least change ([gameplay](polar-gameplay.md) top section; [design decisions](../../design-decisions.md#tents-stand-clear-of-huts-november-1-2026)).
+- **Hours on foot** (`PolarNpcManual.Ground` .5, was .85). In `wg-live-03` walks took about twice the view's hours (about 1.9 m/s where the view said 4.25). `WalkHours` now also takes the person's own pace (`PolarItemDefinition.Speed`: load, wounds, cold, fatigue) for places, Pole Station, the rescue point and people last seen; the manual says 1 km takes about 10.7 hours when fresh.
+- **Manual.**
+  - A hut's stores last days: move on by day while still fed, warm and rested.
+  - A box seen is a dated record: search it again only when someone else has been there. Explorers had searched the same boxes over and over.
+  - A walk of days is a chain of walks.
+  - Ruins may still hold stores, and Pole Station is stocked beyond any hut. This is the GDD's supply gradient: on seed 777 ruins held 30-80 food units, Pole Station 228, and most home huts none by day 4.
+  - Tents stand on open ground, never in or against a hut; strike yours and carry it when you move on.
+- **Refused replies explained** (`PolarNpcDirector.Failed`). A refused reply is asked again with the reason ("Your last reply was refused: ..."). Before, the same question came back unexplained and DeepSeek repeated what was refused: 157 unknown commands and about 200 unknown references in `wg-live-03`. A first command that cannot come first now names the commands that can; an unknown reference says every id must be one the view lists.
+- **Tents clear of huts** (`PolarMvpController.ResolveGroundDrop`, for everyone). No tent stands within a hut's walls and a tent's radius. Jones pitched inside an unloaded hut, whose only floor is its anchor; the tent's box stood over the crates, and Jones died beside two tins after 273 failed takes. An explorer's failed pitch near a hut says so: "A tent cannot stand in or against a hut: go out of its door and a few steps away, then pitch".
+- **Tents carried on** (`PolarNpcSimulation.PackTent`). A `travel`, `explore` or `rescue` walk first strikes the explorer's own tent, once per pitch, when it stands within 15 m, fits in the pack and nobody else is in it. Finished steps make room in the four-command plan, else its last step goes (`PolarSaveService` refuses longer plans; the rerun's autosaves failed until that was handled). In `wg-live-05`, 8 of the 10 dead had left their tent standing 270-1,550 m behind them; in `wg-live-06` the dead lay beside theirs.
+- **Reflexes.**
+  - **Swimming.** An explorer in the water without a `swim` command swims out by reflex the way it faced, and its plan goes on from the edge (`Swim`). Two drowned in `wg-live-05`: in water only `swim` may come first, and their replies kept naming `travel`.
+  - **Eating.** `eat` takes any food that can be eaten there when the named id is not food in the pack, or is a frozen ration away from a fire. The validator no longer checks eat's id. Shaw starved naming tins just picked up from the floor; 33 eats failed "That is not food" in six days, and 86 named frozen rations with tins in the pack.
+  - **Warmth.** The warmth reflex shelters only in a known hut with a usable stove (a ruin has none); otherwise it pitches the tent.
+- **View.** Past the comfortable weight, a warning gives the load and the maximum. Vale's takes failed as too heavy 19 times in one day with no weight shown.
+- **CloudNpcCheck** builds again: its project lacked `PolarWalkEffort.cs` and `PolarRescue.cs`, missing since 0.6.87-test.
+- **Results** (seed 777, DeepSeek, speed 10, 3 while waiting; `Logs/NpcDayDiagnostic`):
+
+  | Run | Code | Alive on days 4 / 6 / 8 / 11 / 14 | End | Deaths | Requests, cost |
+  |---|---|---|---|---|---|
+  | `wg-live-03` | before | 19 / 16 / 12 / 5 / 3 | all dead day 17.8 | 16 cold, 4 hunger | 2,969, $3.62 |
+  | `wg-live-05` | hours, manual, refusals, tents clear of huts | 18 / 15 / 12 / 7 / – | stopped at day 11 | 9 cold, 2 hunger, 2 drowned | 2,393, $2.95 |
+  | `wg-live-06` | all but the plan-room and frozen-ration fixes | 20 / 16 / 9 / 3 / 2 | all dead day 17.8 | 16 cold, 4 hunger | 2,594, $3.31 |
+
+  The ship was heard on day 11 in all three runs and came on day 16, and nobody was ever rescued or chose `rescue`. `wg-live-04` stopped at day 4 when the Editor closed with no crash logged.
+- **What is left.**
+  - The fixes removed the deaths that were mechanical: in a hut with a pitched tent, in water, beside food, or with the tent left behind. They did not change how many survive. In `wg-live-06` the dead lay by their own tents with no oil and no food.
+  - Only the huts each explorer reached ran out, not its district (counted later the same day; this corrects "home districts empty by days 8-12" written here first). Comparing every site's food and oil in a keyless save at day 0.2 (`wg-dry-01`, the same world, nothing searched) with `wg-live-06`'s end: 36 of the 146 supply points were used, each explorer's home hut and 0-2 others (1-3 of its district's 7), none outside its district and never Pole Station. 760 of 5,440 food units (14%) and 266 of 2,256 litres of oil (12%) were used.
+  - Why the rest were never reached. The huts nobody reached lie 0.64-6.3 km from their district's home hut (median 3 km, 21-75 h on foot); the huts used, a median 0.77 km. The view's hours are honest: 39 walks that arrived took 0.86 times the hours told (0.58-1.53), about 83 m of straight distance an hour. Walking cools a person 0.1-0.15 C an hour, so from a hut without a fire those walks need one to three nights in the tent at a day of oil a night, and food for the days; explorers start with no oil, and home huts hold 1-4 days of food. Of the 21 walks toward a hut nobody reached, 7 began fed and unhurt (days 1-8) and 14 began starving or hurt. 4 ended in death on the way, 8 stopped within 6 hours to pitch (often with no full portion of oil for the burner), 7 gave way to another walk or a rest and 2 never moved; 8 were followed by a walk home. The nearest any came was 365 m. No executor or engine fault was found in them.
+  - The cairn is 7-15 km from most explorers (140-520 h on foot at their pace). The survivors meant to rest first and set out for the coast later, then starved.
+  - Making explorers survive and reach the ship is a balance or design choice for the user: each district still holds food and oil, but a day's walk or more away. Options: nearer huts or more in home huts, oil to start with, slower cooling on the walk, explorers told to leave early with what the nights out need, and a nearer rescue point for the ship.
+  - Counting scripts (scratchpad, not in the repository): `supply_use.py` (stocks and searches by site), `walks.py` (each walk toward a hut nobody searched) and `pace.py` (told against taken hours).
+  - The plan-room and frozen-ration fixes came after `wg-live-06` and are checked only offline. Nobody fell through ice in `wg-live-06`, so the swim reflex is untested live.
+  - Shared rules 2748 and CloudNpcCheck 204 pass, and the Player and Editor sources compile. No package was built; the next free label stays `0.6.92-test`.
+
+## The whole game on the model, and no hourly ceiling: November 1, 2026
+
+At the user's request, a test of the whole game from a new expedition to the rescue with all 20 people decided by the model, faster than real time; the ship is never drawn, only its point (the cairn and flag) is needed.
+- **Whole-game diagnostic** (`PolarNpcDayDiagnostic -npcDiagnosticAll`). It sets `PolarGameplayState.Autopilot` (never saved) before the new game. The player's character becomes one more explorer, Vale, with the archetype pool's last kind (unused since world v21) and a mind of its own (`PolarNpcMind.Initialize`); the director and `PolarNpcSimulation.Step` take it like any explorer, its death or rescue no longer ends the run, the last-survivor ending is off (`PolarActions`), it listens to the ship for 12 s and boards it as the others do (`PolarRescue.Step`). `PolarMvpController` then runs the world without the keyboard: the view follows Vale, and the clock runs `AutopilotSpeed` game seconds a real second.
+- **Speed.** `-npcDiagnosticSpeed <n>` while everyone awake has a plan, `-npcDiagnosticWaitSpeed <m>` (default 1) while someone stands waiting for the model, so a slow reply costs no more game time than at m times real time.
+- **Ends.** When everyone is dead or rescued, the ship has gone, `-npcDiagnosticBudget <dollars>` is spent (`PolarRequestRecorder.Limit`; DeepSeek's yuan at 7.1 to the dollar; requests then fail without a call) or `-npcDiagnosticMinutes <n>` have passed; 60 game days at most. The results are written at every 06:00, with the day each person heard the ship, was rescued or died, and the broadcast and arrival days.
+- **No hourly ceiling** (the user's choice; [design decisions](../../design-decisions.md#no-hourly-ceiling-on-deepseek-november-1-2026)). `NpcApiBudget` keeps the last real hour's spend for the developer overlay ("API ¥x in the last real hour") but never refuses a request, and an unreadable ledger starts empty, so the `bf-01` ledger lockout below cannot recur. The director no longer pauses on "Hourly API budget exhausted". The 60 starts a minute per lane are unchanged.
+- **Result** (`wg-live-03`: seed 777, DeepSeek, speed 10 and 3 while waiting; `Logs/NpcDayDiagnostic/wg-live-03`). The whole game ran in 77 real minutes (17.8 game days, about 3.5 times real time): 2,969 requests, none failed (median 2.3 s, P95 4.4 s, the largest 16.7 kB), $3.62 (about ¥26), no exceptions. Everyone was alive after three days; the first died on day 5, 7 were alive when the ship was first heard on day 11 (the first day it could be; all 7 heard it), 1 when it came on day 16, and the last died on day 19. Nobody was rescued and nobody ever chose `rescue`: the survivors, 5-12 km from the cairn (33-77 h on foot), planned to rest first and set out "at first light". 15 died of cold, most walking between huts below 34 °C and some in unheated huts, and 5 of hunger, with 88% of the food and 89% of the oil still in the world. The most common failures were taking from under other items (270 "Take the items in front first") and unknown commands (157 refused). Waiting for replies took about a fifth of everyone's game time at 3 times real time, three times what it would cost at real speed. No two people ever met (closest 843 m).
+
+## DeepSeek when its key is set: October 31, 2026 (0.6.91-test)
+
+At the user's request, `PolarMvpController` gives the director `ArkNpcClient` (Volcano Ark, `deepseek-v4-1-flash-261017`, thinking off, strict JSON schema, the hourly yuan ledger) whenever `ARK_API_KEY` is set, and `ClaudeNpcClient` otherwise. The prompts, manual and schema are the same for both. `ArkNpcClient` now passes each streamed delta to `request.partial`, so DeepSeek's words type into the talk box as they arrive. Its request bound stays 32,000 bytes. The prompts were tuned on Claude, whose live days kept 19 of 20 alive where DeepSeek's kept none (0.6.81-test); expect weaker decisions.
+
+## Everyone's radio: October 31, 2026 (0.6.90-test)
+
+Replaces the section below's hearing ([gameplay](polar-gameplay.md) top section; [design decisions](../../design-decisions.md#the-ships-message-on-everyones-radio-and-the-quick-bar-without-a-backpack-october-31-2026-0690-test)).
+- **Hearing.** Every awake explorer hears the ship at the same moment, wherever they are, and listens for 12 s (holding the radio, faint static within 6 m) before deciding again; sleepers on waking, swimmers once out. The belief reads as heard on their own radio from the relief ship Kestrel.
+- **Manual** (`PolarNpcManual`). Each person carries a radio, which gives only static unless someone calls; Pole Station no longer hears the outside world.
+
+## Pole Station's radio and the rescue ship: October 31, 2026 (0.6.89-test)
+
+Explorers' side of the rescue ship ([gameplay](polar-gameplay.md#pole-stations-radio-the-rescue-ship-and-improving-weather-october-31-2026-0689-test)).
+- **Manual** (`PolarNpcManual`). Pole Station stands in a district of its own on the ring with three huts, no longer at the map's centre; its radio reaches the outside world only by day in clear weather from day 11, and news of a ship would come there. The weather line says clear skies are rare at first, ease from day 6, and are about a quarter of the time from day 10 while snowstorms and blizzards still come.
+- **Hearing.** An explorer awake in Pole Station or within 8 m of its radio when the message starts gets it as a radio belief, which asks for a decision like heard words ("Pole Station's radio (radio): ..."); it hears it only once. Retold, the message reaches others as hearsay and counts as heard.
+- **View** (`NpcKnowledgeSnapshot.rescue`). Once heard: the rescue point's distance, bearing and hours on foot, the ship's days, whether it is there now, that anyone there while it waits leaves on it, and that `rescue` walks there; "The rescue ship has gone." after.
+- **Command** (`rescue`, `PolarNpcSimulation.Rescue`). Offered while the ship is heard of and not gone. It finds a way to the rescue cell as `explore` does and walks it; at the point before the ship comes it ends with the day it comes; while it waits the explorer stays and `PolarRescue.Step` takes it aboard. Anyone at the point in the window leaves, heard or not.
+
+## Cold walks and meetings measured: October 29, 2026 (0.6.84-test)
+
+Two faults left open by [0.6.81-test](#claude-explorers-who-know-the-game-and-talk-in-turn-october-29-2026-0681-test), at the user's request, on Claude ([gameplay](polar-gameplay.md#explorers-drop-and-pond-traps-october-29-2026-0684-test)).
+- **Cold walks.** Shivering explorers set out for huts 0.5-1 km away, because nothing told them how long a walk takes or how fast they cool; most of the 14 wrong decisions of 150 judged in `nk-live-03` were such walks. Now:
+  - each known place, Pole Station and each person last seen gives its hours on foot at the manual's open-ground pace (`PolarNpcManual.WalkHours`; "Hut 02, 1.04 km NNE 24, 5.5 h on foot");
+  - the warmth line gives the rate now, from the survival step's own rule (`PolarSurvivalSimulation.Change`, which the step now calls), and the hours left until 35 C ("outdoors: cooling 0.13 C an hour in this weather, 35 C in about 11 h"; "by a lit fire: warming 0.96 C an hour");
+  - the manual tells them to compare the two and, if a walk would end below 35 C, to pitch the tent, get in and add a day of oil to its burner, which lights it. An earlier wording ("light its burner") had explorers light empty burners.
+- **Pole Station** now reads "expedition base and assembly point, map centre; its huts are not on your chart", with its hours on foot. "A map mark only" had read as nothing there (GDD 2.1).
+- **Meetings measured.** The day diagnostic logs each explorer's position (`timeline.csv` x, z), and the summary keeps the closest two explorers ever came and each first meeting (`closestMetres`, `closestPair`, `meetings`).
+  - On seed 777, a district's ten huts run 6-9 km from the coast inward.
+  - Neighbouring districts' nearest huts are 450-650 m apart.
+  - Pole Station's huts are 10-13 km (50-70 h on foot) from the explorers' homes.
+  - Each explorer knows only its own district's huts (GDD 2.1), its stock lasts the first days, and explorers sleep through the nights when firelight shows.
+  - So nobody met: in `cw-live-01` the closest two came was 1.56 km, and in three days (`cw-live-02`) 1.55 km. Contact needs a design choice ([current status](../current-status.md#current-checkpoint-package-0684-test--cold-walks-drop-and-pond-traps-meetings-measured-october-29-2026)).
+- **Checks.**
+  - `Tools/CloudNpcCheck`: core 204, prompt bounds 43 (the largest request trimmed to its 16,000-byte bound besides the shared 8,455).
+  - Bench: 128 of 129 replies correct or acceptable (99%; 0.6.81-test 127).
+  - Scenes, two runs: coherence 3.82 and 4.27, knowledge 4.73 and 4.64, usefulness 4.00 and 3.91, character 4.00 and 4.18, naturalness 3.73 and 3.91. That is within run-to-run spread of 0.6.81-test's 4.36, 4.64, 4.00, 4.09, 4.09; the weak scenes (rifle raised, wounded help) touch nothing changed here.
+  - One live day on seed 777 before the drop fix (`Logs/NpcDayDiagnostic/cw-live-01`, $3.11): 20 alive, 318 requests, none failed.
+    - Of 150 decisions judged, 6 were wrong (4%; `nk-live-03` 9%), two of them walks into the cold.
+    - 21 commands failed (`nk-live-03` 3): Moss's trap, the burner wording and 3 eats of a non-food id.
+  - Three days with the drop fix, before the pond fix (`Logs/NpcDayDiagnostic/cw-live-02`, $8.39):
+    - 19 of 20 alive. Only Shaw ever fell below 35 C, in the pond trap ([gameplay](polar-gameplay.md#explorers-drop-and-pond-traps-october-29-2026-0684-test)), now fixed.
+    - 3 hunger spells with 3 eat reflexes, and Shaw's 2 cold spells with 2 warmth reflexes (`nk-live-01`: 8 hunger and 4 cold spells).
+    - Waits were 18% of commands, and 15 of 694 commands failed, 4 of them pitches the reflex had done.
+    - Of 150 decisions judged, 3 were wrong (2%). One was still a cold walk: Olsen, shivering in a snowstorm, set out on a 13.8 h walk.
+    - 64 of 897 requests failed, all at the 15 s timeout, in two spells when Claude's replies slowed (a tenth of the run had a median of 14.2 s against 2.4-4.3 s elsewhere); the director retried them.
+
+## Names learned by talking: October 29, 2026 (0.6.82-test)
+
+M3 of the [talk scenes and names plan](../plans/polar-talk-scenes-names.md) ([decisions](../../design-decisions.md#names-learned-by-talking-october-29-2026-0682-test), [gameplay](polar-gameplay.md#names-learned-by-talking-october-29-2026-0682-test)).
+- **Name line.** An explorer talking with a player who has not heard its name (`NpcKnowledgeSnapshot.unnamed`, not serialised; set when the partner is the player in an expedition with names) gets one more sentence before the past policy: "#0 does not know your name until you say it; give it if asked and you are willing, or when you choose." (`NamePolicy`). The past policy stays last. Explorers still know one another on meeting (`knownNames`).
+- **Checks.** `Tools/CloudNpcCheck` core 204 and prompt bounds 43 pass (largest request 15,905 of 16,000 bytes besides the shared 8,157). The live mode asks each of its three explorers "What's your name?" before the question about home, which needs a name, and checks that the player knows the name exactly when the explorer's words to them said it and that the name tab shows it only then. On `nm-02` it passes 108 (`Logs/PolarV7/0.6.82-test/nm-02-live`).
+
+## Claude explorers who know the game and talk in turn: October 29, 2026 (0.6.81-test)
+
+The user's request: explorers that understand the game as well as the player, decide correctly from what they know, and talk well to the player and to each other, with Claude (`claude-opus-5-5`) in place of DeepSeek for the day ([plan](../plans/polar-claude-explorers.md); [decisions](../../design-decisions.md#claude-explorers-shared-training-and-body-reflexes-october-29-2026-0681-test), [gameplay](polar-gameplay.md#body-reflexes-executor-steps-and-truer-failure-texts-october-29-2026-0681-test)). The October 24 open items below (missing body rules, misleading failure texts, Pole Station off the charts) are addressed here.
+- **Transport** (`ClaudeNpcClient`, an `INpcModelClient` beside `ArkNpcClient`, which stays for a one-line switch back in `PolarMvpController`). Raw `HttpClient` to the Messages API (`anthropic-version: 2026-10-21`, key `ANTHROPIC_API_KEY`), streaming; `output_config` with a JSON schema and effort `low` on every lane (medium scored no better on the scenes, 4.18/4.45/4.00/4.00/3.55 against low's 4.36/4.64/3.82/4.09/3.64, and cost about 20% more); no thinking parameter (Opus 5.5 thinks adaptively) within `max_tokens` 16,000; the safety-refusal fallback (`fallbacks: "default"`, beta `server-side-fallback-2026-07-01`). Deadlines: 15 s a decision, 20 s for the player's answer. Lanes: 10 planning, 3 explorer-to-explorer, 2 player slots (`SemaphoreSlim`), connection limit 16. One cached system block (`NpcModelRequest.cached`: the Policy, the manual and the help for every command, 8,116 bytes) shared by all twenty explorers; `usage.cache_read_input_tokens` confirms hits. Prices for the reports (`ClaudeNpcClient.Dollars`): $4 input, $20 output, $5 cache write and $0.20 cache read per million tokens. No hourly cap; the DeepSeek ledger is not used.
+- **One schema** (`NpcModelPrompts.DecisionSchema`): goal, say, commands (kind an enum of every command), memo, terms, quotes, about, all always present, so the provider compiles it once; unsupported keywords are stripped (`ClaudeNpcClient.Supported`).
+- **Training** (`PolarNpcManual.Text`, from the save's rule values, in the handbook's page order): body thresholds and recovery, warmth, day and sleep, walking pace, weather and water, huts and boxes, fire and oil in days, tents, load, maps and Pole Station, people and promises, weapons. Only what the player can read or learn (GDD 2.3).
+- **What an explorer sees** (`PolarNpcMind.Snapshot`): body values with the HUD's words ("satiety 32: below 40, losing hp"); the clock ("day 1, 11:00, 11 h to nightfall"); places, people last seen and people in view with compass direction and distance (`PolarLabels.Compass`); Pole Station as a map mark with its bearing; open ground for `explore` on eight bearings (`PolarNpcSimulation.Around`, the walk probe); items as the backpack reads them; 16 events and 8 beliefs; the standing `goal` and a `memo` per person (saved; older saves read empty); one conversation in the order said (16 lines with the partner, or to everyone, own words included). Bound 16,000 bytes (`NpcModelPrompts.Bound`).
+- **Decisions.** Command help says what each needs (`Help`); `Validate` accepts a plan whose first command is possible now and whose later ones become possible on the way (a take after an investigate). Warnings repeat for every 10 hp lost while hunger or cold drains it.
+- **Talking to the player** (`PolarNpcDirector.Talk`): the topic gate and the answer run at once (an unrelated request cancels the answer); the answer's `say` streams into the talk box as it arrives (`NpcModelPrompts.PartialSay`, `PolarMvpUi.Npc`), and a reply that fails validation leaves nothing. 12 lines of the player's own talk go to the gate.
+- **Talking to each other** (`PolarNpcDirector`): one turn at a time among those in hearing (a social decision waits while someone in hearing decides their words, `talking`); words decided while new words arrived for the speaker are not said (the waiting notice asks again with them); every line said is kept by everyone awake in hearing (`PolarNpcMind.Dialogue`), so a third person follows the talk; the talk box still shows only lines between the player and that explorer. Speech rules: answer the newest words, wait for an answer to your own, no echoes or restated agreements, thanks or goodbye need no answer, the world in a person's words (no rule numbers or the game's terms), concealment and candor decide what is given away.
+- **Checks.** `Tools/CloudNpcCheck` core 204 pass; `--bench` (about 40 fixed situations, 3 replies each, judged by `Tools/npc_bench_judge.py` with Claude at effort high): 127 of 129 replies correct or acceptable (98%; on the prompt before this work, DeepSeek 48% and Claude 93%); `--scenes` (11 conversations between two or three explorers through the real director in real time, about $0.10 each, judged 1-5 against the explorers' own manual): coherence 4.36, knowledge 4.64, usefulness 4.00, character 4.09, naturalness 4.09 (first Claude run on the old prompt: 3.45, 4.18, 3.64, 3.55, 3.18); `--prompt-bounds` 43 (largest 15,802 of 16,000 bytes); `--live-agency` on Claude: 20 of 20 valid, the gate 41 of 41 with every unrelated request caught and none of 21 game messages judged unrelated ($1.19); `Tools/PolarGameplayCheck` 2704/2704. Prompts and replies from these runs stay outside the repository.
+- **Live days** (`PolarNpcDayDiagnostic`, seed 777, Claude, three days, `Logs/NpcDayDiagnostic/nk-live-01`; prompts and replies kept outside the repository): three days on seed 777 (`nk-live-01`, before the take, pour, reach and tent fixes): 19 of 20 alive at the end, against none in DeepSeek's `bf-live-01` (5 alive at the end of day 2). The one death was Moss, of cold beside a tent pitched below a drop (fixed since). 6% of commands were waits (DeepSeek 39%), and "No walkable ground" never came up (DeepSeek 14.8 a day). The reflexes ate 15 times and sought warmth 3 times, against 684 eat commands the explorers chose themselves. 1,916 requests, median 3.4 s, $20.01. 923 of 1,188 takes failed on units behind others or out of reach (fixed after). One day on the final code (`nk-live-03`; `nk-live-02` had only the unit choice and still failed 80 of 128 takes): 20 alive, 3 of 557 commands failed, 301 requests, median 2.6 s, first text after 1.7 s, $2.86. Claude's judge on 150 decisions each: 11% wrong in `nk-live-01`, 9% in `nk-live-03`. Most of the rest are shivering explorers setting out for a hut 0.5-1 km away (hours at the game's walking pace) instead of making warmth where they are. The planned reflex bar (under 10% of hunger and cold episodes) can't be read from these days: the 10 s timeline shows only 12 such episodes in three days, fewer than the reflexes themselves. Explorers never met in these days (homes 1.6-4.4 km apart), so talk between explorers is shown by the scenes only.
+- **Player modes** (build `Builds/HdrpMilestones/nk-02`): gameplay 382, physical 2706, ui 436 and live 90 pass (`Logs/PolarV7/0.6.81-test/nk-02`). In the live mode the player's requests streamed their first text after a median 1.7 s (the whole reply 3.2 s), and its segment spent $1.29.
+
+## Talk by the fire and speech that takes its time: October 24, 2026 (0.6.53-test)
+
+Package B of [the plan](../plans/polar-keepsake-stories.md) ([decisions](../../design-decisions.md#talk-by-the-fire-and-heard-lines-read-in-full-october-24-2026-0653-test), [UI](polar-ui.md#heard-lines-read-in-full-october-24-2026-0653-test)). Head turns between explorers stay out.
+- **Settled company** (`PolarNpcDirector.Settle`, from `Pump` once a game second). An explorer is at a fire while it is awake and either at a hut whose stove is lit (its heat site, else its shelter; `PolarActions.Lit`) or inside a pitched tent whose burner burns (`TentAt`); two people share a fire when it is the same hut or tent. An explorer at a fire with anyone else awake there, the player included, is asked once a stay, when the stay is 40 game seconds old, it has no decision waiting or in flight and its own last words are at least 150 game seconds old: "Settled by the fire with <name, or an unidentified explorer>; you may talk, rest or keep busy.", on the conversation lane, with that companion as partner: the one it last exchanged words with longest ago, ties to the next person by id after it, so a crowd does not all turn to one. A stay ends when nobody else is at its fire; the next stay asks again. Ten explorers in one hut make at most ten requests a stay, not one a pair. Silence is a fine answer; nothing else is added (no line, cap or score). `Settled` counts the nudges.
+- **Speaking time** (`Notify(…, after)`, `Notice.notBefore`). Heard words (overheard, said to the explorer or called) ask the hearer only after 1 s for every 15 characters (`Received`). A reason joining a waiting notice keeps the later time, except an urgent one, which waits only for its own words, so an aimed rifle never waits behind a long overheard line. Reasons without words wait for nothing; the player's own words (`Talk`) are answered at once as before.
+- **Checks** (`Tools/CloudNpcCheck`): 204 core (13 new: no nudge at 39 game seconds, both asked at 40, by name or as a stranger, on the conversation lane; once a stay; again after parting; its own words within 150 game seconds hold one back while its company is asked, and it is asked once they are 150 seconds old; a lit tent counts; an unlit stove, a sleeper and a sleeper's company ask nothing; ten in one hut give ten nudges to ten different companions; 30 characters wait 2 s, not 1.9; a long overheard line waits, and an urgent notice does not wait behind it), 7 physical-event and 3 call checks (words and a call ask after their speaking time), 43 prompt-bound, 2 deadline and 3 information-boundary checks. The pipeline check lets a second pass for those who first hear another's words.
+- **Live mode** (`PolarCloudRuntimeValidation.FireScene`): two explorers whose own last words are over 150 game seconds old are brought to the lit home stove beside the player, each on a fresh stay; once neither has a decision waiting or in flight, the frozen clock moves on 40 game seconds (or until their own words are 150 game seconds old), both must be asked and decide, and each line they say must show whole among the heard lines (which keep game time, so the earlier frozen scenes' lines are cleared first). On `bf-02` it passed: Frost and Grant, strangers to the player, were both asked; Frost offered terms for a share of the stove's warmth ("I've a rifle with three rounds and a tent, if we're trading terms.") and Grant answered that its oil was his only heat, and both lines showed whole (136 requests, the largest 4,900 bytes, ¥0.39; `Logs/PolarV7/0.6.53-test/bf-02/live`). On `bf-01` the mode never reached the provider: all five requests were refused as "Hourly API budget exhausted" while the shared ledger (`PolarNpcApi/hourly-ledger.json`) held ¥2 of ¥20. The three-day Editor run was rewriting that file meanwhile, and `NpcApiBudget` counts a ledger it cannot read as a spent hour; run live modes with no other game process.
+- **Days** (`PolarNpcDayDiagnostic -npcDiagnosticDays <n>`; the summary adds `toExplorers`, `settled`, and the player's added tins and days of oil). Three live days (`Logs/NpcDayDiagnostic/bf-live-01`, seed 777 from the source, ¥3.46, 1,274 requests, the largest 4,389 bytes, median 2.2 s): no two explorers ever shared a lit fire, so `settled` stayed 0 and nobody spoke to anyone (192 calls; no lines to explorers; no words about pasts). All twenty explorers died, fifteen of them in the second 900 game seconds (most between 1,350 and 1,570 s) and the rest by 2,547 s, hungry and cold outdoors 100-2,400 m from home. Among them they ate 53 food units in three days (23 eat commands; ten never ate) and began the second day at a median satiety of 5, as in Package A's one-day run (`ks-live-01`), so this predates Package B.
+- **Open, for later: why explorers starve and never meet** (diagnosed October 24 from `bf-live-01` and the earlier live days; the user chose to fix these later, so nothing is changed yet).
+  - **The instructions lack the body's rules.** Every agency day since October 18 (ten runs, `agency-live-01` to `ks-live-01`) ended its first 900 game seconds with 7-13 explorers under satiety 40 and 4-13 under 35 C (`bf-live-01`: 15 and 15); the rule-engine days before agency (`camp-0621`, `rivers-v17`, `tents-777`) ended with none, at a median satiety of 60 and 37 C. `Policy` never tells explorers what the player's handbook does: satiety under `hungerDanger` (40) or a core temperature under `freezingTemperature` (35 C) drains HP, and HP 0 is death. They see the raw numbers and the notices "You are getting hungry." and "You are getting cold.", and nothing ties them to dying. In `bf-live-01`, at the first hunger notice (about 310 s) 18 of 20 were 113-997 m from home; 11 went on exploring and 1 tried to eat. 13 of the 23 eat commands came below satiety 25 (Grant carried eight tins from 76 s and first ate at 941 s, at satiety 2), and after a cold notice nobody walked to a hut or a fire.
+  - **Proposed least change.** One sentence from the save's own rule values, appended after the commands as the past clause is: `. body: satiety under 40 or temperature under 35 C drains hp, and hp 0 is death; you cool except at a lit stove or burner, and shelter only slows it` (148 bytes; the heaviest constructed request would grow from 4,915 to about 5,063 of 5,200). No engine rule is added. To verify: `--prompt-bounds`, then one live day (about ¥1.9), then three (about ¥3.5).
+  - **Contributing.** Explorers start without food or oil (`PolarGameplayFactory`) and must take both from their home boxes, and a failed command ends the whole plan, so a stove command for oil not yet carried drops the takes planned after it. Two failure texts mislead (`PolarActions`): Strike answers "Someone is inside the tent" when the striker is the one inside (six of Dale's plans lost their meal behind it), and Watch answers "Keep watch beside a pitched tent" to a watcher beside it who is under `RestTemperature`.
+  - **Why nobody meets.** On seed 777 homes are 1.6-4.4 km apart (median 2.4 km) and the central huts 10-13 km from them; the explorers died before the supply gradient could draw them inward (GDD 3.3.1). Their charts hold only their own district, although the GDD puts Pole Station on every character's chart (2.2); adding it is a design choice of its own, since it might send weak explorers on 12 km walks.
+  - **Ledger lockout.** `NpcApiBudget` counts a ledger it cannot read as a ¥20 charge (`ArkNpcClient`), so a second game process rewriting `PolarNpcApi/hourly-ledger.json` can lock another out for an hour, as on `bf-01`. Retrying the read, or skipping it without a charge, would end that; until then live modes run alone.
+
+## Personal pasts and what is remembered of them: October 24, 2026 (0.6.51-test)
+
+Package A of [the plan](../plans/polar-keepsake-stories.md) ([decisions](../../design-decisions.md#keepsakes-and-personal-pasts-october-24-2026-0651-test), [gameplay](polar-gameplay.md#authored-keepsakes-pasts-and-words-about-them-october-24-2026-0651-test), [UI](polar-ui.md#the-question-about-home-key-0-and-words-in-the-roster-october-24-2026-0651-test)). Only in expeditions with `pasts` (new ones); in older ones requests are as before except the say clause, quiet when alone, the style and the eviction order.
+- **View** (`PolarNpcMind.Snapshot`). `past` (after `expression`): the explorer's own card (`PolarPersonalRecords.Past`, 373-435 bytes of ASCII), only while `Hearers` is not empty: others alive, awake and within `promiseHearingMetres` (30 m), the test `Dialogue` already made, now shared as `PolarNpcMind.Hearers`. With it, `toldBefore` (after `ownWords`): the newest two words about pasts the explorer kept whose speaker, listener or subject is the partner (with no partner, anyone in hearing), leaving out text already in `dialogue` or `ownWords`, cut to 200 characters. A keepsake in `ownInventory` reads "#id Keepsake x1, Your pocket watch" (`KeepsakeName`, as this explorer knows its owner).
+- **Lines** (`ArkNpcClient` converter): a kept record is "day 2, 14:00 Bell #2 to me about Bell #2 at <the hut's name>: …", with "someone unidentified #id" for a person not yet met, "anyone" for no listener and no place where it was not at a hut.
+- **Instructions.** The say clause was "spoken now, … intentions only, never claim things done", which forbade telling a past; it is now "heard now by those within hearing, one or two short sentences, "" for silence; claim nothing done here that your events or lastResult do not show; no numbers or ids". With a past, a last clause (`PastPolicy`, after the commands so the "Commands: " parse holds): the past is the explorer's own, to tell as I; others know only what it told them; one detail at a time or nothing; the "Closer:" part only when the talk calls for it; speak of the keepsake, never show or hand it over in words; no news from home since leaving; `about` is whose life before the expedition the say tells of (home, family, work, a keepsake: `knowledge.actor` for its own, that person's # for theirs), -1 when it tells of nobody's (the here and now, places, plans).
+- **Decision.** `about` is in the schema only with a past (strict, so required); `NpcDecision.about` defaults to -1, so a reply without it is not about the player. `Validate` turns an id that is neither the explorer, a person in view nor a known name into -1 (resolved, not refused).
+- **Records** (`PolarTold`: at, site, speaker, listener, about, text; `PolarActorState.told`, 60 kept, oldest out, saved for everyone). `PolarNpcMind.Dialogue(…, about)` gives one record to the speaker and to every hearer, at the hut the speaker is in (`Here`, else -1). `PolarNpcDirector.Apply` receives the words it answers (`notice.heard`, or the player's text in `Talk`): when `about` names someone other than the explorer, those words are kept too, as the partner's, unless already kept (the player's own past, or a retelling such as "Bell told me…").
+- **Quiet when alone** (`Apply`). Speech needs `Hearers` (live days had 163-415 lines a day spoken to nobody); a note still takes `say` as its text.
+- **Calmer speech** (`Style`). Leaves out the reasoning order and the disclosure style, and the cadence "Use pairs of sentences, with the second identifying risk" reads "Use pairs of sentences"; address, tone and confrontation stay.
+- **Memory.** When events are full, solitary ones (no other person) go before those with someone, after salience (`OrderBy(salience).ThenBy(e.other>=0)`).
+- **Bound.** `Fits` allows 5,200 bytes (was 3,900); `Fit` aims at 4,900 and trims `toldBefore` to one once events are down to four and drops it after the last events, before the last dialogue; the own past is never trimmed. Heaviest constructed request 4,915 bytes (`--prompt-bounds`, with 60 kept records of 400 characters each).
+- **Checks** (`Tools/CloudNpcCheck`): 191 core (47 new: the card only in its owner's request and the clause last; `about` in the schema only with a card, id 99 to -1, a missing `about` -1; no card alone or beside a sleeper, none at `pasts` 0; records for speaker, listener, player and hearers, none for a sleeper, for someone 42 m away or for a late arrival's earlier words; a retelling keeps teller and subject; `Talk` with `about` 0 keeps the player's words once; records survive 60 lines and 100 beliefs, a round trip and the cap; `toldBefore` the newest two, cut, without repeats, rendered by the converter, absent alone; alone, silence and no record while a note keeps its text; solitary events go first), 43 prompt-bound, 6 physical-event, 2 call, 2 deadline and 3 information-boundary checks.
+- **Live provider** (`--live-pasts`: each of the twenty, as a stranger and as familiar company, asked "What did you bring from home?" and one of the other two ready questions, whose replies should name nobody's past; ¥0.29 a run). With the first wording of `about` ("the #person whose past your say tells or answers") 21 of 40 home replies were tagged as the player's past. The second ("whose past your say speaks of", which `ks-01` carried) tagged 30 of 32 replies naming the keepsake as the explorer's own but also 23 of 40 replies to the other questions, such as "Hut 01 in District 01. I saw a stove…" (in `ks-01`'s live mode the roster would have shown such lines as "In their words"); "-1 unless your say tells of someone's life before the expedition…" cut those to 5 but tagged only 25 of 33 and twice the player. The final wording, whose life before the expedition the say tells of with -1 for the here and now, places and plans: 80 of 80 decisions valid, 34 of 34 replies naming the keepsake tagged as the explorer's own, none as the player's, and 6 of 40 replies to the other questions tagged, two of them pasts told unasked (Vale: "I'm looking for work, and the last promise of it turned out empty.") (`live-pasts-03-old-wording.json`, `-04.json`, `-05.json`). Earlier runs of the home question alone: strangers held back more often ("Just a bit of silver, something my sister made. Nothing you'd want."); familiar company told more, sometimes the closer part. Replies kept to the cards and invented no news from home; one mixed a card's detail into the answer (Nash: "A chair. It broke while we were moving."), and some ran to three or more short sentences (longest 256 characters) (`Logs/NpcAgency/live-pasts-01.json`, `-02.json`).
+- **Live tagging, before and after.** The scripted `PolarCloudRuntimeValidation` scene on `ks-01` kept ten records: three of Bell's ring, four deflections ("Tools and rations, mostly."), and three that told of no past at all (Dale's hut, Ellis's "Stay where you are, please"). The wording above was changed after it and `ks-02` carries it.
+- **Live day** (`PolarNpcDayDiagnostic`, seed 777 from the source, `Logs/NpcDayDiagnostic/ks-live-01`, ¥1.59): 643 requests, the largest 3,962 bytes; no spoken line with nobody in hearing (recorded days had 163-415). Its 40 lines with nobody within 30 m were all calls, which the `call` command records as the explorer's own words and which carry farther; the summary now counts them apart (`calls`). Nobody met within 30 m that day, so `told` stayed empty.
+
+## Seeing goods on the ground: October 20, 2026 (0.6.30-test)
+
+Goods change hands only by being put down and picked up ([decisions](../../design-decisions.md#camping-harpoons-terrain-talking-during-play-quick-bar-october-20-2026-0630-test), [gameplay](polar-gameplay.md#tents-thrown-harpoons-physical-exchange-and-the-quick-bar-october-20-2026-0630-test)); the model chooses what an explorer does about them.
+- **Perception** (`PolarNpcMind.Snapshot`). `ground`: up to four things lying (not in flight, not tents) within 10 m, nearest first, "#id Name, N m", with ", mine" for its own; `groundIds` bounds what it may name. `Fit` trims the list to one entry before anything else when a request is too long.
+- **Command** `pickup` (`Help`: "item from ground"; offered when something lies in view; `Validate` needs a listed id). `PolarNpcSimulation` walks the explorer within 1.5 m and calls the shared `PolarActions.Pickup` (reach, sight, room in the pack, the same item). "It is no longer there" and "The way is blocked" are failures it sees next time.
+- **Triggers.** `Drop` and `Pickup` call `PolarNpcInformation.Witness` ("Put down", "Picked up"), so everyone in view gets a first-hand belief and `Pump` asks them to decide, as with words heard. Nothing is given or returned automatically; taking, leaving it, refusing or putting something down in return are the model's choices.
+- **Terms** (`ParseTerms`, `NpcTerms`, the terms help): "record #place; askRecords N; tent #tent; promise". `give #item xN` and `ask Kind xN` are unreadable now; saved commands keep the old fields for the load-time withdrawal only.
+- **Conversation.** The player's side is the RPG-style box since October 24, 2026 ([UI](polar-ui.md#the-talk-as-an-rpg-style-box-october-24-2026-0649-test)): its two ready questions are fixed sentences sent through `Talk` like typed words, and the moving dots while words are on their way are the UI's own flag, not `Busy`. `Talk`, the 300-character limit, the range and addressee rules, the gate and the lanes are unchanged.
+- **Bounds.** The heaviest request is 3,872 of 3,900 bytes (3,867 before): the removed item terms pay for the ground line and the help.
+- **Checks.** `Tools/CloudNpcCheck`: 144 core (cooperation without goods, a tin put down 3 m away seen and picked up, an unseen id refused, the pickup witnessed), 3 information-boundary, 6 physical-event (2 new: an explorer putting a tin down asks the one beside it to decide, and that one sees the tin by id), 2 call, 41 prompt-bound and 2 deadline checks.
+- **Live** (`PolarCloudRuntimeValidation`, packages `fv-04` to `fv-09`): passes on `fv-09` (68 checks, 106 requests all completed, ¥0.29). The overlay, the cloud greeting reply, the promise proposal and the keepsake put down with a word ran with Bell's own decisions (it called out, investigated elsewhere or waited, and never picked the keepsake up; the player took it back); Bell, Dale and Stranger Ellis answered the location question from the cloud, and Ellis refused the unrelated request for good. `fv-05` to `fv-07` stopped at the location question about 1 s after the keepsake shot, not after the 20 s wait for a free explorer. Bell was free when `Ready` checked, then a decision it had waiting (the witnessed pick-up) started during the 0.3 s settle before the press, and `Free` turned Ask place off. `PausePlanning` now holds planning with the director's own pause (`pausedUntil`, by reflection) and returns the action that resumes it, called right before the press so that a failed `Talk` is still answered by the queued decision. The location step uses it and notes what the panel offered (on `fv-08` Bell's note read "busy False, decision waiting True, near True, visible True, button on"); the unrelated-request scene, which `fv-08` stopped at the same way on Send, uses it from the staged offer to the press.
+
+## E on a person and words to nobody: October 18, 2026 (0.6.28-test)
+
+0.6.27-test's live Player mode failed twice on "Stranger Ellis: E opens the conversation and the two meet" and once on locations replies the explorers did not address to the player. Neither came from 0.6.27-test's change.
+- **E on a person** (`PolarMvpController.Interact`). E took the first hit of a ray from the eye. The eye is inside the player's own character controller ('Surveyor', layer 0; the ray leaves out only the ViewModel layer 10), and PhysX sometimes reports that capsule at 0 m, so nothing opened. Reproduced offline in the Editor from `stove-03`'s live start save: the cloud scenes failed Ellis in one of two runs, and repeated E presses at Ellis (staged as the scenes stage them) failed 6 of 19 times, each on 'Surveyor' at 0 m. `Interact` now uses the aim the focus already used (`Aimed`: the nearest collider in reach past the player's own body). Then 30 of 30 presses opened; in 14 the old ray met the player's own body first. When a conversation does not open, the live check notes what E met.
+- **Words to nobody** (`PolarNpcDirector.Apply`). The conversation panel shows only lines to or from the player. A decision asked for without a partner (an offer or promise proposal changing, the quiet one-minute re-ask) still answers the player's latest words, but it spoke them to anyone, so the player never saw them (`stove-02`: Bell's and Ellis's answers to "Would you share one location you know?"). Words with no addressee now go to whoever last spoke to the explorer, while they are close enough to talk (`Near`).
+- **Probe.** Twelve player-lane answers to the locations question from Bell's, Dale's and Ellis's own knowledge in `stove-03`'s save (live provider, ¥0.025): 11 valid; one refused (`investigate` naming target 0); one valid answer carried a `note` command, so its words were written as a note instead of spoken.
+- **Not changed.** Placing an item (`UpdatePlacement`) and the player's rifle shot (`PolarWeaponView`) still take the first hit of a ray from the eye, so they can meet the player's own body the same way (fixed in [0.6.29-test](polar-gameplay.md#rifle-shot-and-item-placement-past-the-players-own-body-october-18-2026-0629-test)).
+- **Results** (package `lc-01`). Gameplay 339 and live 62 pass at the first try (`Logs/PolarV7/0.6.28-test/lc-01`: 119 requests, ¥0.32, no reply needed a retry; background answers to the player's words were addressed to the player while they stood close, and to anyone after they left).
+- **Live day** (`Logs/NpcDayDiagnostic/lc-live-01`, seed 777, twenty explorers, one game day, the provider fast: median 2.93 s and P95 5.37 s a request). All twenty alive, none below 32 °C, no injuries; 605 decisions, 705 requests, ¥1.87; median 140 game s awake without a plan (149). Stove failures fell to **7.3 per 100 decisions** (44; 16.5 on `slots-live-02`, 16.8 on `stove-live-01`): lighting without oil 5 (36, 30), oil added without room 24 (46, 37), oil taken from a lit or empty stove 11 (20, 22). This is the first clean day on 0.6.27-test's stove codes, so the drop belongs to that change. 80 decisions refused (62): 31 missed the 8 s deadline, 21 named an unknown box for `take`.
+
+## Stove codes and one request limit: October 18, 2026 (0.6.27-test)
+
+The two open items of 0.6.26-test: stove commands still failed often, a stove command without n put the stove out, and the director and the client each counted 60 planning starts a minute on their own clocks.
+- **Stove codes** (`PolarNpcSimulation.Execute`, `NpcModelPrompts.Help["stove"]`). n=0 now lights and n=1 puts out (swapped), so a stove command without n no longer puts a stove out; the burner follows ("n as stove"). Lighting a lit stove and putting out an out stove count as done, as the tent burner's `SetBurner` already did. The hint is "n=0 light|1 put out|2 add 1 day of my oil if room, lights it|3 take oil if out". Heaviest request 3,894 of 3,900 bytes. A stove or burner step saved by 0.6.25/0.6.26 with n=0 or 1 now runs the other way (plans are replaced at the next decision).
+- **Tried and dropped.** Listing the stove n possible now on the stove line ("can n=0|3", build `sc-01`) made no difference: in its live day (`stove-live-01`) 42% of oil additions still failed for lack of room (45% before) and stove failures were 16.8 per 100 decisions (16.5 on `slots-live-02`, 34.8 on 0.6.25-test's day 3). The plans show a fixed recipe, "take a can | add oil | light", and the light after adding oil (which already lights it) failed 30 times; the no-op light is for that.
+- **One limit.** `ArkNpcClient` no longer keeps its own 60-starts-a-minute gate; the director's count (taken when it starts a request) is the only one. The rolling ¥20-an-hour ledger stays in the client.
+- **Not shown.** The final code's live day (`stove-live-02`) ran while the provider was degraded (264 of 571 requests missed the 8 s deadline, 261 decisions, ¥0.82; all twenty alive, none below 32 °C): 14.2 stove failures per 100 decisions, not comparable. Whether stove failures fall below 0.6.26-test's level needs a fresh day.
+- **Live Player mode fails** on this round's code: `sc-01` twice (`stove-01`: "Stranger Ellis: E opens the conversation and the two meet"; `stove-02`: Bell's and Ellis's locations replies, where the explorers answered with calls or spoke to anyone instead of the player) and `sc-02` once (`stove-03`, the Ellis check again). The Ellis check never failed on the four earlier runs; no link to this change was found (it fails before any model reply, and Ellis's saved state matches the passing runs). The same heaviest conversation decisions are unchanged (`CloudNpcCheck --live-agency`: 18/20 valid, speech in 18/20, the gate 16/16 unrelated caught and 0/21 misjudged; 19/20 and 18-19/20 before).
+
+## Stove line and planning throughput: October 18, 2026 (0.6.26-test)
+
+The third live day of 0.6.25-test showed two gaps: stove commands failed often (232 failed commands, 165 of them adding oil to a stove without room or lighting one without oil), and explorers queued for decisions (planning slots busy 1.98 of 2, median 386 game s awake without a plan). Least-change fixes:
+- **Stove line** (`PolarNpcMind.Snapshot`). The hut's stove reads "stove: lit, 1.6 of 2 days oil" (or "out, 0 of 2 days oil"): the oil in it of the days it holds, in tenths rounded up, so "1 of 2" still has room for the day that adding oil puts in. The hint (`NpcModelPrompts.Help["stove"]`) is "n=0 put out|1 light|2 add 1 day oil from my can|3 take oil". To keep the heaviest request at 3,874 of 3,900 bytes, the policy drops "choosing what to do" and the spaces around `=`.
+- **Planning slots** (`ArkNpcClient`, `PolarNpcDirector`). 4 planning slots (was 2); 1 interaction and 1 player slot, 60 starts a minute per lane and the rolling ¥20-an-hour ledger are unchanged.
+- **Connections** (`ArkNpcClient` constructor). Unity's Mono opens 2 connections a host by default (`ServicePointManager.DefaultConnectionLimit`), so every lane had shared two connections and the extra slots only queued inside the client: the first day with 4 slots (`ns-01`) took a median 4.28 s a request (2.45 s before) for fewer requests, and the live Player mode missed two 15 s player deadlines. The Ark service point now allows 6 connections, one per slot. Checked in Unity's Mono against a local 2 s server: 4 concurrent requests took 2.0/4.0 s at the default and 2.0 s at 6. The provider itself did not slow at 4 concurrent requests (medians 1.77/1.98/1.84 s at 1/2/4). .NET 8 (CloudNpcCheck) and Python have no such cap, so no offline check showed it; under .NET 8 the call only warns SYSLIB0014.
+- **Live days** (seed 777, twenty explorers, one game day, against day 3 of 0.6.25-test). `slots-live-01` (stove line and 4 slots, 2 connections): 547 decisions, 602 requests, ¥1.69, 111 failed commands, 55 refused, median no-plan 218 s. `slots-live-02` (final, `ns-02`): all twenty alive, none below 32 °C, no injuries; 660 decisions (580), 732 requests (669), ¥2.06 (¥1.91), median 2.22 s and P95 4.30 s a request (2.45/3.88); planning slots busy 2.07 of 4 (1.98 of 2); median 149 game s awake without a plan (386); 72 decisions refused (89); 152 failed commands (232), of them stove oil added without room 46 (99), lighting without oil 36 (66), taking oil from a lit or empty stove 20 (26). Six requests met the client's 60-a-minute planning limit (the director counts the same limit on its own clock) and were asked again.
+- **Open.** 102 stove commands still failed in 660 decisions (191 in 580 on day 3); 10 stove commands came without n (put out).
+
+## NPC agency: October 18, 2026 (0.6.25-test)
+
+Every high-level choice an explorer makes now comes from the model, from that explorer's own knowledge; the engine carries it out with the shared actions and reports the actual result ([plan](../plans/polar-npc-agency.md), [decisions](../../design-decisions.md#npc-agency-october-18-2026-planned-0625-test)). The sections below this one describe the rule-era system and are historical where they conflict.
+
+- **Contract** (`PolarNpcMind`, `NpcModelPrompts`). A reply is `{commands: 1-4 of {kind, target, item, n}, say, quotes[, terms]}`. `NpcKnowledgeSnapshot` holds the explorer's body, own items (`#id`), the 8 nearest known places, people in view (four described, the rest as `alsoInView`), people out of sight where last seen, the hut's stove (lit or out, and its oil) and its boxes as last seen (grouped by kind), pitched tents within 30 m, offers involving it with exact terms (`PolarLabels.OfferTerms`), its plan and last result, memory, calls heard, and the trigger. `can` lists the command kinds possible now on feasibility alone (owning a rifle, being in water, having a pending offer); the instructions list them with their parameters (`NpcModelPrompts.Help`). `Validate` accepts only those kinds and only ids from the snapshot; physical feasibility is left to the executing action. A loosely named thing resolves from the explorer's own knowledge instead of failing the decision: a call to someone unknown goes to anyone, `stove`/`shelter` mean the hut here, `take`/`pour`/`place` use the box the item was seen in, and a tent command uses the one tent here the explorer may use. `terms` is one text ("give #id xN; ask Food tin xN; record #place; askRecords N; tent #id; promise"), parsed by `ParseTerms`. A "say" command is treated as speech only, invalid speech is dropped, and only exact heard words are kept as quotes.
+- **Prompt size.** Each place, person, memory and line of speech is one short line (`Lines` converter). `Fit` keeps the body, `can`, the trigger, offers and own items, and drops older claims, beliefs, dialogue and events first, then speech habits, people beyond the first, places beyond the nearest, the plan's later steps and box contents, the latest words last. Heaviest case: 3,867 of 3,900 bytes. Player messages are limited to 300 bytes.
+- **Pipeline** (`PolarNpcDirector`). `Notify(id, reason, urgent, social, partner, heard)` is the only way to ask: the simulation reports first sight or reacquisition after 30 game s, wounds, waking, body thresholds (hungry, cold, exhausted, nightfall, badly hurt) and command results; `Pump` itself notices new beliefs, events and offer or promise-proposal changes, and asks every explorer again after a quiet real minute. Urgent first, then oldest; one request per explorer; 2 planning and 1 interaction slot with 60 starts a minute each, 8 s deadlines; sleepers wait. A decision replaces the plan (`continue` keeps it), speaks its words through `PolarNpcMind.Dialogue` and answers everything queued before it. Only the decision id makes a reply stale.
+- **Failures.** Nothing falls back to rules. The plan continues while it can; otherwise the explorer waits. A transient failure retries the same question after 2, 4, 8, 16, then 30 s; a missing key, HTTP 401/403 or a spent budget pauses all requests for a minute. `mind.status` keeps the reason for diagnostics only.
+- **Player words** (`Talk`). The topic gate (`NpcModelPrompts.Topic`: the new words as data, the last four lines between the two, fixed rules with short examples) classifies first; nothing answers the words before it. `unrelated` → `MakeHostile`; otherwise the words are spoken and one decision on the player lane (15 s for both requests) answers them and its commands run. The player's consent is still a button. If the gate fails, the words are not delivered and the panel says "No answer".
+- **Execution** (`PolarNpcSimulation.Execute`). Deleted: `PolarNpcCalls`, `EatAvailable`, `RestAt`, `Camp`, `CaughtOut`, `TentAnswer`, `VisitSupplies`, `SeekWindShelter`, `TurnBack`, `CanReachInDaylight`, `PressOn`, the gunshot retreat, `ChooseRoute`'s own destination, `Respond`, the 35 m pursuit reset, automatic stowing, `RuleChoice`, `OfferSafe`. Each command reuses the old mechanics: travel and explore through the shared route search (a busy queue waits for the same place), approach and leave by straight walks (a leave goes away from the person, or from a hut within 30 m, on a straight way clear all along), shelter/exit by the hut walk path and tent entrance, investigate/take/place/pour at the box's front, stove and burner within reach, pitch at the 8 spots ahead, sleep at a cot or bag, aim, shoot (`TryShot`, n shots), stab and throw, offers and the rest through `PolarActions`. A command that cannot be done ends the plan with the action's own reason, which asks for the next decision.
+- **Harpoons.** `PolarMvpController.ResolveStrike`/`HitActor`: one segment-against-capsule test for stabs and thrown flights, for the player and explorers alike, with `ClearLine` (physics near the player, terrain and hut boxes far off) between; damage lands once.
+- **Hostility.** `mind.hostileToPlayer`, `hostileAt`, `hostileSource`. The transition is idempotent: it cancels the explorer's request, removes waiting offers and promise proposals with the player (an active promise stays; harm breaches it), speaks "You've lost your senses. I won't talk to you." once, and only the addressee keeps the request's words. While it recognises the player in sight it attacks with its held weapon, else a rifle with rounds, else a harpoon close in (`ForcedAttack`); out of sight it goes once to where it last saw them. A model's own attack on the player takes precedence; its cooperation with the player is dropped.
+- **Saves.** NpcMind gains `agency`, `agenda`, `step`, `progress`, `result` and the hostility fields; `plan` and `foodTarget` are gone. Reading a pre-agency v7 save copies the file byte for byte to `…pre-agency-<first 12 of its SHA-256>.json` (once per content), then sets empty plans; legacy requested offers become one ask. `Validate` checks plan length, step and command kinds.
+- **Checks.** CloudNpcCheck (rewritten around a scripted test model): 143 core, 3 information-boundary, 4 event, 2 call, 41 prompt-bound and 2 deadline checks. Editor rehearsal (`PolarNpcAgencyRehearsal`): 13/13. Live provider (`--live-agency`, two runs): 19/20 heaviest decisions valid; the gate caught 16/16 unrelated requests and judged none of 21 game-related messages unrelated.
+- **Live days** (`PolarNpcDayDiagnostic`, seed 777, twenty explorers, one game day of 15 real minutes each, `Logs/NpcDayDiagnostic/agency-live-01` to `03`). Every day all twenty lived, none fell below 32 °C, nobody was hurt and supplies were only consumed. Day 1: 529 decisions, 643 requests, ¥1.81, P95 3.5 s, 114 decisions refused for unknown references. Day 2: ¥1.80, 161 refused (98 loosely named places, boxes, people or tents); 44 failed commands lit a stove without oil. Day 3, with the reference resolution and the stove line: 580 decisions, 669 requests (5 missed the deadline), ¥1.91, P95 3.85 s, 89 refused (mostly `investigate`/`take` naming ids never seen); failed commands rose to 232, mostly stove commands: oil added to a full stove (99; the snapshot does not give the 2-day capacity) and lighting a stove without oil (66). The two planning slots were busy 1.7-2.0 of 2 on average, so explorers queue for decisions: the median explorer spent 195-387 game seconds awake without a plan.
+
+## Tent camp: October 17, 2026 (0.6.21-test)
+
+Explorers camp by engine rule in the new camp ([gameplay](polar-gameplay.md#tent-camp-october-17-2026-0621-test)); the planner is unchanged.
+- **Camp** (`PolarNpcSurvival.Camp`). An explorer uses its own pitched tent within 12 m, or a tent it was invited into within 30 m. It goes to the invited tent at night or below 36.5 C even when not caught out: it accepted, so it comes. It does not look at other tents.
+  - With neither and caught out, it pitches its own tent 2.2 m ahead (four directions, then at 3.2 m), at night or by day with oil, and waits out the 10 s.
+  - Inside a tent it may not sleep in (a guest asked to leave), it walks out first.
+  - In its tent it lights the burner below 36.5 C as before, walks to its bag and sleeps at night. By day, once warm or with nothing burning, it walks out; an owner then strikes the tent (5 s), retrying while within 12 m if someone is still inside.
+- **Walking in and out** (`PolarNpcSimulation.EnterTent`, `LeaveTent`). From beside or behind a tent it walks round its side to the entrance, opens the flap if it is closed, and walks through the entrance to its bag (`PolarActions.TentBed`). There it faces the bag's foot end, so the Sleep clip lies along the bag; the presentation lifts a tent sleeper 0.28 m onto it (`PolarCharacterPresentation`). Leaving, it opens the flap if needed and walks out through the entrance. Loaded tent walls stop explorers' steps like other layer-14 obstacles.
+- **Invitations** (`PolarNpcSurvival.TentAnswer`, answered at once, no cloud request). "Not now." while defending or fleeing, after harm from the asker, or to a known promise-breaker; invited into another's tent, "I am warm enough, thank you." by day at 36.5 C or warmer; otherwise `ShareTent` records the guest ("Thank you, I will come in." / "You may sleep in my tent.", or "There is no room in the tent").
+
+## Tents: October 17, 2026 (planned 0.6.18-test)
+
+Every explorer carries a tent ([gameplay](polar-gameplay.md#tents-october-17-2026-planned-0618-test)) and camps by engine rule; the planner proposes nothing about it.
+- **Caught out** (`PolarNpcSimulation.CaughtOut`, each NPC step before wind shelter): not sheltered by a hut, night or below 35.5 C, not pressing on to its destination warm (`PressOn`), and no known hut with a stove within 150 m.
+- **Camp** (`PolarNpcSurvival.Camp`, offline-checked): caught out with a packed tent, it pitches it at its feet (`Drop`), at night or by day when it has oil, and steps in (`EnterTent`). In its own tent it lights the burner below 36.5 C (kept oil, else a day of its flask's), eats as usual (frozen rations at the lit burner), and sleeps at night (`Begin(Sleep,-1,tent)`). By day, once at 36.5 C or with nothing burning, it strikes the tent and normal planning resumes. Without oil by day it does not pitch, and turns toward a fire as before.
+- It uses only its own tent (`owner`), never someone else's. A tent it cannot carry back (over 30 kg) stays where it stands.
+- The 6 kg tent counts toward its load, so a heavily loaded explorer walks a little slower. A dead person's tent lies pitched beside the body.
+- Lit tents are not hut firelight for perception (`ObserveFirelight` covers huts only).
+- **One day** (`PolarNpcDayDiagnostic -npcDiagnosticNewGame 777`, Editor window; batch mode no longer starts an HDRP world). At 06:00 on day 2 all 20 are alive, none below 32 C (lowest 34.5 C, median 37.0 C). 17 are in huts. Bell, Jones and Shaw were caught out 0.7, 1.5 and 2.4 km from home; they pitched their tents, slept from 22:15, 03:30 and 03:45 once warm, and struck them at dawn at 37.0 C. The summary now counts tents (`inTents`, `mostTentsPitched`).
+
+## Explorers on world v12 and survival rules revision 2: October 10, 2026 (0.6.9-test)
+
+The first NPC day runs on world v12 (`PolarNpcDayDiagnostic -npcDiagnosticNewGame 777`) left 4-7 of 20 explorers outside at dawn (all alive). Three causes, all fixed:
+- **Blocked doors.** A route that ran through a snowed-in or damaged door stopped at the door, and since the route was not finished the explorer never reached the "clear the entrance" step; Carter waited at a door 2.1 km from home all night. `Move` now ends the route when the door step fails at an inaccessible destination within reach of its entrance, so the explorer clears it like any arrival.
+- **Planned travel at dusk.** The planner's travel decisions (`PolarNpcDirector.Travel` → `PlanTravel`) skipped the daylight rule that the explorers' own choices obey; on v12 they set out a minute before dark and walked all night. `PlanTravel` now applies `CanReachInDaylight` to a sheltered explorer.
+- **Cold limits.** Raising "press on" and "act on cold" to 35.5 and 36 C with survival rules revision 2 left an explorer at 35.2 C after a day's walk unable to press on (it stalled outside) and turned others back mid-route. Both limits stay at 34 and 35.5 C (`PolarRulesConfig.PressOnTemperature`, `CautiousTemperature`); the eating limit follows the new 60-point portion (`EatBelow`).
+- **Hut doors on v12.** Hut pads looked for huts within 3 cells; v12's narrower cells cut them short with a 1 m step at doors, where explorers could not step (`PolarWorldCheck --explorer-routes`: 92 failing steps on seed 777, now none). See [world](polar-world.md).
+- The day diagnostic's summary now records where each explorer ends the day and the route round its cursor.
+
+## Wind-shelter and walk-back legs clear unwalkable cells: October 10, 2026
+
+Two more straight walks were tested with the explorers' step test alone (`CanMoveTerrain`, which reads the cells every 4 m). Either could clip an unwalkable cell between readings, where `Move` drops the route.
+- **Wind shelter** (`SeekWindShelter`, weather cold 2 and above). An explorer in the open at 35.5-36.5 C, or tired, walks to the most sheltered point beyond 0.5 for the wind's heading: one of eight points 16 m away, or a shelter it has stood in up to 90 m away. It chooses afresh every step, so after a stop it could choose the same leg again.
+- **Walk back** (`EndEncounter`). After approaching or slipping away from a caller, an explorer walks straight back to where it left its route.
+
+**The change.** Both legs must also pass `StraightClear`, as route legs do: every cell the leg enters, and the cells round any corner it passes within 5 cm of.
+- **Wind shelter.** The candidates pass the step test as before. The chosen one's leg must also pass `StraightClear`, else the next most sheltered is tried. Only the chosen leg is tested: on seed 777 a choice took 1.0002 tests on average, at most 2. `CellsWalkable` takes a median 13 µs on a 16 m leg and 71 µs on a 90 m leg, so a blizzard step costs each explorer about one more test, not one per candidate (up to 40).
+- **Walk back.** A way back that fails `StraightClear`, or the wall test as before, is not walked. The explorer searches a new route to the same place, as it already did when the step test failed.
+- World generation, route searches, straightening, `Move` and the boulder detours are unchanged.
+
+**Measured offline** (`PolarWorldCheck --explorer-detours`, new). It takes the explorer routes between neighbouring huts as `--explorer-routes` builds them: 478 on the game's seed-777 world cache, and seeds 12345 and 494993 from their libraries.
+- **Wind shelter.** Points every 18 m along the routes, at each of the 16 wind headings, with the shelters the explorer recorded on its way there: 2.27 million cases on seed 777.
+  - In 34,751 the explorer already stood in shelter, and in 10,869 it chose a leg. None of those legs entered an unwalkable cell.
+  - But 19 candidate legs that passed the old test did: 16 to the eight points and 3 to known shelters. Tried at every half degree of heading, as a changing wind blends through them, 3 of the 19 would be chosen (at 10, 12 and 35 of 720 headings). Each time the explorer would turn or reach shelter before the cell.
+  - Seed 12345: 7 of 12,465 chosen legs entered an unwalkable cell (6 to known shelters). Walked as `SeekWindShelter` and `Move` walk them, 4 of those explorers stopped at the same corner again and again: 70 stops in 20 steps each, one on all 20. Now none stops and all 7 reach shelter.
+  - Seed 494993: 1 of 12,554, and that explorer reached shelter before the cell.
+- **Walk back.** From points every 45 m along the routes: an approach toward a caller in eight directions 15, 35 and 60 m away, and a slip away 25 m. Each is walked as `Walk` walks it, then the straight way back is tested.
+  - Seed 777: 1,752,262 ways back passed the old test. 13 of them (from 6 departure points) entered an unwalkable cell, and on 4 `Move` drops the route.
+  - Seeds 12345 and 494993: 7 and 3 entered, none dropped.
+- **Now**, on all three seeds, no chosen shelter leg and no walk back enters an unwalkable cell or fails a step.
+  - Ways back that pass within 5 cm of a corner are refused too: 995 of 1.75 million on seed 777 (0.06%) search a new route instead, and 1,037 and 848 on the other seeds.
+  - 2 shelter choices change on seed 777 (7 and 1 on the other seeds). In one case on seed 777 the only sheltered point in reach has a leg that crosses 5 cm of an unwalkable cell, so the explorer no longer walks there at those headings.
+
+**In the Editor** (`PolarShelterLegCapture`, the game's own seed-777 world, the production `Step` at the game's 1 s NPC step):
+- **Walk back.** The 13 offline cases. Before, all 13 walked back, and `Move` dropped the route on 4, 0.50-0.52 m before the cell (Pike three times, Quinn once). Now all 13 search a new route to their destination at once, and none stops in 40 steps.
+- **Blizzard** (`.Blizzard`). The 3 shelter cases above, each at its heading, set mid-blend. Replayed with the game's own tests, the old rule chooses the clipping leg in all 3. The production step now chooses 6 legs in 20 steps, none entering an unwalkable cell, with no stop; 2 explorers reach shelter.
+
+**Captures** (record `shelter-walkback-legs`, two pairs, inspected). Pike walks back after approaching a caller on his way from sector 37 hut 4 to hut 7.
+- One second after he reached the unwalkable cell, he stood at its edge, planning anew. Now he is 20 m away on a new route.
+- Five seconds after that moment, he was 11 m from the cell on a new plan. Now he is 32 m from it.
+- Only the explorer and his shadow differ (1.29% and 0.17% of pixels).
+
+The wind-shelter change has no pictured case: on seed 777 no explorer stopped on its way to shelter.
+
+**One ordinary day** (`PolarNpcDayDiagnostic -npcDiagnosticNewGame 777`). At 06:00 on day 2 all 20 explorers are alive and sheltered, none below 32 C (lowest 34.7 C, median 37.0 C), all within 2.7 m of their hut.
+
+**Package 0.6.8-test.** All 12 Player modes pass, 3,136 checks (`Logs/PolarV7/0.6.8-test/suite-01/`); see [current status](../current-status.md#wind-shelter-and-walk-back-legs-clear-unwalkable-cells-october-10-2026-test-package-068-test).
+
+## Route legs clear unwalkable cells: October 10, 2026
+
+`Move` drops an explorer's route where a half-metre step fails the explorers' step test (`CanMoveTerrain`): it clears the route and sets `destinationSite=-1`. Explorers whose route clipped the corner of an unwalkable navigation cell stopped there, and often searched the same line again. There were two causes.
+- **Straightening read the cells every 4 m.** `LineClear` tested a straight leg with `PolarFracturedWorld.Segment`, which reads the cells every 4 m, so a leg could clip a cell between two readings. On seed 777's 478 explorer routes between neighbouring huts, 19 legs entered an unwalkable cell (27 failing steps on 7 routes). Seeds 12345 and 494993 had 14 and 22 legs (29 and 39 steps).
+- **Single-precision steps bowed legs off their line.** `Move` stepped on from each rounded position. Positions are floats 4-8 mm apart at the world's coordinates, and the same rounding repeated step after step. On seed 777 a leg bowed a median 12 cm, and up to 86 cm, off the line it was tested on.
+
+**What explorers did.** `PolarRouteCornerCapture` ran in the Editor on the game's own seed-777 world, with the production `Step` at the game's 1 s NPC step and every other explorer asleep. The game's routes failed on 7 of the 478 walks (23 steps). Walked:
+- on 6 the explorer stopped at the corner;
+- on 4 of those it then looped: it walked back to search a route to the same hut and stopped at the same corner every 21-33 s, never arriving (Irwin, sector 30 hut 9 to hut 5: 29 stops in 600 s);
+- on 2 the new route missed the corner;
+- on 1 its steps passed over the clipped corner.
+
+**The fix.**
+- **`StraightClear`.** Straightening and the hops between a hut's approach point and its route end (`RouteEnd`, `RouteStart`) now test a leg with `Segment` as before plus `PolarFracturedWorld.CellsWalkable`.
+  - It reads the leg every half metre and traces every cell between two readings along the line joining them on the grid, so no cell the leg enters is missed.
+  - A leg between two cell centres often passes exactly through a cell corner. So the four cells round any corner it passes within 5 cm of, and the cells within 5 cm of its ends, must be walkable too.
+- **`Move` steps along the leg's own line** (`Along`): each step ends on the line from where the explorer set out toward its waypoint, so rounding no longer accumulates. Legs now stay within 2 cm of their line (median 4 mm). The leg starts afresh after a load, a new waypoint, or anything that moves the explorer more than 5 cm off it.
+- **Each part alone left failures.** In a single-precision emulation of `Move` on the three seeds:
+  - straightening alone left 0, 2 and 5 failing steps;
+  - stepping alone left 14, 15 and 20.
+
+  In the Editor, straightening alone left Olsen (sector 36, hut 9 to hut 4) stopping once: his walk had drifted 15 cm across a corner his leg clears by 8 cm.
+- **A route goes where it was searched for.** The first NPC day run with the two changes above left 3 explorers out at dawn, 1.1-1.3 km from home at 33 C.
+  - A travel plan's route search was still running when a visit inside the hut (a supply box, the cot) set `destinationSite` to that hut. `ChooseRoute` then joined the route toward the other hut to that hut's walk path.
+  - With the hut it left as its destination, `TurnBack` never turned the explorer back.
+  - The race is older. Searches now take about twice as long, which leaves more game steps for it.
+  - `ChooseRoute` now restores the destination the search was for (kept with the route's ends).
+- **Unchanged:** world generation (world hashes), the grid search, `Move`'s step test, and the boulder field and its detours (`WayRound`, `LegWalkable`). Detour legs are now walked on the lines `LegWalkable` tested.
+- **Cost.** Straightening takes a median 80 ms per route on the route search's background thread (was 43 ms; at most 232 ms, was 118 ms). Seed 777's routes keep 24 more waypoints (8,347), with the same total length.
+
+**Verification.**
+- **Offline.** `PolarWorldCheck --explorer-routes` ran on the game's seed-777 world cache and the seed 12345 and 494993 libraries; `--explorer-routes-coarse` now runs the old straightening for comparison.
+  - The straight walk fails no step (was 27, 29 and 39).
+  - Read every 5 cm, no leg enters an unwalkable cell (was 19, 14 and 22 legs).
+  - The single-precision walk, as `Move` steps with 4.5 m per NPC step, fails no step (was 17, 26 and 38 steps, on 7, 10 and 15 routes) and keeps within 1.7-2.0 cm of each leg.
+  - Boulder detours still keep every step clear: 517, 527 and 516 passes (were 517, 528 and 514 on the old routes), none left on its line, no step in rock. World hashes are unchanged.
+- **In the Editor.** On the same fixture the scan finds no failing step on the 478 walks; stepping on from each rounded position instead, Olsen's 2 remain. All 7 earlier failing walks now arrive without a stop.
+- **Captures** (record `route-cell-corners`, two pairs, inspected). Irwin's walk from sector 30 hut 9 to hut 5:
+  - One second after reaching the corner, he stood 0.35 m before it; now he is 11 m past it.
+  - Five seconds later he was walking back 15 m to re-plan; now he is 28 m on.
+  - Only the explorer and his shadow differ (1.1% and 0.08% of pixels).
+- **One ordinary day** (`PolarNpcDayDiagnostic -npcDiagnosticNewGame 777`, world `66D0F53098C6C4FF`). At 06:00 on day 2 all 20 explorers are alive and sheltered, none below 32 C (lowest 33.8 C, median 37.0 C), all within 2.7 m of their hut. Jones, Lane and Olsen made the same two trips toward a neighbouring hut as in the boulder run (at most 531 m out) and turned back.
+- **Package 0.6.7-test.** All 12 Player modes pass, 3,136 checks (`Logs/PolarV7/0.6.7-test/suite-01/`); see [current status](../current-status.md#explorer-routes-clear-unwalkable-cells-october-10-2026-test-package-067-test).
+
+**Remaining.** The walks to wind shelter (`SeekWindShelter`) and back after an encounter (`EndEncounter`) still tested their straight legs with `CanMoveTerrain` alone, which reads the cells every 4 m. Fixed the same day: see [Wind-shelter and walk-back legs](#wind-shelter-and-walk-back-legs-clear-unwalkable-cells-october-10-2026).
+
+## Explorers walk round boulders: October 10, 2026
+
+World v11 boulders (1.4-2.8 m, `PolarBoulderField`) stop the player, but explorers' routes and steps ignored them. On seed 777's 478 explorer routes between neighbouring huts (each hut to its two nearest in its district, both ways, built as `ChooseRoute` builds them), 491 of 7,845 route segments pass a boulder. Walked straight, as before, they take explorers into 338 boulders.
+
+Explorers now keep `PolarBoulderField.Reach` from each boulder's centre. That is the rock's own footprint plus 0.6 m (the body capsule's 0.34 m and a margin). The footprint is 0.63 times the boulder's size: the furthest any of the six boulder prefabs' collision meshes reaches above the ground, under the scatter's yaw, tilt and sink, is 0.623 (measured by `PolarBoulderPassCapture` with rays against the colliders). Boulders are pure data, so loaded and unloaded explorers pass them alike.
+- **Waypoints round a boulder.** Before each step, `Move` looks 12 m ahead (`RoundBoulders`). When a boulder's clearance lies in the way, waypoints round it go into the route (`PolarBoulderField.WayRound`): where the tangents round the boulder meet, then back onto the line 12 m past it, or straight to the next waypoint if that comes first. The explorer passes on the side away from the boulder's centre, unless a new leg fails the explorers' own step test as `Move` will meet it: `CanMoveTerrain` in half-metre pieces, with the cells under the leg read every 5 cm (`LegWalkable`). Then it tries the other side, else it keeps to its line, as before. Beyond the rejoining point the walk is the route's own line, so no new ground is walked. The waypoints are saved with the route.
+- **A waypoint inside a clearance** moves straight out to its edge, when that short move passes the same test.
+- **Encounter walks** (`Walk`) head round the first boulder in the way, and their targets move out of a clearance. A step round a boulder that fails the ground or terrain test is taken along the line instead. A fleeing explorer never steps into a clearance.
+- **Route searches and straightening are unchanged.** Making straightening refuse segments that pass a boulder (the first proposal) was measured and not adopted. On the same routes it added 1,001 waypoints and 19 km, turned more sharply, and still left 461 segments that needed a way round.
+- **Cost.** The field is built with the NPC simulation, behind the loading screen (5 ms on seed 777). The look ahead reads a few 42 m squares per step, and a way round is tested once per boulder met.
+
+**Verification.** `Tools/PolarWorldCheck --compact --version 11 --seed 777 --world-folder <save>/worlds/v11-777-66D0F53098C6C4FF --explorer-routes` reads the game's own world cache. .NET float rounding gives the replay another hash (`66CBB63C17D09CDD`), but layout, huts and the walkable grid match the game's archive exactly; 612 of 11,010,048 path costs differ. The check rebuilds the 478 routes as `ChooseRoute` does and walks them in half-metre steps as `Move` does, first straight (as before) and then with the change (`Logs/PolarCompactWorld/explorer-routes-final-777/explorer-routes.json`).
+- **Straight:** 2,970 steps within the body's 0.34 m of a rock footprint, at 338 boulders.
+- **With the change:** no step comes that close and none enters a clearance (closest 0.60 m from a footprint). There are 517 boulder passes and none is left on its line. 1,020 waypoints are added, 63 m in 2,553 km.
+- **Step test failures.** 27 steps on 7 routes fail it with and without the change, at the same points. They are pre-existing: straightening tests a segment every 4 m, and these segments clip the corner of an unwalkable cell between samples. Fixed the same day: see [Route legs clear unwalkable cells](#route-legs-clear-unwalkable-cells-october-10-2026).
+- **Other worlds.** Seeds 12345 and 494993 (.NET worlds from their saved libraries) give the same result: 528 and 514 passes, none left on its line, no step in rock, and step test failures unchanged (29 and 39).
+
+The [capture](../logs/evidence/2026-10-10/explorers-round-boulders/) stages Bell on the home district's first route segment that passes through a boulder (hut 0 to hut 3). Before, Bell walks within 0.52 m of a 1.66 m boulder's centre, inside its 1.04 m footprint. Now Bell passes 1.66 m to its side and comes no closer than 1.70 m.
+
+## Journeys in world v11: October 9, 2026
+
+World v11 halves the walk between neighbouring huts (about 2.8 km), so explorers now see journeys they could almost make. An ordinary day on a new seed-777 v11 world (`PolarNpcDayDiagnostic -npcDiagnosticNewGame 777`, which now starts a new expedition and fills the player's home stove directly, since v7 fuel must first be investigated in a container) showed the gap: Bell set out for another hut in the afternoon and again at dusk, turned back cold about 550 m out each time, and reached home at dawn at 28.2 C. The other 19 were sheltered and warm.
+
+At about 4 m/s and roughly 1 C lost per 100 s outdoors, a 2.8 km walk (about 700 s) is longer than the 600 s day and ends well below 34 C, so no explorer can reach another hut in one daylight under the current cold and speed rules (none did in v9 or v10 either). `PolarNpcSimulation.ChooseRoute` now lets a sheltered explorer (save version 7 and later) set out only on a journey that `CanReachInDaylight`: a quarter longer than the straight line, at the present pace, in the present weather without shelter, ending before dark and above `PressOnTemperature` (34 C). Unknown ground is left for a day with at least half its light ahead. Explorers already outside still turn back as before.
+
+The same day run with the guard (`Logs/NpcDayDiagnostic/v11-777-guard/summary.json`): at 06:00 on day 2 all 20 explorers are alive and sheltered, none below 32 C (median 37.0 C), all within 2.7 m of their stove. Exploration balance between huts (cold rate, walking pace, day length) remains open, as before.
+
+## HP and investigated supply containers: October 7, 2026
+
+Current v7 source follows the approved [experience revision](../plans/polar-experience-v7.md). The same HP, dangerous hunger/cold and recovery rules run for loaded and unloaded people. Thirst no longer appears in engine survival priorities, model snapshots, prompts or call needs. A weakened explorer eats real carried food toward satiety 90 to permit slow recovery; an unhurt explorer retains the usual meal target 65. Visible health is described as weakened or severely weakened, without claiming that all lost HP is a physical wound.
+
+`PolarNpcSimulation.VisitSupplies` chooses a container from that explorer's own snapshots or visible unexplored boxes, walks to its physical approach point, runs `BeginInvestigation`, and transfers one actual item through `TakePhysical`. It does not consult unopened live contents to select loot. Fuel comes from `PourFromCanister`, not a site's aggregate quantity. A hungry explorer checks available food and unexplored boxes before sleeping; cold/rest needs still take precedence. Reading a signed note is a separate local visit at the note board. `appearanceId` selects the persistent character prefab and the Search action presents the Investigate animation.
+
+Surplus gifts and exchanges count all carried tins, including the separate count-one instances produced by physical pickup. The offer transfers one real identity and retains the last food tin; it does not require an old multi-tin stack. A director-level regression exercises the actual autonomous offer and its bilateral commit.
+
+**Verified offline:** CloudNpcCheck passes 1,605 cumulative assertions with `--information-boundaries --physical-events --calls --prompt-bounds --fault-deadlines`; no live model API was called. Gameplay checks cover identical player/NPC physical reach and shared HP. This verifies shared engine authority and prompt boundaries. The final source/package-bound v7 Player acceptance passes all 3,120 checks, including actual NPC route support, loaded physical reach, character motions, rest and dawn survival; see [acceptance](../logs/evidence/2026-10-07/polar-experience-v7/acceptance.md). Historical 0.5.20 live-cloud results below belong to that earlier package.
+
+## Calls and noticing cold: October 7, 2026
+
+Two hand-offs are finished at the user's request, which also authorized the edits to NPC-owned files. Explorers now call out, answer calls and react to them (GDD 3.4.3), and they notice when someone else is visibly cold (GDD 5.9). Evidence: [npc-calls-and-cold](../logs/evidence/2026-10-07/npc-calls-and-cold/).
+
+**Calls and reactions.**
+- **Engine record.** `PolarActions.Call(speaker,call,addressedTo=-1,answer=false)` still gives every awake listener within call range a "Called out" belief. It now also keeps an unsaved list of the calls each listener heard, with the voice's position, for 120 game seconds (at most 8 each). `ForgetHeardCalls` marks them handled, so frozen acceptance scenes don't answer stale calls.
+- **Rules.** The rules are in `PolarNpcCalls`, appended to `PolarNpcSurvival.cs` so both offline tools compile them. Dispositions come from personality weights:
+  - wary: Frightened, or a Hoarder with strangers;
+  - silent: Hoarder, Ordinary survivor;
+  - helpful: Sharer, Schemer, Organizer, Moralist;
+  - in need: satiety under 40, below 35.5 °C, hydration under 40, or injury over 25.
+- **Answers.** Words then movement, by precedence, for "Who's there?" / "Stay where you are." / "I need help.". "I mean no harm." is never answered, which ends an exchange.
+
+  | Who | Answer | Movement |
+  |---|---|---|
+  | Danger (an identified promise breaker, or anyone seen aiming) | "Stay where you are." | avoid |
+  | Wary | "Stay where you are."; nothing to "Stay" | avoid on "Stay" |
+  | In need | "I need help."; nothing to "Help" | hold on "Stay" |
+  | Silent | nothing | hold on "Stay" |
+  | Helpful | "I mean no harm." | hold on "Stay", approach on "Help" |
+  | Others (Pragmatist) | "I mean no harm."; to "Help", "Who's there?" from a stranger, nothing from someone met | hold on "Stay" |
+
+- **Opening calls.** An explorer may call to the nearest person in view within call and sight range, when nobody is within 4 m:
+  - "Stay where you are." in danger;
+  - "I need help." in need;
+  - "Who's there?" to a stranger, or a warning if wary, or nothing if silent.
+
+  A recognised person who is fine gets no call. The same opening is not repeated to the same person until they have been beyond calling range, a game day has passed, or, for "I need help.", the need has ended.
+- **Pacing.**
+  - Calls are answered within 5 game seconds, at least 4 s after the explorer's own last call.
+  - At most 2 answers per pair per 120 s.
+  - Openings need 20 s since the explorer's last call and no exchange between the pair for 120 s.
+  - Reactions use only calls addressed to anyone (the player's) or to that explorer, so bystanders stay quiet.
+- **Identity.** A voice counts as known when the listener has met the speaker, at any range (as heard words are attributed); a face is recognised within recognition range (40 m; 12 m in a blizzard). An unidentified voice is never taken for a known promise breaker.
+- **Movement** (`PolarNpcSimulation.Encounter`, after the wind-shelter step):
+  - hold faces the voice for up to 15 s and keeps the route;
+  - approach walks to the voice, rounded to 10 m and 10 degrees, or to the live person while in view; it stops in talking range with one social request and gives up after 90 s;
+  - avoid walks to one probed point 25 m away for up to 30 s.
+
+  After an approach or avoid the explorer walks back to where it left its route when that line is walkable, and otherwise re-plans to the same place. A hold or approach toward someone seen to be dangerous turns into an avoid.
+- **Survival first.** No encounter movement:
+  - at night, sheltered or at a lit fire;
+  - below 35.5 °C, under 40 water or over 75 fatigue;
+  - within the defence hour of an attack, or within half a game hour of a gunshot (so the existing retreat runs);
+  - with anyone within 4 m;
+  - while a route search is pending.
+
+  Travel planning, rest and turning back end any encounter. Words are still allowed at night.
+- **Planner.**
+  - Planning (not conversation) gains `approach-<call>` and `avoid-<call>` for the latest voice heard, with no speaker id, so the model cannot link a voice to a remembered stranger.
+  - The planning view gains a compact `heardCalls` list (the last two within 60 s, named only if met), which Fit never trims.
+  - No plan starts while an explorer holds, approaches or avoids.
+  - Opening calls are the engine's alone; the planner offers none, because the rule always got there first.
+  - The shared Policy text is unchanged.
+- **Fixed words between explorers.** GDD 3.5 and the cloud milestone decisions say NPC-to-NPC conversation is model-written. The four calls are read as a physical signal, the same vocabulary as the player's Q menu, not as conversation; the engine owns them as it owns defence.
+
+**Noticing cold.**
+- **Perception.** `NpcVisiblePerson.coldSigns` is "Shivering" or "Shivering, frosted" (`PolarBodySigns`). It is filled only within recognition range, deliberately narrower than the injury band's sight range. Speech prompts get the words, no numbers, and warm people add no bytes.
+- **Memory.** `PolarNpcInformation.ObserveCold` gives an awake explorer one first-hand "Shivering" or "Frosted" belief per person every 6 game hours. Example: "An unidentified expedition member was shivering, with frost on their clothes, near P12 / Hut 01."
+  - It is called after `ObserveBodies`, and an unsaved record keeps the throttle even when memory is full.
+  - Sightings have salience 0, like heard words, and rank below other news in the snapshot's four-belief window.
+  - Retelling never offers someone their own shivering as news.
+- **Lighting a stove.** The background planner offers `warm-<site>` (before `note`) when the explorer is at a habitable hut with a usable, unlit stove and a visibly shivering person is at that hut, within recognition range.
+  - **Fuel:** the fuel kept in the stove (LightStove), or one day of the explorer's own fuel (FuelStove) when it carries at least two days and one flask holds a full day.
+  - **Rule score:** friendliness − scarcity/(3 for kept fuel, 2 for own fuel) + 50 if frosted (30 if only shivering) + 1. The +1 wins ties.
+  - **Who helps, with kept fuel:** Sharer, Schemer and Organizer for a shivering person; Moralist and Ordinary survivor too for a frosted one. Hoarder, Frightened and Pragmatist never do.
+  - **Words:** the explorer says "I will light the stove so you can get warm." to the player; when the model chose it for another explorer, the model writes the words.
+  - In play this is rare, because cold explorers light their own stove first (RestAt). Noticing shows mostly through re-planning and speech.
+- **Prompt fit.** Fit gains a last step for decisions only: it drops the speech habits and keeps the parameters. This also fixes two existing overflows: a cold explorer's conversation decision of 3,946 bytes and a 4,030-byte repair request, both over the 3,900 limit and so refused.
+
+Prompt maxima with both features, against the 3,900-byte limit:
+- conversation decisions: 3,478 bytes (was 3,847);
+- with others cold: 3,610 bytes, or 3,694 with the repair suffix;
+- planning: 3,599 bytes;
+- expressions: 3,600 bytes.
+
+Verification:
+- **Captures** from the seed-777 start save, in rule mode:
+  - an Organizer answers the player's "Who's there?" with "I mean no harm.";
+  - a Schemer 30 m away opens with "Who's there?";
+  - a walking Moralist told "Stay where you are." stands still with its route kept (it walked 25 m before);
+  - a Sharer lights its hut's stove for the shivering player and says so.
+
+  Only the heard lines, the held explorer and the stove's light differ.
+- **Review.** An adversarial review in four areas (survival, cloud prompts, acceptance, correctness) confirmed 18 findings, all fixed, among them:
+  - an approach toward a rifleman that blocked the gunshot retreat;
+  - a route that a re-plan silently dropped after an encounter;
+  - the caller's id leaking to the planner;
+  - a cold-sighting throttle that failed with full memory;
+  - repeated openings.
+- **Offline checks.**
+  - CloudNpcCheck: core 419, `--information-boundaries --physical-events` 544, `--prompt-bounds` 1,368, and a new `--calls` mode at 526.
+  - PolarGameplayCheck: 520/520.
+  - The historical NpcV5CandidateCheck still builds (new checks are behind `NPC_CALLS` and `NPC_COLD`).
+- **Acceptance.** The gameplay mode checks that a stranger opens with a call, that an explorer answers the player's call, that "Stay where you are." holds a walking explorer, and that an explorer 4 m away sees the player's frost and remembers it.
+
+## Route straightening: October 6, 2026
+
+Explorer routes are now straightened by line of sight (user request), off the main thread. A grid route steps cell by cell on a grid whose outer-ring cells are about 12 m by 120 m, so it zigzags. Evidence: [npc-route-straightening](../logs/evidence/2026-10-06/npc-route-straightening/).
+
+- **On the search task.** The route search task now runs `Straighten(PolarPathfinder.Find(...))`. It keeps both end cells and drops every cell the explorer can skip on a straight walk of at most 400 m. A skip must pass the walking test (`PolarFracturedWorld.Segment` with `CanMoveTerrain`'s walkability) and keep 8 m from every hut. Route assembly on the main thread is unchanged.
+- **Thread safety.** The test reads only immutable world data, apart from two caches built on first use: the gap banks (`PolarShapePlan.Banks`) and each sector's relief centres. `PrepareStraightening` fills both, with the huts' positions, on the main thread before the first background straightening.
+
+Verification:
+- **Captures** (`PolarNpcRouteCapture`, now with a third case). Lane's route from P13 Hut 14 to P13 Hut 01 (2,034 m apart) is 2,314 m (was 3,223 m), and its zigzag is gone. Irwin's two routes keep their lengths (933 m and 520 m), with redundant points dropped.
+- **All sites** (`PolarNpcRouteDiagnostic`). A route from each site to its nearest neighbour is now a median 1.18 times the straight line (route ends alone: 1.35; originally 1.79). The 25 routes still over twice it cross a district border, where the terrain walls stay by decision. Straightening costs a median 32 ms per route (max 430 ms) on the background thread.
+- **One ordinary day.** All 20 explorers are alive, sheltered and watered at dawn (median 37.0 °C). During the day they made 46 trips, reached at most 832 m from home, and never fell below 32.9 °C.
+- **Built-game rehearsals.** Editor rehearsals pass: gameplay 216/216, continue 30/30, buildings 396/396 and terrain 26/26, with no exceptions from the background thread.
+- **Package 0.5.12-test.** All 1,827 offline built-game checks pass. Frame-time P95s are 16.67–16.80 ms, and the highest memory peak is 4.83 GB ([gameplay](polar-gameplay.md#built-game-acceptance-for-v6-october-5-2026)).
+
+## Route ends beside the hut: October 6, 2026
+
+Explorer routes no longer double back near huts (user request). `PolarPathfinder.HutEntrance`, the navigation target of every hut, lies five template cells in front of the hut. On the polar navigation grid's outer ring, where a cell is about 12 m around and 120 m deep, that is a median 571 m from the door, so routes walked out to it and back at both ends. Only NPC routing in `PolarNpcSimulation` changed; the pathfinder, world generation, the player's survey routes and the terrain validators did not. Evidence: [npc-route-ends](../logs/evidence/2026-10-06/npc-route-ends/).
+
+- **Route ends (`RouteEnd`).** A route to a hut ends at a walkable cell on the two rings just outside the hut's 7×7 footprint. The cell chosen has the shortest hop to the hut's approach point (12 m in front of the door) plus straight distance toward the explorer. Its hop must pass `CanMoveTerrain` and keep 8 m from the hut. Each hut's candidates are built once; hops are tested lazily and cached. If no ring cell qualifies, the old entrance cell is used.
+- **Route starts (`RouteStart`).** The search starts at the explorer's own cell. If the explorer stands inside a hut's footprint, which on the outer ring reaches about 480 m from the hut radially, the start depends on where it is:
+  - at that hut's door: the hut's route end toward the goal;
+  - elsewhere in the footprint: that hut's ring cell on the way, reachable in a straight line;
+  - inside the destination's own footprint: no search at all, just the approach point and in through the door.
+- **Walking.** Route cells are walked at their centres, with the approach point added beside each hut. Before, a route that crossed another hut's entrance cell jumped to that hut's door.
+
+Verification:
+- **Captures.** Before and after captures of Irwin's planned route from above (`Assets/Editor/PolarNpcRouteCapture.cs`):
+  - From inside hut 149 to hut 158 (899 m apart): 933 m, at most 17 m off the straight line. Before: 2,073 m, swinging 612 m to the side.
+  - From open ground 500 m away: 520 m. Before: 1,703 m.
+- **All sites** (`Assets/Editor/PolarNpcRouteDiagnostic.cs`). A route from each site to its nearest neighbour is now a median 1.35 times the straight line (was 1.79); 34 routes are over twice it (was 98). The mean is 5,457 m (was 6,483 m) against 3,080 m straight. 303 routes got shorter, by a median 1,079 m; 21 got longer, by a median 87 m (at most 292 m). The production `RouteEnd` makes the analysed choice at all 324 sites. Its cost is a median 0.34 ms the first time a hut is used (max 5.0 ms) and 0.01 ms afterwards.
+- **Built-game rehearsals.** Editor rehearsals of the built-game modes pass: gameplay 216/216, continue 30/30, buildings 396/396 and terrain 26/26.
+- **Package 0.5.11-test.** All 1,827 offline built-game checks pass, with frame-time P95s of 16.67–16.73 ms and a highest memory peak of 4.78 GB ([gameplay](polar-gameplay.md#built-game-acceptance-for-v6-october-5-2026)).
+- **One ordinary day** (`PolarNpcDayDiagnostic`). At 06:00 on day 2, all 20 explorers are alive, sheltered and watered (median 37.0 °C). During the day they made 47 trips, reached at most 789 m from home, and never fell below 32.7 °C.
+  - A first version also used ring cells inside the destination's own footprint. Explorers approaching home were sent out to a ring cell and back on every new plan; one fell to 29.0 °C and another was still outside at dawn.
+
+Remaining, measured by the same diagnostic:
+- **Straightening.** Done the same day, off the main thread: see [Route straightening](#route-straightening-october-6-2026).
+- **District borders (kept by decision).** 22 of the 324 routes cross a district (sector) border and run a median 11.6 times the straight line; for example, 3.8 km becomes 66.9 km, and Pole Station buildings 84 m apart are 11.4 km apart by route. The pathfinder is not the cause: `PolarTerrain.BorderAllowed` makes every border a mountain wall 31–62 cells deep on each side, with one pass about ±8 cells wide in the middle of each open edge. Explorers and the player both obey it through `CanMoveTerrain`. The user decided on October 6 to keep the walls as world design.
+
+## Notes read by their writer: October 6, 2026
+
+`PolarNpcInformation.ReadNotes` now skips notes the reader wrote, the same guard `Hear` has for a speaker's own words. Before, searching a hut that held your own note filed it in your field journal as a "Signed note" report from yourself, under your own role label ("the District 01 observer"); explorers did the same with their own notes. Another reader still files a note as a signed report from its writer. Evidence: [own-note-journal](../logs/evidence/2026-10-06/own-note-journal/).
+
+Verification:
+- Before and after captures of the field journal after a search of the birth hut holding the player's note (`Assets/Editor/PolarOwnNoteCapture.cs`): the self-filed entry is gone, and the first-hand "Note left" entry is unchanged.
+- CloudNpcCheck has two new core checks: the writer reading its own note files nothing, and another reader files it from the writer. Without the fix, the first one fails. Counts are now 397/400/418 core, 480/487 physical-event and 540 prompt-bound; PolarGameplayCheck still passes 496/496, 20,607 and 37.
+- The built-game continue check "Reading your own note adds no report to your own journal", which failed on 0.5.8-test and 0.5.9-test, passes in an Editor rehearsal (30/30). Package 0.5.10-test carries the fix and passes all 1,827 offline checks, including continue 30/30.
+
+## Night survival and travel: October 5, 2026
+
+The fixes for the first-night freeze (user decisions today: implement A–C, and for exploration "press on if arriving warm"). They change NPC engine rules for v6 saves, which apply with or without the cloud; only planning choices differ between the two.
+
+- **Movement (A).** `PolarNpcSimulation.Move` walks the step's whole speed budget in 0.5 m segments. Each segment still checks doors, terrain and obstructions, and the step stops early only when a check fails or a segment makes no progress. Explorers again cover 5 m per one-second step on open ground; the v6 door checks had cut this to 0.5 m.
+- **Night (B).** `PolarNpcSurvival.RestAt` keeps an explorer at a lit hut that shelters it through the night and puts it to sleep there; v6 sleep ends at 06:00, as for the player. Before, a warm, watered explorer walked out into the dark.
+- **Turn back (C).** In `PolarNpcSimulation.Step`, an explorer on a route, to a known site or to unknown ground, that is below 35.5 °C or under 40 water heads for the nearest known fire at once. Before, it walked on until its next planning decision, which can be many game minutes away while the world runs ten times faster.
+  - "Nearest" is by straight-line distance. A hut whose store was seen without spare fuel still counts, because the record shows the store (`observedFuel`), not whether the stove burns.
+  - Nothing changes when that fire is already the destination, the explorer is within 8 m of it or presses on, its own route search is pending, or both search slots are busy. A full queue would pass the choice to `ChooseRoute`, which prefers huts not seen empty, so the explorer walks on and tries again at the next step.
+- **Press on (D).** `PolarNpcSimulation.PressOn` estimates the temperature at arrival from:
+  - the length of the remaining route;
+  - the present walking speed (condition and the terrain's travel cost);
+  - the outdoor cooling the survival step applies (weather, terrain shelter and wetness).
+
+  At `PressOnTemperature` (34 °C) or above, the explorer keeps going. Both the turn-back and the planner's "rest" choice ask: `PolarNpcDirector` has a `PressOn` hook, bound with `Travel` in `PolarMvpController.BindRules`.
+
+**Verification** ([evidence](../logs/evidence/2026-10-05/npc-night-survival/)).
+- **Before and after captures.** From one fixed start save, with planning off and the other explorers held (`Assets/Editor/PolarNpcSurvivalCapture.cs`):
+  - Adler walks 50.0 m in 10 steps (was 5.0 m).
+  - Carter at 35 °C turns back home (was walking on toward a hut 30.6 km away).
+  - Irwin at 35.4 °C turns back to the hut behind him: his real route to the next hut is 1,703 m, and he would arrive at 31.3 °C. Placed on the same route with 350 m left, he presses on (`Assets/Editor/PolarNpcPressOnDiagnostic.cs`).
+  - Bell, warm at a lit hut at 22:30, sleeps there (was walking out into the dark).
+- **One ordinary day** (`PolarNpcDayDiagnostic`, the investigation's day run, now on the real code). At 06:00 on day 2, all 20 explorers are alive, sheltered at home and asleep, none below 32 °C and none short of water (median 37.0 °C). As built before the change: 3 below 32 °C and 1 sheltered. During the day they made 55 trips beyond 100 m, the farthest 742 m from home, and none fell below 33.0 °C; none reached another hut.
+- **A first version failed that day.** It preferred huts not seen empty of fuel when turning back. Explorers whose home store was empty therefore walked on toward huts 2.9–6.6 km away, and 7 were at about 27.5 °C at dawn. The turn-back now takes the nearest known fire.
+- **Offline suites.** They don't compile `PolarNpcSimulation`. CloudNpcCheck passes 416 core, 485 physical-event and 538 prompt-bound checks; PolarGameplayCheck passes 496/496 shared rules, 20,607 weather/rest/resource and 37 keepsake checks.
+- **Built game, package 0.5.9-test.** 1,826 of 1,827 offline checks pass, the same as 0.5.8-test. Frame-time P95s are unchanged at about 16.7 ms, and the highest memory peak is 4.75 GB. At dawn on day 2 of the gameplay run, every living explorer is sheltered at home and none is below 32 °C (0.5.8-test: all 19 below 32 °C). Details in [gameplay](polar-gameplay.md#built-game-acceptance-for-v6-october-5-2026).
+
+**Routes are much longer than straight lines.** This is a navigation finding, outside the NPC code, with data in [evidence](../logs/evidence/2026-10-05/npc-night-survival/data/).
+- **Cause.** `PolarPathfinder.HutEntrance` targets `PolarTerrain.Entrance`, five cells in front of the hut in template space. On the polar navigation grid, an outer-ring cell is about 12 m around and 120 m deep, so that cell lies a median 571 m from the point a route delivers to; for 315 of 324 sites it is more than 300 m. Routes walk out to that cell and back.
+- **Example.** Irwin 400 m past one hut on the way to the next, 501 m in a straight line, has 1,703 m to walk.
+- **Across the world.** A site's route to its nearest neighbouring site is a median 1.79 times the straight line (90th percentile 2.48 times): 6.5 km on average against 3.1 km.
+- **Effect.** Press-on judges the real route, so it rarely applies between huts. Route ends were fixed on October 6: see [Route ends beside the hut](#route-ends-beside-the-hut-october-6-2026).
+
+## First-night freeze investigation: October 5, 2026
+
+The v6 built-game acceptance found every explorer hypothermic at dawn on day 2. Investigated with Editor diagnostics that call production NPC code through reflection; no NPC file changed ([investigation](../logs/evidence/2026-10-05/npc-first-night-investigation/investigation.md)).
+- **Movement regression.** Since v6 split each step into 0.5 m segments for door checks, `PolarNpcSimulation.Move` stops after the first segment unless it reaches its waypoint (`else break`). All 20 explorers move 0.50 m per one-second step against a 5.00 m budget.
+- **Night.** `PolarNpcSurvival.RestAt` releases a warm, watered explorer from its fire even at night; it sleeps only above 55 fatigue.
+- **No turn-back.** A cold explorer on a route keeps walking until its next planning decision, and decisions are paced in real seconds, so during the player's ten-times sleep or watch it can walk away from fire for hours of game time.
+- **Distance.** Huts were at least 900 m apart (1,800 m since October 7); an explorer setting out at 36.5 °C turns back after 480–750 m, so none reaches another hut on day 1.
+- **Emulated fixes.** A movement fix alone does not change the night (77–79% of it spent outside). With night sleep at a lit hut and an immediate turn-back as well, all 20 explorers are sheltered and warm at dawn. Implemented the same day: see [Night survival and travel](#night-survival-and-travel-october-5-2026).
+
+## First live-cloud run: October 7, 2026
+
+The live-cloud step ran for the first time, on package 0.5.19-test, from the user's terminal with the key set. It passed 53/53 in 3.4 minutes (peak 3.51 GB).
+- **Requests.** 19 requests (12 for the player's conversations, 7 background), all completed; the largest was 3,599 bytes against the 3,900 limit. The live segment made 13 cloud decisions and spent ¥0.0338.
+- **Replies.** Every greeting and locations reply came from the cloud in in-world wording (152–370 characters).
+- **Choices.** All three explorers (Dale and Shaw, met; Carter, a stranger) kept to their own plans, declined the promise and shared no location record, and Dale declined the found keepsake. The checks assert consistency, not particular choices.
+- **Bug found and fixed.** Dale chose "Decline further cooperation for now" and said so, but the player's offer stayed pending ("Your offer awaits Dale's decision"). That general decline answered only a pending promise. `PolarNpcDirector.Apply` now also removes any exchange still awaiting that explorer's decision. Evidence: [npc-decline-pending-offer](../logs/evidence/2026-10-07/npc-decline-pending-offer/), a new `PolarNpcDeclineCapture`. Before, Frost declines and the panel still lists the player's offer; after, "Nothing offered or proposed." A new CloudNpcCheck check fails without the fix.
+- **Key handling.** The key was used only in the user's terminal environment; it appears in no log, report or file.
+- **Re-run on 0.5.20-test** (with the fix): 53/53, 19 requests all completed, ¥0.0334. The stranger declined further cooperation; Shaw chose to share a location record in conversation and said so ("I can share my location record with you. District 01, Hut 14 ...").
+  - **Still a proposal only.** By design, a player conversation never commits a social action ("Talk never commits a social action"), so the record moves only if a later background plan shares it; there it did not, and the player's own record of that hut stayed unchanged. Unlike gifts and exchanges, a spoken share proposal has no accept button.
+
+## Live-cloud conversation acceptance: October 5, 2026
+
+`-polarCloudScenes` is the one built-game acceptance mode that keeps `ARK_API_KEY`; every other mode clears it before the cloud client is created and finishes with zero model decisions. No NPC-owned file changed.
+
+- **Start.** It continues the gameplay run's final save (`final-v6.json`, copied with the world cache into its own folder by `Tools/polar_v6_player_run.py live --live`). Without the key it records one failure and stops; only the key's presence is ever reported.
+- **Recorder.** `PolarRequestRecorder` wraps the director's private client through reflection and passes every request through unchanged. For each request it keeps whether it serves the player's conversation, its UTF-8 size, whether it fits the 3,900-byte bound, the outcome (`Completed` or the client's fixed failure phrase), token use and duration, written to `cloud-requests.json`. Prompts, replies, headers and the key are never kept. Spend is computed at the ledger's prices (2 yuan per million input tokens, 8 per million output); the ledger's own change is reported as a note because older entries can leave its one-hour window.
+- **Scenes.** Game time is frozen and the world is never paused, since pausing cancels requests; other explorers keep planning in real time. Two met explorers and a stranger are met through E. Each gets a typed greeting through the panel's field and send button, a promise proposal and the panel's "Ask for known locations"; the first is also offered the keepsake the player found on a body.
+- **Offline rehearsal.** In the Editor only, `-polarCloudOffline` swaps the cloud for `PolarOfflineModel`, which answers like a model past its deadline without any network, so the scenes can be rehearsed without the key or spend. Its cloud checks then fail as expected; the rest of the flow must pass.
+- **Checks.** Replies come from the cloud, use in-world wording (`MetaFree`), contain no CJK and are at most 400 characters, and the panel shows them. A timeout or transport failure is retried once; HTTP 401/403 or an exhausted budget stops the scenes. Decisions are checked for consistency rather than a particular choice: a promise exists exactly when the explorer accepted it, the keepsake moved exactly when the gift was accepted, and any record received credits the explorer who gave it. All requests fit 3,900 bytes, at least one cloud decision is made, and spend is above zero and under one yuan.
+
+**Status.** Rehearsed offline in the Editor: the scenes ran end to end with three explorers, every consistency check passed, and only the cloud checks failed, as expected without the cloud. The live run has not happened yet on any package (0.5.8-test to 0.5.17-test), because `ARK_API_KEY` is not available to the session that ran them. It runs on the current package named in `PolarPackage.cs` (now 0.5.17-test) with `python Tools/polar_v6_player_run.py live --live` from a terminal that has the key.
+
+## Weather, doors and rest: October 4, 2026
+
+The separate 0.5.5-test package uses fresh v6 expeditions. NPC perception, face recognition, calls, cold and shooting read the shared weather profiles. Night rest targets the next 06:00 boundary; no selected sleep-hour tier remains. Movement checks door passage in segments of at most 0.5m, opens a closed door, waits for its physical animation when loaded and requests safe closure after crossing. Unloaded movement uses the same persisted opening and passage state. Resource observations and model-facing descriptions use whole food portions and the common fuel-day/remainder formatter.
+
+The Ark transport, model choice and bounded-information architecture are unchanged. Offline information-boundary and physical-event checks pass 478 and 423 assertions respectively (both include the 416 core checks). This work does not repeat the historical paid-cloud soak or establish long-term survival and encounter balance. Actual Player results belong to the [v6 evidence](../logs/evidence/2026-10-04/weather-rest-v6/acceptance.md); historical acceptance below remains scoped to its original package.
+
+## Entry and persistence
+
+The October 3 source follows the revised [GDD](../../GDD.md) and [locked decisions](../../design-decisions.md). The independent target package is **0.5.1-npc**, using fresh v5 expeditions (`PolarMvp-v5/continue-v5.json`) and v9 terrain. Older saves are reported but never loaded, modified or given invented memories. The accepted 0.4.0 package and historical 0.5.0-npc test package remain separate. Current-package acceptance is complete for the scoped independent test package.
+
+`NpcProfile` selects one of the eight existing archetypes and stable expression habits. Seeded assignment gives four archetypes three instances and four two. Archetype decision weights and expression parameters remain authored constants. Characters keep existing names, winter models, portraits and abilities. The player cannot inspect hidden archetypes, inventories or intentions.
+
+`NpcMind` saves bounded direct events (160), attributed player claims (32), dialogue (48), committed plans, food target and monotonic decision identifiers. `NpcEvent` records actual transfer quantities, participants, sites, physical interaction position, observation time and outcomes; only participants receive the event. Dialogue and quoted claims are not observation or resource authority. There are no trust, favor, contribution or gratitude scores.
+
+All eight existing decision weights and six expression parameters are retained. Shared role prose describes individual survival and bilateral coordination instead of importing the independent recruitment prototype's inactive alliance duties or pooling rules. Individual seeded speech habits remain persistent.
+
+## Knowledge and decisions
+
+`NpcKnowledgeSnapshot` is a whitelist: own body/inventory, own dated location records, visible appearance and actions, participant events, attributed conversation and feasible candidates. Other actors' private maps never determine whether a share candidate exists; the NPC uses its own sharing history. Visible activity includes actual rifle aiming, rather than hidden intent. The current conversation partner remains in the snapshot even in a crowded encounter. `earlierConversation` confirms a previous reply by this NPC to that person; the current question and overheard words cannot set it. `addressedTo` retains the original addressed listener through retelling, so overheard "we" is not silently reassigned to the receiver. A bounded history is explicitly partial; an omitted detail never proves no prior meeting. Ordinary expression omits incidental other-pair overhearing to avoid reassigning their words to this conversation; planning and explicit retelling retain it. Expression uses a separate compact instruction and physical-language projection: body conditions replace internal scales, gear describes actual chambers and bolts, and experiences use known names/places and game-calendar dates. Personality weights and engine IDs stay in planning. Sole actions never invent a second participant; known place names survive context trimming. Previous words remain attributed speech, never direct event facts. Reviewed schema/quantity/duration narration and inconsistent source-removal modifiers are rejected. Model requests contain no global stock ledger, other personality, remote live coordinates or future random state.
+
+`INpcModelClient` separates provider responses from gameplay. `NpcDecisionProposal` contains a supplied candidate identifier and verbatim current-player quotes. Unknown candidates and unattributed quotes fail validation. Expression is a second English JSON response with the current player statement and the chosen proposal. Speaker/listener zero is serialized explicitly, not as missing attribution; the model is told that every other actor number, including 0, is an ordinary expedition member and is never told which person the human controls. Current engine candidates are trusted facts; spoken claims remain unverified. Outgoing record candidates explicitly state that the NPC sends its own record. Foreground text creates no transfers or consent: the player confirms actions using explicit controls, and the NPC independently decides its side. English validation also rejects interface/JSON debris and meta speech inside utterances. UI rows show only the speaker name and the measured dialogue text.
+
+Background proposals choose known destinations, reserve targets, fire/rest, sharing, promises and withdrawal, surplus gifts, barter, refusal, help, notes, joint clearing and watch. Actual consumption, urgent cold, immersion, attack response, ammunition and movement remain engine-owned. Autonomous transfers preserve a food margin and ammunition; current food never spoils. Barter advertises a desired kind without reading the recipient's backpack; the recipient selects an actual held item before acceptance. `PolarActions` validates stock, capacity, position and bilateral commitment atomically. A waiting trade prevents duplicate offers while leaving promise choices independent. Labels disclose actual terms and relevant consent, without unrelated private inventory.
+
+All gameplay commits run on the world thread. Background network results enter a completion queue; actor death, damage, movement beyond perception, changed candidates, superseded decisions or disposed expeditions invalidate them. Successful damage permanently advances the victim's cloud decision identifier. Clearing the temporary aggressor flag, including during accelerated simulation, cannot revive a pre-hit request. Rejected damage does not advance it; since rule version 5, harm during a promise is not rejected but recorded as a breach. Read/load recreates request lifetime; in-flight network operations are never serialized. Background tasks preserve existing movement and survival while awaiting a response.
+
+## Transport and costs
+
+Ark endpoint: `https://ark.cn-beijing.volces.com/api/v3/responses`; model: `deepseek-v4-1-flash-260910`. Strict JSON Schema, `stream=true`, `store=false`, disabled thinking, no tools and 512 output tokens. SSE deltas are buffered until `response.completed`; incomplete, malformed and failed streams never execute. The implementation accepts the final `[DONE]` marker.
+
+The input bound conservatively counts UTF-8 bytes for system/input/schema, allowing 3900 bytes plus protocol overhead within 4096 tokens. Fitting targets 3600 bytes and removes older or less relevant context while keeping current body, inventory, candidates and execution constraints mandatory. The snapshot admits four received lines, two previous own lines, four salient beliefs and eight relevant events. UI source labels are excluded. Expression keeps only its selected candidate; oversized mandatory input fails explicitly. Full-memory tests exercise all twenty identities and their current choices.
+
+Transfers, record sharing, promise acceptance/withdrawal, refusal, help and watch have an opening sentence bound to the selected action. A concise personal explanation cannot substitute goods, direction, quantities or duration. Speech targets a short reply below 280 characters within the validator's 400-character bound. Its single repair reiterates brevity and the exact opening without referring to an absent procedural outcome. Instructions avoid sentence-count and procedural outcome annotations, which were echoed in earlier model runs. Expression drops extra atlas places and bystanders before recent addressed conversation. Received accounts identify how words arrived and remain unverified; duplicate addressed words already present in the conversation are omitted, while unique addressed reports are retained. JSON braces, backticks, automatic annotation tags and observed instruction echoes are rejected. The live harness preserves raw decision/expression results, including repair attempts and failed turns. Free explanations can still be imperfect. The canonical proposal remains in diagnostic source data, hidden in normal UI; only validated choices can change the world.
+
+There are three lanes. Player conversation has one reserved slot and a fifteen-second total deadline, including queueing, both stages and at most one repair. Planning has two slots, eight-second deadlines and twelve actual starts per real minute. NPC conversation has one request slot, one pair at a time, at most six pairs/24 actual requests per real minute and a fifteen-second pair deadline. Each actor waits at least thirty real seconds; each pair waits 120. Pending offers and promises prioritize a response. Oldest queued planning work runs first; duplicate work merges. Participant events, newly received physical information, completed goals and 120-second reviews trigger reconsideration. Duplicate information does not advance the actor's information revision. Sleep acceleration increases neither requests nor budget. Player conversation preempts a conflicting pair and expires its old response. Healthy speakers pause travel during both player and NPC conversation; urgent survival and defence retain authority.
+
+The key is read only from `ARK_API_KEY`. It is never saved, printed or included in a package. `Tools/launch_cloud_npcs.ps1` can collect a masked key and pass it in the child environment, restoring the original environment afterward. No local model is started by this system.
+
+`NpcApiBudget` reserves 0.012288 yuan before each request (4096 input at 2 yuan/million plus 512 output at 8 yuan/million), settles known usage and keeps the maximum charge for unmetered failures. Reservations and charges persist atomically under the application's `PolarNpcApi/hourly-ledger.json`; reload/restart cannot reset the allowance. A corrupt ledger conservatively consumes the hour's allowance. This is a conservative local estimate, not a provider billing guarantee; current provider prices and billing remain external. Rolling cost and input/output token totals appear only in the opt-in developer overlay (`-npcDiagnostics`, `POLAR_NPC_DIAGNOSTICS=1` or `launch_cloud_npcs.ps1 -Diagnostics`), never in normal play.
+
+Failures use the same archetype weights and speak an in-character line for the chosen rule candidate (`PolarNpcMind.RuleLine`). The rule mode and failure reason remain in `NpcMind.status` and the stored dialogue source for diagnostics and the developer overlay. Transport failures do not create model-generated text, free resources, protection or exemptions.
+
+## Information parity (October 2, 2026)
+
+Approved by the user on October 2, 2026: internal engine and model metadata is hidden from both players and NPCs. The revised GDD and locked decisions adopted by the current October 3 implementation incorporate this requirement. The original plan's "visible rule fallback" wording remains historical and does not govern the new package.
+
+- Player UI: no model mode, API estimate, token counts, dialogue source labels, canonical proposal labels, enum names, generator stages or save-format versions. Stored site codes such as `P02 / Hut 01` display as `District 02, Hut 01` through `PolarLabels`; stored save names are unchanged.
+- NPC view: places, items, offer labels and visible activities use in-world names; the internal expression identity code is omitted; the player character appears as the observer of their assigned district, never as "You" or "the player". Expression receives actual `heard_text` and a human-readable selected action; procedural outcome annotations are omitted.
+- Speech: `PolarNpcMind.MetaFree` rejects interface, cost, model, protagonist and stored-code terms while accepting in-world phrases such as "a token of good faith".
+- Checks: `Tools/CloudNpcCheck` asserts in-world prompt names, absence of protagonist/model/cost framing, meta-speech rejection and in-character rule replies.
+
+The October 3 v5 implementation removes those old meeting shortcuts: each speaker receives a separate model decision and expression from their own snapshot, and each participant separately accepts. The sender's own sharing history replaces comparisons against the recipient's hidden map. Historical v4 code paths remain for provenance but are not loaded by the new package.
+
+## Rule version 5 and physical memory (October 3, 2026)
+
+`PolarNpcSurvival` eats tins anywhere and frozen rations at a lit fire, seeks fire hydration and warmth, relights retained stove fuel and uses finite carried fuel. v5 NPCs no longer depend on bottles, snow melting, timed preparation or spoilage. Terrain, stock, weights and travel scale remain authoritative.
+
+`NpcBelief` saves at most 96 observations and sourced reports: origin, original source, latest speaker, subject/pair, event and reception times, hops and channel. Retelling preserves origin, original named source and event time while recording the latest messenger and increasing hops. A speaker's firsthand observation becomes an attributed report for the receiver; it cannot retain the label "My own observation." Reports and notes never become direct observations. Speakers can conceal supplies or mislead; they cannot alter factual records. Previous own words constrain later explanations. Salient deaths, breaches and transfers survive ordinary memory eviction. There is no global reputation or news feed.
+
+Face-to-face speech and overhearing require physical hearing range and an awake listener. Promise acceptance and withdrawal reach actual listeners; harm reaches actual sight witnesses. Seeing harm without knowledge of the private agreement records a conflict, without revealing a hidden promise. The older roster experience summary uses that same actual observation, rather than generating its own breach witness list. Transfer and hit observations require sight of both participants; seeing only the giver or shooter cannot reveal an unseen recipient or result. Identities remain unknown until contact. Late body discovery requires actual local sight and occlusion checks; it records discovery time without hidden inventory, cause or exact death time. Sleeping people do not learn ordinary talk or visual events. The production NPC step skips exterior discovery and automatic identity contact while asleep. The shared v5 contact action checks each recipient's wakefulness: an awake observer can recognize a sleeper, while the sleeper receives no identity record. NPC observation of a sleeping player cannot advance the player's encounter act. Controlled packaged-Player states check the production step and the shared contact entrance. Historical rules are preserved.
+
+Signed notes are read only through actual hut search. NPC writing uses their own history and knowledge. Joint clearing records actual contributors for both people. The player's roster has a full bounded field journal of their own actions, sightings and physically received words with provenance. The pre-existing expedition roster contains every name and portrait, as specified by GDD 2.1. Encounter recognition links a perceived person to a roster entry; unencountered entries disclose no live situation, stock or intentions.
+
+Watch keeps an NPC awake while companions sleep, subject to exhaustion; actually perceived aiming lets the watcher warn sleepers within hearing. Gunshots wake hearing sleepers, including promise partners. An asleep actor cannot read a hidden defensive intent.
+
+`PolarNpcCombat` raises a held rifle for 1.5 real seconds before firing; sleep acceleration cannot shorten the warning. Accuracy depends on distance, movement, weather, cold and injury and is never certain. Every shot uses ammunition; the shot sequence persists to prevent rerolling the same saved shot. Defence has bounded pursuit and can flee.
+
+Autonomous confrontation currently requires a recently observed resource competitor and desperation and excludes an active promise. Autonomous promise-breaking remains disabled pending the GDD's betrayal calibration. The shared v5 engine permits harm during a promise and records a breach. This is **not** the withdrawal-only fallback, which would need a real engine protection gate. Long-term betrayal frequency and emotional playtesting remain open.
+
+## Player-side safeguards and records (October 3, 2026, source only)
+
+This adds shared engine rules that NPC code already reads. Only one NPC-owned file changed: `PolarNpcView` in `PolarNpcSimulation.cs`, approved by the user. Details are in [gameplay](polar-gameplay.md#safeguards-roster-record-and-diary-october-3-2026-source-only).
+
+- **Aim notices.** `PolarActions.ObserveAims` runs every world step for everyone, NPCs included. When an aim starts:
+  - the person aimed at, if awake and able to see the aimer, gets a first-hand "Aimed" belief;
+  - witnesses who see both people get one too;
+  - this happens at most once per pair every 10 game seconds.
+  
+  Beliefs raise `informationRevision`, so NPC planners reconsider within seconds. The player's raised rifle now sets `aimingAt`, so NPC snapshots and NPC watchers see it.
+- **Struggles.** `Damage` wakes sleepers within 30 m of the victim. This includes sleeping NPCs.
+- **Watch.** The player's watch is the action kind `Watch`. NPC snapshots see it as "Keeping watch". NPC watch planning is unchanged.
+- **Records.** `Contact` now also fills `PolarActorState.people` for both people, NPCs included. Nothing in NPC code reads it yet.
+- **Bodies.** `PolarNpcView` keeps a dead body's renderers on and disables its standing collider. A view created later shows the end of the death animation.
+
+Hand-offs to the NPC owner:
+- Check NPC behaviour and balance now that aim notices reach minds. Optionally route NPC aiming through `PolarActions.Aim`.
+- The planner's nearby-person choice does not exclude a sleeping player (`PolarNpcDirector.cs`).
+- "Warned by watch" does not trigger a re-plan, and a woken NPC goes back to sleep.
+- `PolarNpcMind.Record` names strangers in player participant entries.
+- `ObserveBodies` writes "of An unidentified".
+- NPC diaries (model-written, GDD 5.9) and NPC use of person records are not started.
+- These edits change `PolarGameplayState.cs` and `PolarActions.cs`, which are in the 0.5.1-npc source binding, so the next NPC package needs re-validation.
+
+## Encounter presentation (October 3, 2026, source only)
+
+This adds shared engine rules and player UI; no NPC-owned file changed. Details are in [gameplay](polar-gameplay.md#encounter-presentation-october-3-2026-source-only).
+
+- **Calls reach minds.** `PolarActions.Call` gives every awake listener within 60 m (20 m in a blizzard) a "Statement" belief on a new channel, "Called out", attributed as `Hear` does. The belief raises `informationRevision`, so NPC planners reconsider after their 30-real-second cooldown (not within seconds, as first written).
+- **Recognition range.** The player's tags and last-seen records name a met person only within 40 m (12 m in a blizzard). NPC identity rules are unchanged.
+
+Hand-offs to the NPC owner:
+- NPCs calling out, approaching, warning someone off or keeping away, using `PolarActions.Call`.
+- How NPCs react to a heard call (channel "Called out").
+- NPC snapshots name a met person anywhere in view, out to 90 m (`PolarNpcMind.Snapshot`). Applying the same 40 m / 12 m recognition range would match the player.
+- `PolarActions.cs` changed again, so the next NPC package needs re-validation.
+- Calls and reactions were finished on October 7: see [above](#calls-and-noticing-cold-october-7-2026). Recognition range for names in snapshots is still 90 m.
+
+## Supply gradient (October 5, 2026, source only)
+
+Only generated worlds change. Seeds with a station distance get an explicit food and fuel budget drawn toward Pole Station, and the work harpoon lies at each person's coastal hut ([gameplay](polar-gameplay.md#supply-gradient-and-world-budget-october-5-2026-source-only)). NPC fixtures carry no distance, so they keep their tier stock; CloudNpcCheck's counts and report files are unchanged.
+
+Hand-offs to the NPC owner:
+- NPCs moving inward as outer stock runs out; the gradient makes inner huts and Pole Station the richer targets.
+- `PolarGameplayFactory.cs` and `PolarGameplayState.cs` changed, so the next NPC package needs re-validation.
+
+## Firelight (October 5, 2026, source only)
+
+This adds a shared engine rule; no NPC-owned file changed. Details are in [gameplay](polar-gameplay.md#firelight-october-5-2026-source-only).
+
+- **Firelight reaches minds.** `PolarActions.ObserveFirelight` runs from the world step for everyone awake at night. Each lit hut a person can see within the weather's light range is noted once a night:
+  - as a first-hand belief, kind "Firelight", channel "Saw directly";
+  - in the person's location record (`firelightSeenAt`), creating an exterior record for an unknown hut.
+
+  The belief raises `informationRevision`, so NPC planners re-plan.
+- **Same rule as the player.** Seeing it needs the light's side to face the observer and a clear terrain line (`CanSeeSite`). The player's screen glow uses the same rule.
+
+Hand-offs to the NPC owner:
+- How NPCs use firelight: approaching, avoiding, or returning to a lit hut.
+- NPCs putting out stoves when they leave. Today their fires burn for up to two days, so a light does not reliably mean someone is there.
+- NPC snapshots could list places where firelight was seen.
+- `PolarActions.cs` and `PolarGameplayState.cs` changed again, so the next NPC package needs re-validation.
+
+## Visible decline (October 5, 2026, source only)
+
+NPC figures now show their condition. `PolarBodyCondition` is a gameplay add-on that the controller attaches to each NPC view; no NPC-owned file changed ([gameplay](polar-gameplay.md#visible-decline-october-5-2026-source-only)). After the Animator poses the body, it adds:
+- a cold tremor;
+- a limp on the hurt leg while walking;
+- a rime-like paling of the coat and cap.
+
+It also scales the Walk playback to the NPC's real speed. The thresholds are in the Unity-free `PolarBodySigns`.
+
+Hand-offs to the NPC owner:
+- NPC snapshots still describe only injury bands. By user decision, tags gained no "shivering" or "frost" words, so NPCs do not yet read others' cold, while the player can see it on bodies. Adding those signs to `PolarNpcMind.Snapshot` would restore parity.
+  - Done October 7 (`coldSigns`, within recognition range): see [above](#calls-and-noticing-cold-october-7-2026).
+- NPC views now carry this add-on and a changing `animator.speed`. Keep this in mind when changing `PolarNpcView` animation.
+
+## Keepsakes (October 5, 2026, source only)
+
+Every explorer now starts with one keepsake ([gameplay](polar-gameplay.md#keepsakes-october-5-2026-source-only)). No NPC-owned file changed:
+- `PolarNpcMind.Snapshot` lists it in `ownInventory` as "Keepsake x1", through the existing item names. Every prompt grows by 14 bytes; the full-memory worst case is now 3,847 of the 3,900-byte limit (3,833 before).
+- `OfferSafe` already lets explorers hand over only food and cartridges, so they keep their own keepsake. They may accept one as a gift or in an exchange, like any incoming item.
+- Explorers never pick up ground items, so a dead explorer's keepsake stays with the body.
+- Keepsakes take the last ids at creation, so ids allocated later (offers, drops, records) are 21 higher than before. `Tools/CloudNpcCheck` still passes 416, 478/485, 423 and 538 prompt-bound checks, and its reports are otherwise identical.
+
+Hand-offs to the NPC owner:
+- The model sees only "Keepsake", not its kind or whose it is, so an explorer cannot yet say what theirs is or recognise a friend's.
+- Whether explorers should refuse a keepsake as payment for food or cartridges. Today `OfferSafe` treats it like any other incoming item.
+- Explorers could mention, value or return keepsakes (for example a dead friend's), or take them from bodies.
+
+## Verification tools
+
+`Tools/ark_npc_probe.py` checks actual SSE/schema/thinking/usage. `Tools/CloudNpcCheck` checks profiles, isolation, quotes, transactions, transport, budgets and director behavior. The base run tests separate speakers, fire survival, warning and uncertainty; `--information-boundaries` tests sleeping receivers, unheard agreements, unidentified conflict, late bodies, participant journals, clearing and action sentences. `--physical-events` checks visible transfers, aiming, conversation travel and new-information scheduling. `--prompt-bounds` fills memory across all twenty people. `--live` runs twenty identities across eight actual two-stage foreground situations. `--small-live` uses four independent three-person/two-site scenes, with controlled model-written invitations and independently chosen Moralist, Organizer, Frightened and Hoarder recipients. Gift and no-harm-only promise outcomes, including refusals, are retained without forcing a model choice. Invalid donor output uses the same production rule line and retains every rejected attempt; it is never counted as a model-written invitation. `--prepare-soak` copies the exact current package's untouched fresh v5 benchmark, without converting old saves.
+
+The terrain regression's `Place(position, false)` helper keeps simulation paused during exact-position loaded/unloaded shelter comparison. It asserts that actor position and wind heading remain identical. Normal gameplay and the numerical shelter tolerance are unchanged. Current-package continuation uses a real fresh v5 snapshot with interrupted search. Historical v2 processing/continuation evidence belongs to the preserved original builds; the new package never loads those saves. A snapshot taken after an interrupted action has already completed is unsuitable for a partial-action assertion.
+
+`PolarNpcV5Capture` fixes six 1600x900 production cases: menu, HUD, backpack, hut, promise panel and roster. Its genuine baseline preceded NPC production changes. The unchanged adapter, seed, clock, positions and camera bind the final comparison. Aiming, bodies and watch have no reconstructed baseline; functional and actual Player coverage are reported separately. `PolarCloudNpcBuild` targets non-Development `Builds/Windows/PolarNpc-0.5.1-test`. The independent source copy created by `Tools/npc_v5_build_source.py` must reconcile the terrain owner's sealed files before final fingerprint/build validation.
+
+`Tools/npc_v5_windows_validation.py` serializes the accepted-release baseline, new-package regressions and cloud-enabled hour. The opt-in Player fixture compares record sharing against the promise expiry after withdrawal, rather than the original one-day expiry. Interrupted search and continuation use a fraction of the current four-second duration; the former eight-second fixture completed the action and is retained as a failed diagnostic. These test repairs do not change NPC runtime bytes. The hour audit requires every decision identifier to increase relative to its actual starting snapshot. Baseline/regression children receive no API key. `Tools/cloud_npc_player_check.py` runs graphical regressions serially with independent Windows memory monitoring. `-polarNpcSoak` runs twenty unchanged NPCs for one real hour at normal speed with an observer using ordinary finite fire and food. NPCs are not relocated or replenished. All active frames and minute progress are recorded. Source/package seals and current measurements remain separate from the historical 0.4.0 and [0.5.0-npc evidence](../logs/evidence/2026-10-02/polar-cloud-npcs/manifest.json).
+
+`Tools/NpcV5RefusalCheck` supplements the accepted gift/promise scenes with an actual pending one-tin/two-cartridge exchange for four individual tendencies. Both acceptance and rejection remain available and inside the survival reserve. The controlled sender attempts its own model expression; the recipient's production conversation selects and executes its own choice. Rejection must cancel the offer without changing inventory or fabricating a transfer. Original planning-only and one-cartridge outcomes remain diagnostic, rather than being relabeled as rejection evidence. Its independent harness binds the same eleven production files as the main matrix.
+
+Unity Mono's `Process` memory properties returned zero during the soak. Its raw zero is unavailable data. The accompanying native Windows monitor records private bytes every 100 ms and reads Windows lifetime peak; the acceptance collector separately requires that nonzero result to meet the 5 GB gate. The opt-in timer reads Stopwatch again after the final loop condition to avoid undercounting one frame.
+
+The first complete current performance run fails native lifetime private memory at 5.911GB despite passing all five active P95 samples. Its six full region transfers retain normal automatic distant LOD and NPC execution; the separately accepted terrain fixture pauses automatic distant selection during idle setup and cannot replace it. `PolarMvpAcceptance` now records phase memory and distant-resolution counts. The explicit `-polarMemoryDiagnostic` modifier isolates two region transfers and an explicitly labeled collection/LOD-settlement experiment; it is diagnostic evidence only, never an acceptance run. Normal performance has no forced collection or idle LOD gating.
+
+Remaining product boundaries: formal Acts III-IV, public-store and contract enforcement, generalized social inference, voice, new animation, long-term balance and emotional playtesting are not delivered by this milestone.
+
+
+## Completed current-package acceptance, October 3, 2026
+
+The independently sealed **0.5.1-npc** Windows test delivery passes 933 actual Player assertions across the measured candidate and final targeted reruns, 609 cumulative cloud-core and 364 shared-rule checks. All 160/160 real foreground cases pass within fifteen seconds (P95 4.781s, maximum 7.311s), with twenty additional record conversations. Four small scenes demonstrate separate model-written invitations, accepted gifts and bilateral promises; a supplementary exchange test records 2 independent model refusals. These controlled scenes do not establish natural encounter frequency.
+
+The preserved measured package runs 3600.04 real seconds at normal speed: 520 model decisions, 8 rule decisions, 52 invalidated completions, 521,341 input and 10,871 output tokens, conservative local estimate 1.141938 yuan. All twenty NPC decision identifiers advance, saved profiles remain stable and finite-resource conservation passes. 21 people remain alive; the recorded deaths are balance evidence, not a survival guarantee. Matched fresh World.Ready is 149.451s versus 147.052s for accepted 0.4.0 (1.016 ratio). Highest regression P95 is 16.715ms, hour P95 16.724ms, and independent Windows lifetime private commit peaks at 4.616GB. The 25% / 20ms / 5GB gates pass on this documented serial hardware fixture; startup excludes subsequent cache writing and final controller activation.
+
+An earlier full-NPC candidate failed the memory gate at 5.911GB. Actual mesh accounting identified unnecessary central-floor refinement. The final renderer caps only complete, feature-free constant-height inner hub blocks at 64. Near terrain, collision, WFC recipes, navigation, world scale and supply spacing remain unchanged. Actual Unity replay passes 2,190,821 assertions on twenty original maps, with 168 eligible blocks each, zero plane-height error and 0.01953125m maximum sampled horizontal error. Thirteen genuine paired terrain/morph comparisons were inspected. The failed package, diagnostic experiment and separately accepted terrain-only package remain preserved.
+
+Six final unchanged-adapter NPC comparisons and the packaged Player gallery were inspected. The source/package seal binds `8ffba616b2739fbc5c6f0ba72921dbc3d086f9ee16553184221902e98e92cd89`. The eleven NPC files are byte-identical to the actual model test project; the later opt-in diagnostics and planar renderer amendment are explicitly recorded without claiming repeated model runs.
+
+The final journal/load amendment reruns gameplay and new-process continuation. The full hour and four unaffected regressions remain measured on preserved candidate `6baced4b9aad3a0c4137c899acd6055043155080a02ecd353314b2574f9ccac4`; they were not rerun on the final UI/load package. The five-file amendment changes participant journal labels, normalizes only the player's inline-null placeholder on load and adds opt-in evidence. All eleven NPC files, terrain and assets remain byte-identical, with 12,948 unchanged existing inputs and exact report hashes recorded in the acceptance binding. Two additional genuine journal comparisons were inspected; received words and saved dates/quantities remain literal. Autonomous promise-breaking remains disabled pending betrayal calibration; shared v5 actions permit harm and record a breach. This is not the withdrawal-only engine fallback. Free personal explanations remain imperfect despite bound action sentences. Natural world-scale encounters, long-term survival, emotional playtesting, old bottle/preparation handbook illustrations and later acts remain open. Astra was recommended for focused memory-attribution and wording review and was not started.
+
+### Player journal and Unity continuation
+
+Unity inline serialization reconstructs a null class reference as an empty object. After decoding a valid v5 save, `PolarSaveService.Read` normalizes only `Player.mind` to null so actual participant actions reach the player's `NpcBelief` journal. Existing beliefs, observations, NPC profiles and committed plans are retained. The final actual new-process continuation verifies this with a real participating event. No old-version save is converted and no historical journal is reconstructed.
+
+`PolarMvpUi.JournalText` formats only firsthand entries marked `Participated directly`: record observation seconds become a game day/clock, committed transfers use ordinary handover wording and the protection duration describes one day without harm. Literal received words, signed notes and hearsay remain unchanged. Two genuine fixed-action before/after comparisons precede and follow this amendment.
+
+[Exact acceptance](../logs/evidence/2026-10-03/polar-npc-gdd-v5/acceptance.md) · [Central planar evidence](../logs/evidence/2026-10-03/polar-central-floor-memory/manifest.json).

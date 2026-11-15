@@ -1,0 +1,194 @@
+docs/engineering/logs/evidence/2026-11-14/frame-budget/final-report.md
+
+# Frame budget (16.67 ms): final report (November 14, 2026)
+
+The Windows standalone game against a 16.67 ms frame at 2560 by 1440, High. Baseline 0.6.154-test (`to-01`); final candidate
+0.6.155-test (`fb-02`). Every experiment, kept or not: [loops.md](loops.md).
+
+## Result
+
+- **Benchmark.** Every segment's P95 is at or under 16.67 ms in every run of the candidate (on `to-01` the pond reached
+  16.67 and the hut 16.44, with no margin).
+- **Actual play.** Three of the four walked routes pass with margin. The hut at night passes as a whole (16.61 ms) and has
+  two steps over: look round 16.92 ms and go out 16.72 ms. The measured fix lowers distant-terrain detail; the user decided to
+  leave it as it is.
+- **Hitches.** In 88,089 route frames, 3 of 25 ms or more, none recurring at a step. In a live game day with explorers on
+  the model, 1 game-owned frame over 25 ms in play (code compiled on first use) and 4 as the expedition appears: loading's
+  last frame behind the loading page, then the play loop's first frames compiling (profiled in loop 12; not changed).
+- **Picture, rules, saves.** Unchanged; the full acceptance suite passes on `fb-02`.
+
+## Identities and conditions
+
+| | Baseline | Final candidate |
+|---|---|---|
+| Package, build | 0.6.154-test, `Builds/HdrpMilestones/to-01` | 0.6.155-test, `Builds/HdrpMilestones/fb-02` |
+| Source | `d71fc2e6e` | `7ff890a89` |
+| `Assembly-CSharp.dll` SHA-256 | `c198b3b2ba0452ee...3ca94562` | `959c4a993d458950...8d453a26` |
+| API, pipeline | Direct3D 11, HDRP 17.3, Unity 6000.3.28f1 | the same |
+
+- **Machine.** Intel i7-13700H, NVIDIA GeForce RTX 4070 Laptop GPU (driver 32.0.16.1074), 15.8 GB of memory, panel 2560 by
+  1440 at 240 Hz, on mains, Windows power plan "Balanced".
+- **Settings.** High preset, TAA, 100% render scale, the game's borderless window at 2560 by 1440 kept in front, vertical
+  sync off and no frame cap while a part is timed.
+- **Measure.** The release Player's whole-frame interval (`Time.unscaledDeltaTime`). Over budget means over 16.67 ms.
+- **Host.** Other programs closed by the user; `Tools/polar_machine_monitor.py` beside every run; the hosting app's large
+  `git diff` processes stopped as they appeared (`tools/diffguard.py`).
+
+## Benchmark segments, release
+
+`to-01`: four runs (base-1 to base-4). `fb-02`: three runs (d1, d4, d5); three more on `fb-01`, the same drawing code, read
+alike. The Benchmark's own result file holds each segment's mean rate, P95 and GPU mean, not its P50, P99 or share over
+budget; the route is about 100 s.
+
+| Segment | to-01 mean ms | to-01 P95 | to-01 GPU mean | fb-02 mean ms | fb-02 P95 | fb-02 GPU mean | P95 change |
+|---|---:|---:|---:|---:|---:|---:|---:|
+| Open snow, clear day | 13.54 to 13.83 | 14.24 to 14.60 | 13.39 to 13.68 | 13.42 to 13.53 | 14.16 to 14.23 | 13.28 to 13.39 | -0.22 |
+| Hut at night, stove lit | 15.70 to 16.01 | 16.23 to 16.44 | 15.59 to 15.89 | 14.53 to 14.69 | 15.18 to 15.43 | 14.40 to 14.55 | -1.03 |
+| Pond | 15.64 to 15.79 | 16.48 to 16.67 | 15.47 to 15.62 | 15.34 to 15.54 | 16.04 to 16.14 | 15.18 to 15.38 | -0.48 |
+| Coast | 11.90 to 12.01 | 12.37 to 12.52 | 11.86 to 11.97 | 11.59 to 11.64 | 12.01 to 12.13 | 11.54 to 11.60 | -0.37 |
+| Into a blizzard | 12.77 to 12.95 | 14.02 to 14.31 | 12.69 to 12.85 | 12.50 to 12.61 | 13.71 to 13.83 | 12.41 to 12.53 | -0.40 |
+| Whole route | 13.69 to 13.87 | 15.86 to 16.16 | | 13.29 to 13.40 | 15.29 to 15.49 | | |
+
+Average rate 72.1 to 73.1 fps on `to-01` and 74.6 to 75.2 on `fb-02`; 1% low 60.3 to 61.3 and 62.8 to 63.7 fps. The GPU
+holds 98 to 99% of frames in every run. The pond is the thinnest margin: 0.5 to 0.6 ms.
+
+## Walked routes, release, three passes each
+
+Baseline: `fb-00` (to-01's source plus the route recorder) with to-01's `PolarHdrpPresentation.cs`, run `routes-base-1`;
+`to-01` itself has no recorder. Candidate: `fb-02`, run `routes-fb02-1`. Frame interval in ms; explorers walk between huts
+by the game's rules without the model.
+
+| Scenario or step | Baseline frames, s | Baseline P50 / P95 / P99 | Over 16.67 | Candidate frames, s | Candidate P50 / P95 / P99 | Over 16.67 | 25 ms or more | Longest |
+|---|---:|---:|---:|---:|---:|---:|---:|---:|
+| **A, pond** | 5706, 79 | 13.89 / 14.78 / 15.41 | 0.1% | 5881, 79 | 13.48 / 14.37 / 15.01 | 0.1% | 0 | 24.3 |
+| A approach | 1928, 25 | 13.16 / 13.87 / 14.58 | 0.1% | 1991, 25 | 12.74 / 13.40 / 14.19 | 0.2% | 0 | 24.3 |
+| A look across | 1260, 18 | 14.22 / 15.07 / 15.68 | 0.0% | 1296, 18 | 13.82 / 14.67 / 15.30 | 0.0% | 0 | 15.8 |
+| A cross | 757, 10 | 13.75 / 14.68 / 15.32 | 0.0% | 779, 10 | 13.37 / 14.37 / 14.80 | 0.3% | 0 | 20.6 |
+| A leave | 1761, 25 | 14.03 / 14.98 / 15.43 | 0.1% | 1815, 25 | 13.62 / 14.51 / 14.99 | 0.0% | 0 | 15.4 |
+| **C, streaming** | 60623, 816 | 13.26 / 14.71 / 16.37 | 0.7% | 62491, 816 | 12.86 / 14.27 / 15.91 | 0.5% | 0 | 24.2 |
+| C out | 15208, 210 | 13.78 / 14.57 / 15.33 | 0.1% | 15669, 210 | 13.37 / 14.16 / 14.87 | 0.0% | 0 | 24.2 |
+| C turn back | 422, 6 | 14.00 / 15.71 / 16.22 | 0.7% | 434, 6 | 13.67 / 15.27 / 15.84 | 0.0% | 0 | 16.3 |
+| C back | 44993, 600 | 13.06 / 14.71 / 16.63 | 0.9% | 46388, 600 | 12.67 / 14.28 / 16.16 | 0.7% | 0 | 18.9 |
+| **D, explorers at dusk, weather turning** | 10846, 149 | 13.69 / 15.81 / 17.46 | 2.5% | 11196, 149 | 13.26 / 15.38 / 17.03 | 1.6% | 1 | 27.3 |
+| D watch the door | 5371, 75 | 13.92 / 16.46 / 17.77 | 4.6% | 5559, 75 | 13.49 / 15.97 / 17.23 | 2.7% | 1 | 27.3 |
+| D round the hut | 5475, 74 | 13.20 / 15.40 / 16.01 | 0.5% | 5637, 74 | 12.79 / 15.00 / 15.83 | 0.5% | 0 | 24.5 |
+| **B, hut at night** | 8094, 123 | 15.68 / 18.05 / 18.59 | 15.0% | 8521, 123 | 14.56 / 16.61 / 17.09 | 4.4% | 2 | 29.2 |
+| B approach | 1751, 23 | 12.85 / 13.46 / 14.17 | 0.1% | 1808, 23 | 12.44 / 13.03 / 13.85 | 0.1% | 0 | 17.7 |
+| B open the door | 603, 8 | 14.20 / 14.87 / 15.79 | 0.2% | 622, 8 | 13.81 / 14.46 / 15.19 | 0.2% | 0 | 20.3 |
+| B enter | 846, 13 | 15.27 / 16.59 / 19.33 | 3.9% | 885, 13 | 14.35 / 15.64 / 17.64 | 2.0% | 0 | 19.0 |
+| B look round | 2162, 36 | 16.31 / 18.44 / 18.73 | 36.1% | 2380, 36 | 14.75 / **16.92** / 17.59 | 11.3% | 2 | 29.2 |
+| B go out | 523, 9 | 16.92 / 18.33 / 18.58 | 60.2% | 561, 9 | 15.60 / **16.72** / 17.61 | 7.5% | 0 | 18.1 |
+| B close the door | 515, 7 | 14.36 / 15.12 / 15.84 | 0.0% | 530, 7 | 13.98 / 14.66 / 15.51 | 0.0% | 0 | 15.9 |
+| B leave | 1694, 27 | 15.90 / 16.69 / 17.27 | 5.1% | 1735, 27 | 15.52 / 16.34 / 16.88 | 2.3% | 0 | 17.2 |
+
+What each route is: A walks in from open snow at 14:00, looks across the pond, crosses it and leaves by the far bank. C
+walks 240 m out along the Benchmark's line, turns and walks back (85 terrain chunks made a pass). D stands and walks by a
+hut at 21:20 with explorers walking, through clear weather turning to heavy snow. B approaches the lit home hut at
+midnight, opens the door, goes in, looks round through 360 degrees, comes out, closes the door and leaves.
+
+## Hitches
+
+| Where | Trigger | Size | Recurs | State |
+|---|---|---|---|---|
+| Routes, candidate | The first frames of a step after a placement: D watch the door once, B look round twice (first pass) | 27 to 29 ms | No: not at the same step in every pass | Left; 3 of 88,089 frames (5 of 85,269 on the baseline) |
+| Streaming (route C) | Terrain chunks made while walking | Longest frame 24.2 ms, P99 15.91 | | No frame of 25 ms or more |
+| Live day, in play | An explorer's decision carried out for the first time: code compiled on first use | 30.8 ms, once (4.4 ms of it the profiler's call-stack capture) | Once a session | Left |
+| As the expedition appears: loading's last frame | `StartWorld`'s last step (rules bound, `Preload`, first save); in the Development profile 448 of its 773 ms is code compiled on first use | 415 to 631 ms on the release build (895 ms in the live day) | Every new expedition | Not a stall of play: the loading page is on screen throughout (loop 12) |
+| As the expedition appears: the first frames of play | The play loop's first run compiled on first use (44 of 70 ms), then the explorers' director's first pump | Two frames of 64 to 72 ms on the release build. With the model three: 68, 101 and 62 ms, the second the director's first request compiling (68 ms), the third 32 ms inside the HTTP client's send call on its second request, once | Every new expedition | Profiled (loops 12 and 13). The model's part is fixed in 0.6.156-test (loop 14): with the model the start is two frames of 65 to 75 ms, as without one. The rest is not changed. A fix would keep the loading page up for the first three frames of play: a few lines, a new package and the suite; left at the user's "Leave it" (November 14) |
+| Live day, night fall (22:00) | The explorers deciding again as night falls | 15 frames over 25 ms on 0.6.140-test | | None on the candidate |
+
+The live game day (`fb-day-live`, loop 11): the Development build of the candidate's source, explorers on the model, 900 s,
+paced at 60 fps at 1600 by 900 as the earlier live days were, so it shows stalls and not the budget. 53,828 frames; 99th
+percentile 16.84 ms; no load from disk in play; 574 model requests, 4.77 yuan; 19 explorers alive.
+
+## Still over budget
+
+| Step | P95 | Over by | Cause |
+|---|---:|---:|---|
+| Hut at night, look round | 16.92 ms | 0.25 ms | Facing west (yaw 240 to 300 degrees) the whole island's distant terrain is submitted behind the hut's wall: 12.9 million triangles, about 2.4 ms of GBuffer for ground no pixel shows. Other headings run at 14 to 15 ms |
+| Hut at night, go out | 16.72 ms | 0.05 ms | The same terrain in view through the door and on leaving |
+
+Options measured (loop 10) and the decision:
+
+| Option | Effect | Picture | Decision |
+|---|---|---|---|
+| Halve the distance at which distant terrain drops detail (6, 16 and 28 km to 3, 8 and 14) | Inside the hut facing west 16.60 to 15.92 ms of GPU; pond bank 15.18 to 14.61; look round to about 16.2 ms | Lowers far-ground detail; crops read the same | **Left as it is (the user, November 14)** |
+| Quarter it | 16.60 to 15.66; pond bank 14.29 | Lowers it further | Not taken |
+| Cull terrain hidden behind nearer ground | Not measured | Unchanged | Not started: a new subsystem, a risk of far ground appearing late, and no help inside a hut |
+
+## What changed in the game
+
+| Change | Where | Gain (GPU) | Picture |
+|---|---|---|---|
+| Terrain drawn near to far (0.6.154-test, the baseline itself) | `PolarWorldStreamer.OrderTerrain` | 0.3 to 0.5 ms at the pond | Unchanged |
+| Distortion, rough distortion and low-resolution transparents off | `PolarHdrpPresentation.ConfigureCamera` | About 0.4 ms everywhere | Unchanged: nothing drawn uses them |
+| The sky's lighting on demand indoors, the hut's probe asking for its own | `PolarHdrpPresentation.LateUpdate`, `BeforeWorldCamera` | 1.1 ms in a lit hut | Unchanged: the hut at dawn is lit as before |
+| After this report's candidate, 0.6.156-test (`mr-02`, loop 14): a model request's start on a worker | `ArkNpcClient.CompleteAsync`, `Send` | Not GPU: one frame of 52 to 62 ms and 35 ms of another, once, as an expedition starts with the model | Unchanged |
+
+## Measured and not applied
+
+| Candidate | Result | Why left |
+|---|---|---|
+| Full depth prepass | +0.85 to +1.04 ms | A net loss |
+| Every renderer ordered near first | +0.2 ms | Worse than terrain alone |
+| The pond's basin under intact ice | -0.09 ms | Within what a run varies by |
+| The stove lamp's shadow on demand | -0.10 ms | Would freeze a moving body's shadow |
+| Fill and window lamps out of the fog | -0.08 ms | Small, and it changes the fog's light |
+| Distant ponds' hidden water renderers | 0 ms of GPU (361 draws, 0.15 ms of render thread) | No frame-time gain |
+| The pond's water surface under intact ice | 0 ms | No gain |
+| Cheaper screen-space global illumination (4.2 to 6.4 ms at High) | Not tried | A quality tier, the picture's own cost |
+
+## Checks on `fb-02`
+
+- Full Player suite: 12 modes, 6,439 checks pass (`Logs/PolarV7/0.6.155-test/fb-02`).
+- Front page 173, startup 4, screen-args 3 pass (`Logs/PolarFront/0.6.155-test/fb-02`).
+- Stopped-clock captures at open snow, the pond and the hut differ no more than two captures of one setting.
+- No game file changed after Stage 1, so these stand as Stage 2's test; Stage 2 added the live game day.
+
+## After this report: 0.6.156-test (`mr-04`)
+
+The package now in `PolarPackage.cs` is `fb-02` plus loop 14's change to the model client, and the suite's live mode brought
+up to date (loop 15, test code). It draws and steps as `fb-02` without a model: the Benchmark has no director and the routes
+and suite modes run with the model keys withheld, so their numbers above were not measured again. Checked: `Tools/CloudNpcCheck`
+212, gameplay 392 and continue 36 on `mr-02`, the start with the model (loop 14), and the live mode 108 on `mr-04` (loop 15).
+
+## After this report: 0.6.157-test (`dr-01`)
+
+The user then chose to fix both items this report left: the distant detail rings are halved (3, 8 and 14 km), after 27
+same-session comparison pictures showed at most 0.31% of pixels differing, and the loading page stays up over the first
+frames of play. The hut route's go out is under the budget (15.64 and 16.49 ms) and its look round is at the edge (16.55 and
+16.73 ms, from 16.92); the pond's Benchmark P95 is 15.10 to 15.80 ms. Results and every picture:
+[distant-detail-entry/results.md](../distant-detail-entry/results.md).
+
+## Limits of these numbers
+
+- The window must be in front: behind another window every segment reads about 1 ms slower (two Benchmark repeats that ran
+  behind a Windows Security prompt are excluded and were repeated).
+- The pond crossing was walked without the player's weight on the ice: every line through the middle of that pond touches a
+  weak plate.
+- The streaming route's walk back stops by time (200 s, 490 m): gusts and slopes slow and turn the walker.
+- One machine, one seed (777), one resolution and preset.
+
+## Reproduce
+
+```
+python Tools/polar_play_routes.py --stage fb-02 --run-id <new id> --passes 3
+python Tools/polar_save_rate.py --stage fb-02-dev --run-id <new id> --live --profile
+python docs/engineering/logs/evidence/2026-11-14/frame-budget/tools/final_tables.py
+```
+
+The diagnostic builds (`fb-00`, `fb-00-dev`, `fb-01`, `fb-01-dev`, `fb-02-dev`, `fb-03-dev`) were deleted on November 14 at the
+user's word, and `fb-04-dev` (loop 13), `mr-01`, `mr-01-dev` and `mr-02-dev` (loop 14) after their runs; `fb-02` and `to-01` are kept. A Development build comes from `PolarHdrpBuild.Run -polarHdrpStage <name>
+-polarHdrpDevelopment`.
+
+The Benchmark runs from the Graphics tab, or `-polarRunBenchmark <folder>` with the window in front
+(`pwsh Tools/polar_window_front.ps1 -name SurvivalLotteryMVP`). The live day costs API calls (about 5 yuan); run it alone.
+
+## Raw data
+
+The raw data behind the tables and pictures of this work (lab captures, Benchmark JSON, the Development route runs under the
+pass probe, profiler tables, build logs, the lab's sources) is kept on this machine, outside git, in
+`Logs/FrameBudget/2026-11-14` (905 files, 3.95 GB; a file-for-file copy of the session's working folder, made on November 14
+at the user's word). Its folders are listed in [distant-detail-entry/results.md](../distant-detail-entry/results.md) (last
+section). The release routes' rows for every frame are in `Logs/PlayRoutes`. Do not delete either in a disk clean-up without
+asking.

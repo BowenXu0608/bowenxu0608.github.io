@@ -1,0 +1,285 @@
+docs/engineering/plans/polar-thin-ice-deep-water.md
+
+# Thin ice: breakthrough and deep water
+
+Approved by the user on November 2, 2026. Source: Codex's plan, kept verbatim in [polar-thin-ice-deep-water-codex.md](polar-thin-ice-deep-water-codex.md); concepts C01-C10 in [docs/art/thin-ice-deep-water](../../art/thin-ice-deep-water/manifest.json). This file is that plan adapted to the code; where they differ, this file holds.
+
+## Status
+
+- M0 done (November 2): concepts archived; capture section `b4-deep-water` (`Assets/Editor/PolarArtCapture.DeepWater.cs`,
+  56 shots, seed 777 pond 33, weak plate 1 walked from stable plate 0, weak plate 17 run from 18, merged with plate 2); before
+  run `Logs/ProjectUpdateCapture/polar-art/dw-before-b` on 0.6.95-test code; 28 before images registered under
+  `docs/engineering/logs/evidence/2026-11-02/` (`deep-pond-water`, `underwater-entry`, `continuous-breakthrough`).
+- Found by M0: the first run (`dw-before`, pond 8) picked a weak plate about 1 m across, and its hole held the player's 0.35 m
+  capsule 0.25 m under the water line, still walking, 5 cm short of the swim switch (`PolarSurveyPlayer.Move`, feet 0.3 m under
+  the water). M2's rim support must let a player whose centre is over open water drop in. The capture now walks only onto weak
+  plates whose centre is at least 0.9 m from their edge.
+- Found by M1's count: 1,177 of 8,566 ponds over the twenty seeds (13.7%; seed 777: 48 of 422) hold water at or below the sea
+  plane + 0.1 m, in inland hollows down to 224 m below the sea. The dry land's exclusion hides any water seen through it, so such
+  a pond takes HDRP's water only while the eye is below that plane (in its hollow or in the pond itself) and the owned water
+  otherwise (`PolarThinIceRuntime.Low`); the underwater view works in them, since the eye in the water is always below the plane.
+- M1 done (November 2, 0.6.98-test, build `dm-01`): world v23 (ponds 20 m deep), the basin drawn at that depth, the exclusion cut
+  round ponds over the sea + 0.6 m (the review raised the cut from 0.1 m: water just over the exclusion is still hidden where a view ray
+  crosses it first), one re-anchored pool surface, navy optics; 1190 of 8566 ponds (13.9%) are low at 0.6 m. Gameplay 387,
+  physical 3959, continue 36, performance 61, weather 80, ui 463 pass.
+- M2 done (November 3, 0.6.100-test, build `dm-02`): one hole line for art, colliders, rules and climbing, the narrow capsule, ice
+  undersides, HDRP underwater in the active pond, the dip (the drawn body follows it, found in the Unity pass), hands in the world
+  draw, lens film, low-pass, and the thin-ice session's slush and seam items. Gameplay 389, physical 3959, continue 36,
+  performance 61, weather 80, ui 463 pass. Thin-edge transmission and the wet band were left out (the captures read as ice without
+  them); a shore-lip line older than M2 goes to the shore work.
+- M3 done (November 3, 0.6.101-test, build `dm-03`): events, the saved break point, cracks along the plate's Voronoi network (exact
+  edges from its seeds: the drafted line map dashed and overran its junctions in the Unity pass), the fold, decal rings, pooled
+  spray, bubbles and foam. Gameplay 390, physical 3959, continue 36, performance 61, weather 80, ui 463 pass. The 24-piece
+  rigid-body simulation was not built (rings move normals only).
+- M4 done (November 3, 0.6.102-test, build `dm-06`; test code only): the performance mode measures the breakthrough uncapped against
+  the same pond quiet, since 60 fps pacing counts the GPU's idle gaps (+6.6 ms paced, about 0.2 ms uncapped), and soaks two ponds
+  250 m apart over 30 cycles. Pond 33: breaking through 11.46 ms frame P95 uncapped, GPU P95 +0.25 ms and main thread +0.21 ms over the same pond quiet (11.15 against 10.90 ms; 10.45 against 10.24 ms); the broken pond +40 MiB private and +28 MiB of render textures against the intact bank. Soak: after 30 visits each, meshes, materials, textures, render textures, objects and native memory +0 at both ponds, the private floor +4 and +21 MiB (passing peaks +288 and +251 MiB). Not as planned: no paired runs against 0.6.95-test, which cannot
+  run the scene; the soak lives in the performance mode; the runner's 1600x900 window. The plan is complete.
+- Drafted offline and adversarially reviewed (workflow `wf_e3caa600-7f8`; about 30 confirmed findings fixed). 0.6.95-test (the earlier plan's M1+M2, commit `0f11bfec`) is the baseline; the earlier plan's M3,
+  M4 (bending, flooding) and M5 follow this one.
+
+## Plan as approved
+
+### Context
+
+The user wants the fall through thin ice to look and feel real. Codex wrote the upgrade plan (`[user directory]\Downloads\PLAN (10).md`, 10 approved concepts C01-C10). In the plan's sequence, the ice cracks under load, its pieces fold into the water, the person goes briefly under among rising bubbles, and they surface and climb out onto ice that really holds them. The water is deep blue with no bottom.
+
+What exists today:
+- The peer session "Thin ice visual effect" is shipping the earlier plan's M1+M2 as `0.6.95-test` (build `ti-01`). Its Player suite is running now, and nothing is committed yet. It covers:
+  - world v22, with water 3 cm under the ice;
+  - a ragged rounded hole, with Voronoi pieces in their final pose;
+  - one shared HDRP "Pond water" pool surface.
+- The pool is 3 m deep in the rules. Under HDRP water it is *drawn* no lower than sea + 0.6 m, because the dry-land water exclusion (`PolarArtWater.Dry`, a stencil at -6.5 m) hides all water in front of a deeper floor.
+- No surface renders underwater: `underWater=false` on all three surfaces, so water is invisible from below.
+- No break event exists; consumers poll `Revision`/`swimming`, and the load point is not kept.
+- The hands draw in a separate foreground pass that ignores world depth and water.
+- The gasp plays 0.5 s after entry, on a fixed timer.
+- The visible rim around a hole has no collider.
+
+**User decisions (November 2):**
+- This session takes over thin ice once 0.6.95-test is committed. The old plan's M4 load cracks merge into this plan; old M3 (the intact-ice look), old M4's bending and flooding, and old M5 (the shore) queue after it, in this session.
+- A test package with a Player suite goes out after each milestone.
+
+### Where this plan departs from Codex's text (and why)
+
+1. **The sea inside a pond.** Codex asks for fragment clipping in "the ocean's owned water material". There is none: the sea uses HDRP's default water graph, and HDRP water graphs cannot discard fragments.
+   - Instead, the exclusion is cut exactly to the footprint of each pond whose water lies above the sea plane (-7 m) plus a margin. There, the pond's own water surface is nearer than the sea and hides it.
+   - While the eye is under water in a pond, the sea's surface is culled from the eye camera. HDRP skips a water surface whose GameObject layer is not in the camera's culling mask (`HDRenderPipeline.WaterSystem.cs:942-944`), so the sea moves to a layer of its own.
+   - Ponds at or below the sea keep today's exclusion and owned water, with no underwater dip. M1 counts them on twenty seeds.
+2. **One pond surface, re-anchored, not a second surface.** HDRP draws each custom-mesh renderer at its own transform, but it reads a pool's reference height (camera height and waterline), its `volumeBounds`, `underWater` and decal region from the surface itself. So the existing shared surface follows the *active pond*. Nothing is handed between surfaces and nothing is drawn twice.
+   - The active pond is the one holding the player; otherwise the nearest loaded broken pond within 60 m, kept until 80 m.
+   - If M1's two-pond capture shows a fault, fall back to Codex's dedicated surface.
+3. **Light under the ice.** HDRP's underwater pass cannot read a per-pond mask. Instead:
+   - shadowed volumetric light gives shafts through the opening (HDRP 17.2's voxelization already fogs underwater voxels, `VolumeVoxelization.compute:59-93`);
+   - one scalar ambient dimmer (WaterRendering `ambientProbeDimmer`) follows how open the ice is around the eye.
+
+   The world-aligned open-water mask is still built. It fades deformation under the ice, and the CPU water sample and the bubbles read it.
+4. **Water deformation.** It uses HDRP's own "Sample Water Decal" graph in texture mode, fed by an owned 256² impulse texture. No new shader graph is needed. The CPU sample evaluates the same impulse function.
+5. **The break point is saved.** It is one additive field per broken plate in `PolarIceSnapshot`, so a reloaded hole shows the same pieces the player saw. Older saves use the plate's hashed point.
+6. **Paths and versions.** The repository is `D:\NewGame`, not `[user directory]/NewGame`. The depth change is world **v23**, since v22 ships in 0.6.95-test.
+
+### Before starting
+
+- Wait for the peer to commit 0.6.95-test. Then message it (`SendMessage` to "Thin ice visual effect") that, by the user's choice, thin ice moves here and it should stop after that package.
+- Check that no peer holds Unity or runs a Player suite ("Game testing with AI NPCs", "Polar Habitat models review"). Log "Unity START/FREE" in the side-session notes.
+- Read the handoff docs in the AGENTS.md order: README, current-status, `rendering-streaming.md`, `polar-world.md`, `polar-gameplay.md`, `polar-audio.md`, the old plan and the latest log.
+- Save this adapted plan as `docs/engineering/plans/polar-thin-ice-deep-water.md`. Mark the old plan `polar-thin-ice-upgrade.md` as superseded for M4's cracks, and record that M3/M5 come after.
+
+### M0 — References and genuine baseline (no production edits)
+
+- **Concepts.** Archive C01-C10 from `[user directory]\.codex\generated_images\01a19cc1-…\` into `docs/art/thin-ice-deep-water/C01-….png`, unretouched, with `manifest.json` (original file name, SHA-256, dimensions, intended use). Follow `.gitattributes` for PNG/LFS.
+- **Baseline.** The fingerprint is the 0.6.95-test commit, and build `ti-01` is its matching package.
+- **Capture adapter (Editor only).** Extend `PolarArtCapture` section `b4-thin-ice` (seed 777, pond 8, weak plate 26 broken by the real load from plate 27) at 1600×900, with a fixed seed, weather, time, exposure and particle seeds. Add a *presentation clock* the capture can step. Cases:
+  - standing and 25 m overhead: intact, just broken (+0.3 s) and settled (+6 s);
+  - low oblique, and a waterline with a large tipped piece;
+  - under water looking up, sideways and down;
+  - the player's walking and running break frames at 0 / 0.15 / 0.3 / 0.5 / 0.8 / 1.2 / 2 / 4 / 6 s, then swimming and climbing;
+  - an explorer breaking through and climbing out, seen from the shore;
+  - two adjacent broken plates;
+  - clear day, overcast day, clear night, and a storm sequence.
+- Run the "before" capture on 0.6.95 code and start the evidence record with `change_evidence.py start` (change ids `deep-pond-water`, `underwater-entry`, `continuous-breakthrough`).
+- Afterwards, `git checkout --` the three font assets the capture dirties.
+
+### M1 — Deep basins and water ownership → test package (next free label, probably 0.6.96-test)
+
+**Rules**
+- `PolarCompactWorld`: `CurrentVersion=23`; `IceSettings(version>=23)` is the v22 profile plus `poolDepth=20`.
+  - Only the hash changes; ponds, plates and routes do not (the runtime alone reads `poolDepth`).
+  - The front page deletes v22 saves by the existing rule.
+- Fix `PolarThinIceValidation.ClearPoolColumn`: it raycasts 5 m and needs over 3 m.
+- Update `Tools/PolarArtIcePresentation.cs:87`.
+
+**Basin** (`PolarThinIceRuntime.BuildStaged`)
+- Remove the drawn-floor workaround (`drawn`, "Drawn pool bottom").
+- The floor and walls go to water − 20 m. They are watertight, single-sided and face inward with real normals; today's both-winding quads share vertices, so their normals cancel.
+- They use a near-black submerged-ground material below the ice's 6 cm. Release `silt` in `OnDestroy` (a leak today).
+
+**Exclusion** (`PolarArtWater.Dry`)
+- For each pond with water above sea + 0.1 m, find the cells it touches (with the same row/column lookup as `Mark`).
+- Emit the projected cell quad minus the convex outline with `PolarThinIce.Subtract` (half-plane pieces, fan triangles, both windings).
+- Built once per world, like today.
+
+**Pond surface** (`PolarArtWater.Pond` and a new `Anchor(pond)`)
+- The surface's y follows the active pond's water level.
+- A trigger `BoxCollider` (layer 2) is its `volumeBounds`, sized to the basin.
+- `underWater` stays off in M1.
+- The sea goes on its own layer (a free layer, checked in TagManager).
+- Pond optics only (the sea and Inland are unchanged):
+  - absorption 4 m, underwater multiplier 1, max refraction 0.5 m;
+  - restrained navy refraction and scattering colours, tuned against C01;
+  - ripples fade with distance (`ripplesFadeStart/Distance`), and smoothness falls with distance (`start/endSmoothness`, fade);
+  - caustics stay off.
+- Fix `PolarFiveAreasCapture` WaterPerf, which picks "inland" as the first non-sea surface: pick it by name.
+
+**Checks**
+- `Tools/polar_v11_seeds.py --version 23` on twenty seeds into a new folder; `--version 22` keeps its hashes.
+- A one-off count of ponds whose water is at or below sea + 0.1 m.
+- Capture two ponds at different heights after a re-anchor, and look down a hole at a pond near sea level: no sea sheet, no floor.
+- Player modes: gameplay, physical, continue, weather, ui and performance. Front-page save cleanup runs only in an isolated validation folder.
+
+### M2 — Ice from every side, the underwater view, the dip and the hands → test package
+
+**Support that matches the visible ice** (rules, render, climb)
+- Move the hole contour into a pure `PolarThinIce.Hole(pond, plate)` in `PolarThinIceData.cs`. Today it is the rounded inset plus fBm in `PolarArtIcePondView.Rim`.
+- Each rim strip belongs to the unbroken neighbour across its edge. Strips taper out within 0.6 m of an edge shared with another hole, so merged holes open as one.
+- **Player:** each strip gets a `MeshCollider` with `PolarIceSupport{pond, neighbour}`, so standing on it loads the neighbour and `FindClimb` hits the visible edge.
+- **Explorers:** a new `PolarThinIce.SupportAt(pond, x, z)` replaces the polygon lookup in `PolarMvpController.StepEnvironment`. `PolarThinIce.ClimbOut` targets the contour.
+- Pieces stay non-supporting.
+- Rebuild only the broken plate and its neighbours' strips when one breaks; today `Sync` rebuilds the whole pond.
+
+**Ice geometry and materials** (`PolarArtIceCaps`, `PolarArtIcePondView`, `PolarData.hlsl`)
+- Plates get an underside 6 cm down. Rim strips and pieces get top, bottom and fractured sides; cut faces reach the 6 cm thickness.
+- **Wet band:** the top within about 12 cm of the water is darker and smoother. **Thin edges:** thickness transmission on the cut-face and piece materials only, with one owned diffusion profile. The main body stays opaque.
+- **New mask data:** a dedicated uv channel; the r/g/b/a/uv0 meanings are kept.
+- Regenerate the PolarGround twin if `PolarSurface.shader` changes.
+
+**Underwater**
+- `underWater` is on only while the eye is inside the active pond's true outline (`PolarThinIce.Contains`) and below its water.
+- The sea's layer leaves the eye camera's mask at the same time.
+- A WaterRendering override lowers `ambientProbeDimmer` by the open fraction within 6 m of the eye.
+- Ice caps, strips and pieces cast sun shadows, so the volumetric shafts come through the opening only.
+- The lens pass (`PolarLens.shader`, `PolarHdrpLensPass`) adds slight softness and distortion while submerged.
+- There is no second blue fog.
+
+**The dip** (`PolarBodyFeedback`)
+- Trigger: the real pond entry in `PolarSurveyPlayer.Move` (the `Swimming` switch), which emits a `ThinIceVisualEvent`.
+- Curve: an additive 1.2 s offset aimed at a height relative to the sampled surface — about −0.35 m held briefly, then back to the swim eye at +0.47 m. Mouse look and movement stay live.
+- It is composed just before the feedback's final write, so the landing and limp terms cannot erase it.
+- The rules' sight point (`PolarMvpController.ActorSightPoint(0)`) ignores the dip.
+- Cleared on:
+  - teleport (`PlaceAt`), restored swimming (`RestoreExposure`), quitting or a new world, and death;
+  - an E climb: climbing is blocked until the dip has passed 0.8 s.
+- It runs on game time, so pause freezes it.
+
+**Hands** (`PolarWeaponView`, `PolarHdrpForegroundPass`)
+- During entry, swimming and climbing, layer 10 joins the world camera's mask and the foreground pass skips the weapon view. The rig then draws once through world depth and water, with refraction, absorption and occlusion by the rim, at the world camera's field of view.
+- Rig shadows are off in this mode. The switch happens while the film is strongest.
+- Normal ownership returns on exit and in `OnDestroy`.
+
+**Film:** a short water film on the lens, separate from gameplay wetness. It decays over 1.5 s, and sparse drops are gone by 4 s.
+
+**Audio** (`PolarActionSounds`, `PolarBodyFeedback`, `PolarAudio`)
+- An `AudioLowPassFilter` at the listener blends toward 800 Hz while the eye is submerged. UI sources set `bypassListenerEffects`.
+- The underwater factor folds into the feedback's existing `PolarAudio.Dim` call.
+- ColdBreath and Pant mute quickly while under.
+- The player's gasp plays at real resurfacing, the `Resurface` event, instead of 0.5 s after entry; `Puff` breath comes with it. Breath is already silent with the mouth under water (`PolarBreath` L68).
+
+### M3 — The continuous breakthrough → test package
+
+**Events and samples**
+- `ThinIceVisualEvent`: kind (LoadStart, Break, Entry, Resurface, FragmentImpact, Stroke), pond, plate, actor, sequence, presentation time, position, velocity and strength.
+  - It is raised once from real transitions: `PolarThinIceRuntime` for load and break, `PolarSurveyPlayer` for the player's entry and resurfacing, `PolarNpcView` for explorers.
+  - It is never saved and never changes survival.
+- `WaterSurfaceSample PolarThinIceRuntime.Sample(pos)` returns the height, normal and velocity (level + impulses), whether the point is in a pond, and the ice cover from the mask.
+- Per-pond render state (the existing `Loaded`) owns the mask, meshes, fragment state and water registration, and its `Dispose` releases them all.
+
+**Fracture** (`PolarThinIceRuntime`, `PolarArtIcePondView.Fracture`)
+- `SetLoad` takes the feet position, from both the player and explorers.
+- When weight first comes onto a plate, its topology is computed from the seed, the plate and the quantised load point. That is the Voronoi network that exists today, seeded toward that point.
+- Its edges become a 128² crack distance texture, built on a worker thread. The shader reveals it outward with stress, as straight cracks with kinks; this replaces `PolarStressFracture`'s curls and rings.
+- At the existing break (thresholds unchanged), support goes at once. The already-cut pieces fold down and out over 0.2-0.5 s from the actual load point, then float.
+- Saved and streamed-back holes are built settled, with no replay. The break point is saved.
+
+**Floating**
+- At most 24 large pieces near the event are simulated at 30 Hz with rendering interpolated:
+  - four buoyancy samples on `Sample`, water drag and angular damping;
+  - bounded impulses from bodies within reach;
+  - a spring to their deterministic rest pose, so energy dies out and a reload matches.
+- The other pieces keep today's sine `Animate`.
+
+**Water interaction**
+- Turn on `supportWaterDecals` in `PolarPipeline.asset` and `deformation` on the pond surface.
+- One `WaterDecal` uses HDRP's sample decal material in texture mode, with a 16×16 m region anchored at the event or the player.
+- An owned blit shader writes a 256² height texture: at most 16 damped radial impulses (entry 0.12 m; impacts; strokes), times the open mask, so nothing rises under intact ice or at the rim.
+- The CPU `Sample` uses the same function and constants.
+- The thresholded weather writes stay; nothing rebuilds a spectrum.
+
+**Particles** (pooled, replacing the per-call `Splash` GameObject)
+- Droplets: 48, ballistic, each living until it falls back to the water.
+- Bubbles: 96, CPU-steered (`GetParticles`/`SetParticles`). They rise, stop under the ice's underside where the mask says ice, and spread sideways until open water. They draw before refraction, so the water attenuates them once.
+- Sparse foam and slush around impacts.
+- The nearby cap is 1,024; distant emitters lose budget first.
+
+**Audio:** entry, stroke, piece impacts and resurfacing come from these events, using recorded library clips only; skip any sound with no fitting clip.
+
+**Explorers:** their view's WaterFall entry raises the same events, with splash, bubbles, impulses and a gasp at their resurfacing.
+
+### M4 — Stability and release
+
+**Performance gates**
+- Matched windowed 1920×1080 runs, paired and alternating against M0's baseline, on AC power on this laptop.
+- P95 ≤ 20 ms and ≤ 8 GiB.
+- Active pond within +2 ms GPU P95 and +0.5 ms main thread, and +128 MiB GPU / +64 MiB CPU.
+- Over budget, cut in this order: distant particles, simulated pieces, interaction resolution, far detail.
+
+**Soak**
+- Add a Player diagnostic argument that teleports between two ponds at least 250 m apart: 30 load/unload cycles in 10 minutes.
+- Log the pond surface's renderer count, render textures, meshes, materials and memory. They must return to the warmed baseline.
+
+**Also check:** temporal smearing on the water and the hands under the project's actual antialiasing, the screen-edge loss of SSR, and a storm sequence.
+
+**Release:** the full affected suite (gameplay, physical, physical-resume, continue, weather, weather-resume, performance, ui, front-page save handling). Then compare and inspect every pair, and update the docs. A package follows only if M4 changed code.
+
+### Tests added
+
+- **`Tools/PolarWorldCheck --thin-ice`:**
+  - `Hole` is deterministic;
+  - support agrees with the rim: a point in the hole is water, a point in a rim strip belongs to the neighbour, and merged holes open as one;
+  - `ClimbOut` reaches the contour;
+  - the v23 hash.
+- **`PolarMvpAcceptance` (gameplay):**
+  - one Entry event per entry;
+  - `underWater` on during the dip and off after;
+  - restoring a save does not replay the effects;
+  - teleport and death clear the dip and the filter;
+  - pause freezes it;
+  - an explorer and the player entering together;
+  - the climb that starts 0.6 m inside the edge, updated for the rim contour.
+- `PolarColdWaterCheck` builds a new seed-777 expedition at the current version since November 2 (the thin-ice session: pond 33, weak
+  plate 1 beside stable plate 0; 31 checks pass on v23, `Logs/ColdWaterCheck/v23-02`).
+
+### Each package
+
+Use the project-update-log workflow: genuine before and after pairs from M0's cases, with the comparisons inspected. Then:
+- the system docs: `rendering-streaming.md`, `polar-world.md`, `polar-gameplay.md`, `polar-audio.md`;
+- `current-status.md`, `design-decisions.md` (v23, rim support, saved break point), the plan's status, `AGENTS.md`'s package note and memory;
+- commit only this session's files by explicit path, and push to `codex/polar-expedition-huts`.
+
+### Critical files
+
+| Area | Files |
+|---|---|
+| Rules | `Assets/Scripts/Polar/PolarCompactWorld.cs`, `PolarThinIceData.cs`, `Gameplay/PolarMvpController.cs`, `PolarSaveService.cs` (unchanged policy) |
+| Runtime | `Assets/Scripts/Polar/PolarThinIceRuntime.cs`, `PolarArtIcePond.cs` (`PolarArtIceCaps`, `PolarArtIcePondView`, `PolarArtWater`), `PolarWorldStreamer.cs` (sea layer) |
+| Player | `PolarSurveyPlayer.cs`, `Gameplay/PolarBodyFeedback.cs`, `Gameplay/PolarWeaponView.cs`, `PolarHdrpForegroundPass.cs`, `PolarHdrpPresentation.cs`, `Gameplay/PolarActionSounds.cs`, `PolarAudio.cs`, `Gameplay/PolarBreath.cs` |
+| Explorers | `PolarNpcSimulation.cs` (`PolarNpcView`), `Gameplay/PolarWaterMotion.cs` |
+| Shaders | `Resources/Polar/HDRP/PolarData.hlsl`, `PolarLens.shader`, a new owned impulse blit shader, `PolarPipeline.asset` |
+| Tests and capture | `Tools/PolarWorldCheck`, `PolarMvpAcceptance.cs`, `PolarThinIceValidation.cs`, `Assets/Editor/PolarArtCapture.cs`, `PolarFiveAreasCapture.cs` |
+
+### Risks to watch
+
+- **Assumed water depth sorting.** The sea is assumed to sort behind a pond's water by depth. M1 checks this with a capture before the exclusion cut is trusted.
+- **Lighting jump on the hands.** The hands change lighting when they move from the foreground pass to the world draw.
+- **Near clip.** The near clip is 0.08 m in the world against 0.02 m in the foreground.
+- **Build time.** Edits to `PolarData.hlsl` recompile every PolarSurface variant.
+- **Peers.** Peers may hold Unity, so every Editor or Player run is announced in the notes.

@@ -1,0 +1,80 @@
+docs/engineering/logs/evidence/2026-11-12/explorer-step-spread/results.md
+
+# Explorers step at their own moments (0.6.145-test)
+
+November 12, 2026. "The explorers' once-a-second step" was the older of the two items the user left open. It was done at the user's word while they slept: "OK, you can try to fix them after this tasks without ask my allowance". The package is `Builds/HdrpMilestones/es-01`. Its Development copy is `es-01-dev`.
+
+No drawn pixel, rule or save changes, so no screenshots apply. Each explorer still steps once a game second, by one second, under the same rules. What changes is when in the second each explorer steps.
+
+## Why
+
+Explorers take their rules step (`PolarNpcSimulation.Step`) once a game second. Before this change all nineteen stepped together, in the frame where the NPC clock (`npcAccumulator`) passed the whole second. In a walk day, that step took 17 to 21 ms of its frame on average and up to 23 to 40 ms. Most of it was walking work: door checks, ground support, walking effort and movement checks. Every game second there was one frame of 25 to 35 ms among frames of 16.7.
+
+## The change
+
+- **`PolarSurvivalSimulation`** calls `StepNpcs(before, dt)` at every rules step, with the NPC clock before the step and the step's length. At 60 fps a rules step is one frame.
+- **Each person's moment** in the second is `Offset(rules, id)`: id modulo 20 twentieths of a second. The player in autopilot (id 0) steps at the whole second, as everyone did before. `Due(rules, id, before, dt)` tells whether a person's moment falls in a rules step, with the same 1e-7 guard the clock's own turn uses.
+- **`PolarNpcSimulation.Step(before, frame)`** steps only those who are due, each by one full second, in id order. `Step(dt)` still steps everyone at once, for the Editor capture tools.
+- **`Since(state, id)`** gives the game seconds since a person's own last moment. It replaces the NPC clock's remainder where that stood for "since the step":
+  - the explorer view walks each step from the moment the rules took it (`seconds - Since`);
+  - `SetExposure` takes the wind heading at the explorer's own moment (`-Since`);
+  - `WarmShelter` works it out ahead at the explorer's next moment (`npcStep - Since`), so the cache still matches at the step.
+- **The walk capture** (`PolarFiveAreasCapture.Walk.cs`, Editor only) stages the clock one frame before the staged explorer's own moment, so its walk still starts at frame 0. A review found that it had staged the whole second, which is now only id 0's moment.
+
+Saves are unchanged: the NPC clock is the same field, and the moments come from the ids. A save made before this change continues on the new schedule.
+
+## Checked: the schedule (`tests/StepSchedule.cs`)
+
+The test is a .NET 8 console program over the game sources that `Tools/PolarGameplayCheck` compiles. It drives the real `PolarSurvivalSimulation` for 1,200 game seconds at 60 fps, with mixed frame lengths from 1/240 to 1/20 s, and at 10x sleep. It keeps the old clock beside the new one.
+
+| Pacing | Rules steps in 1,200 s | Most people stepping in one rules step | Steps each |
+|---|---|---|---|
+| 60 fps | 72,001 | 1 | 1,200 |
+| Frames of 1/240 to 1/20 s | 44,532 | 1 | 1,200 |
+| 10x sleep | 14,402 | 2 | 1,200 to 1,201 (the run ends just past 1,200 s) |
+
+In every run:
+- each person's moments are one game second apart;
+- the next moment read between steps (`npcStep - Since`, what `WarmShelter` uses) is the moment the person steps;
+- `Since` stays within one step;
+- id 0 steps at exactly the rules steps where the old clock stepped everyone.
+
+The output is `data/schedule.txt`.
+
+## Measured: a walk day, before and after (free)
+
+The run is `python Tools/polar_save_rate.py --stage <build> --run-id <id> --walk --profile --seconds 960`, back to back on the same quiet machine. Every explorer walks between its two nearest huts with no model.
+- Before: `dn-01-dev` (`Logs/SaveRate/dawn-wrap-after`).
+- After: `es-01-dev` (`Logs/SaveRate/steps-after`).
+
+| | Before | After |
+|---|---|---|
+| The game's own frames over 25 ms, whole day (the profiler's log starts apart, 52 in each) | 181 | 6 |
+| Of those, in play after the first two seconds | 176 | 2 |
+| Frame time P99, whole day | 21.12 ms | 16.87 ms |
+| Minutes 2 to 6 (`live-times`): frames over 25 ms; longest frame | 35; 31.04 ms | 0; 23.09 ms |
+| Minutes 10 to 15 (`live-late`): frames over 25 ms; longest frame | 38; 32.80 ms | 2; 32.48 ms |
+| The explorers' step (`Polar.Npc.Step`) in one frame, largest: minutes 2 to 6; 10 to 15 | 23.32; 21.27 ms | 9.19; 7.64 ms |
+| The explorers' step, mean over every frame of minutes 2 to 6 | 0.22 ms | 0.24 ms |
+
+The step's total work is about the same. It is now spread over twenty frames a second instead of one.
+
+After the change, two of the game's own frames in play are over 25 ms: 26.1 ms at 441 s and 26.3 ms at 611 s.
+
+Among the profiler's frames, the slow ones left are:
+- a save and some code compiled under the call stacks (minutes 6 to 10);
+- frames whose time is the frame-rate wait (`WaitForTargetFPS`), with no game work over 1.2 ms.
+
+The summaries are in `data/walk-day.json`.
+
+## Checks
+
+- **Compile.** `Assembly-CSharp` compiles in the package builds. The Editor scripts compile in a batch run of the Editor.
+- **Shared rules** (`Tools/PolarGameplayCheck`): 2750 pass.
+- **Player modes on `es-01`:** gameplay 392 and continue 36 pass (`Logs/PolarV7/0.6.145-test/es-01`).
+- **Review.** Three read-only reviewers looked at the clock, at code that assumed everyone stepped together, and at the view and cost, with two skeptics for each finding. One finding stood: the walk capture's staging, fixed above.
+
+## Left
+
+- **One explorer's step** can still take 4 to 9 ms in a Development build. About half of it is door checks (`Polar.Npc.Door`): 160 to 460 µs a call, which is more than its loop over the 146 huts should cost. It has not been looked into.
+- **The last 4 to 5 ms a save costs the main thread.**

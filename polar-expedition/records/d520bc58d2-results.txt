@@ -1,0 +1,78 @@
+docs/engineering/logs/evidence/2026-11-12/dawn-wrap-notices/results.md
+
+# Dawn's wind turn, the diary's last paths and urgent notices across a decision (0.6.144-test)
+
+November 12, 2026. These are three items the user left open after 0.6.142-test. They were done on the user's word while they slept: "OK, you can try to fix them after this tasks without ask my allowance". The package is `Builds/HdrpMilestones/dn-02`. Its Development copy is `dn-01-dev`, which differs from it only in the director's rule for merged notices (part 3). A walk day without the model never reaches that rule.
+
+No drawn pixel, rule or save changes, so no screenshots apply. Explorers' shelter, the diary's text and every decision's input are as before. What changes is when the shelter is worked out and when the diary's code is compiled. One urgent notice that a reply used to drop is now asked about.
+
+## 1. The first step of 06:00's wind turn
+
+**Why.** Since 0.6.141-test, `WarmShelter` works out explorers' terrain shelter one rules step ahead, and the step's `SetExposure` uses that value when the heading is within 0.01 degree of it. Headings run from 0 to 360. A turn from north the negative way round starts at 359.9999 degrees. The cache held 0 from the step before, and the plain difference took the two for 360 degrees apart. So the turn's first step worked out every explorer's shelter again in its own frame.
+
+Seed 777's four-hour wind directions are 12, 1, 12, 7, 8, 0, 8, 9 points of 16. The turn at 06:00 goes from 0 (north) to 8 (south), and the blend takes the negative way round.
+
+**Fix.** Both comparisons measure the difference round the circle (`Mathf.DeltaAngle`). Headings that differ by less than 0.01 degree across north now match.
+
+**Measured** in a free walk day past 06:00 (`Tools/polar_save_rate.py --walk --profile --seconds 960`), before (`rb-01-dev`, `Logs/SaveRate/grids-after`) and after (`dn-01-dev`, `Logs/SaveRate/dawn-wrap-after`). Both are read from the profiler log that holds 06:00 (`live-late-15`), per step by `PolarLoadReport` (`data/walk-day.json`):
+
+| | Before | After |
+|---|---|---|
+| Shelter work (`Polar.Npc.Senses`) in the turn's first step | 4.03 ms | 0.80 ms |
+| The same in the other 15 or 16 steps of that minute | 0.54 to 0.77 ms | 0.57 to 0.89 ms |
+| Code compiled (`Mono.JIT`) in the step at 06:00 | 0.59 ms | 0.33 ms |
+| The walking work in that step (`Polar.Npc.Execute`) | 10.82 ms, 129 door checks | 14.47 ms, 146 door checks |
+| That frame | 27.16 ms | 32.80 ms |
+
+The turn's first step now costs what every other step costs. The frame itself was not shorter in this run. Explorers walk where their own timing takes them, and in this run that step's walking work was 3.65 ms heavier, which is more than the 3.2 ms saved. That walking work is the explorers' once-a-second step, the next item. No collection fell in either frame (`allocations/live-late-frames.csv`).
+
+Over the whole day the game's own frames over 25 ms were 173 before and 181 after, and the frame time P99 was 21.2 and 21.1 ms. The walking step's run-to-run spread (about 40 frames, `route-search-grids/results.md`) covers that.
+
+## 2. The diary's last paths at dawn
+
+**Why.** 0.6.142-test composes a throwaway diary day on the loading screen, so the diary's LINQ over value tuples is compiled there and not in the first 06:00's frame. That day had three lines: two searches and a gunshot. A real first day also meets someone and sees a death, and the dawn writes the entry (`WriteDiary`), so their code was still compiled at dawn.
+
+**Fix.** The throwaway day also meets someone (`Met explorer`) and sees a death (a first-hand `Death` belief). `WriteDiary` is called on it behind its guard: `diaryDay` is set to the largest day, so nothing is written. The actor has id -1 and no list holds it, so nothing reaches the state or the save.
+
+**Measured** on the game's own compiled code under Unity's Mono (`tests/DiaryJit.cs`; a fresh process each run, a full first day written at dawn after each warm-up):
+
+| Warm-up on the loading screen | First diary at dawn | The warm-up's own time |
+|---|---|---|
+| None | 13.47 to 14.91 ms | 0.14 to 0.26 ms |
+| 0.6.142-test's day (three lines) | 0.82 to 1.10 ms | 21.40 to 22.79 ms |
+| This day (five lines and `WriteDiary`) | 0.25 to 0.30 ms | 22.18 to 25.98 ms |
+
+Four runs each, on `dn-02`'s `Assembly-CSharp.dll` (`data/diary-runs.txt`). The entry's text is the same after each warm-up (one checksum for all three). The warm-up adds about 1 ms to loading. The first diary at dawn is shorter in this harness than in 0.6.142-test's (`DiaryWarm.cs`, 33 to 46 ms with no warm-up), because the harness day is not the same.
+
+In the walk day the code compiled in the step at 06:00 fell from 0.59 to 0.33 ms. A walk day's player meets nobody and sees no death, so the walk day does not reach the paths this adds.
+
+## 3. Urgent notices that come while a decision is under way
+
+**The question** (0.6.141-test left it open): should an explorer whose request was in flight at night fall be told about night fall again?
+
+**Answer: yes, and it is now done.** A decision's input is taken when its request starts. Night fall, hunger, cold, a fall, a wound or a failed step that comes while the request is in flight is not in that input. Before, the reply's arrival removed every notice that came meanwhile, so the explorer acted on a plan made in daylight. The next question came only from the minute's idle notice, about 1.6 game hours later.
+
+**The rule** (`PolarNpcDirector.Apply`). A notice that came while the decision was made is answered by it, as before, except an urgent one that is not words. That one stays queued, and the explorer is asked again at once.
+- Each notice keeps its latest urgent reason that is not words (`Notice.alert`). Words merged into the same notice do not hide it.
+- When the reply answered words and the notice also holds words, the explorer is asked about the alert alone, on the planning lane. The words were answered, and they are not answered twice.
+- Plain notices (a plan finished, nothing new) and words are answered by the reply, as before.
+
+**Cost.** One more request for each explorer whose request was in flight when such a notice came. At night fall that is at most the requests in flight then: 3 planning and 10 conversation slots.
+
+**Checked** (`Tools/CloudNpcCheck`, 211 checks; `data/npc-checks.txt`):
+- night fall during a decision asks the explorer again, and the second request's input says "Night has fallen.";
+- a plain notice during a decision is answered by it, with one request;
+- night fall merged with words while the explorer answers words asks again about night fall alone, on the planning lane, without the words.
+
+The director before this change fails the first check. The first version of this change, which kept only notices that were urgent and not social, fails the third. A review found that gap (night fall merged into a words notice while the player talks at 22:00), and the merged rule above closes it.
+
+## Checks
+
+- **Compile.** `Assembly-CSharp` compiles in the package builds (`dn-01`, `dn-01-dev`, `dn-02`).
+- **Player modes on `dn-02`:** gameplay 392 and continue 36 pass (`Logs/PolarV7/0.6.144-test/dn-02`).
+- **Review.** Three read-only reviewers looked at the wrap, the diary warm-up and the notice rule, with two skeptics for each finding. Two findings were raised. One stood: night fall merged into a words notice was still dropped. It is fixed above. The other, that a failed step of a replaced plan is asked about again, was refuted by both skeptics. The step failed where the explorer stands, and the new plan was decided without knowing that.
+
+## Left
+
+- **The explorers' once-a-second step.** Every explorer steps in the same frame, 12 to 18 ms of it in a walk day (door checks, ground support, walking effort and movement checks).
+- **The last 4 to 5 ms a save costs the main thread**: the text of everything but the unchanged huts, and the validation.
