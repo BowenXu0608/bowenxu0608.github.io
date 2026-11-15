@@ -55,12 +55,6 @@
     list("[data-film]").forEach(link => link.addEventListener("click", event => {
       event.preventDefault(); open(film); playAt(Number(link.dataset.start) || 0);
     }));
-    list("[data-time]",film).forEach(button => button.addEventListener("click", () => playAt(Number(button.dataset.time))));
-    reel.addEventListener("timeupdate", () => {
-      const chapters = list("[data-time]",film);
-      const active = chapters.filter(button => Number(button.dataset.time) <= reel.currentTime).pop();
-      chapters.forEach(button => button.setAttribute("aria-pressed",String(button === active)));
-    });
     film.addEventListener("close", () => reel.pause());
   }
 
