@@ -1,0 +1,785 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="A C++20 and Vulkan rhythm game engine. Read the full engineering casebook for mobile rendering, runtime, authoring tools and Android delivery.">
+  <meta name="theme-color" content="#f7f8fa">
+  <title>Music Game Engine · Engineering Casebook</title>
+  <link rel="icon" href="assets/mge.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="style.css">
+  
+  
+<link rel="stylesheet" href="reading.css"><link rel="alternate" hreflang="en" href="en.html"><link rel="alternate" hreflang="zh-CN" href="index.html"><script src="content-en.js" defer></script><script src="portfolio.js" defer></script><script src="language.js" defer></script><script src="casebook.js" defer></script></head>
+<body>
+<a class="skip" href="#overview">
+<span>Skip to project</span>
+</a>
+<header>
+<div class="wrap top">
+<a class="brand" href="#overview" aria-label="Music Game Engine">
+<span class="mark" aria-hidden="true">
+<i>
+</i>
+<i>
+</i>
+<i>
+</i>
+<i>
+</i>
+<i>
+</i>
+</span>MGE</a>
+<span class="brand-context">
+<span>Engineering portfolio</span>
+</span>
+<nav aria-label="Project sections">
+<a href="#overview">Project</a><a href="#graphics-lab">Graphics engineering</a><a href="#november-review">Verification</a><a href="#casebook">All cases</a><a href="#architecture">Eight systems</a><a href="#history">Projects</a></nav>
+<div class="languages" role="group" aria-label="Language"><a lang="en" hreflang="en" href="en.html" aria-current="page">EN</a><a lang="zh-CN" hreflang="zh-CN" href="index.html">中文</a></div></div>
+</header>
+<main class="wrap">
+<section id="overview" class="overview">
+<h1>Music Game Engine</h1><p class="lead">
+<span>A C++20 and Vulkan rhythm game engine with a Windows chart editor and an Android player.</span>
+</p>
+<dl class="facts">
+<div>
+<dt>
+<span>Project records</span>
+</dt>
+<dd>
+<span>Mar–Nov 2026</span>
+</dd>
+</div>
+<div>
+<dt>
+<span>Platforms</span>
+</dt>
+<dd>Windows / Android</dd>
+</div>
+<div>
+<dt>
+<span>Individual role</span>
+</dt>
+<dd>
+<span>Awaiting author confirmation</span>
+</dd>
+</div>
+</dl>
+<div class="hero-pair">
+<div class="editor-board">
+<div class="board-head">
+<span>Windows · Song Editor</span>
+<span>17.20 s</span>
+</div>
+<figure class="hero-editor">
+<a class="image-link" href="assets/song-editor.webp" data-image data-caption="Drop 2D Studio Program · Hard.">
+<img src="assets/song-editor.webp" alt="Drop 2D Studio Program · Hard.">
+</a>
+<figcaption>
+<span>Drop 2D Studio Program · Hard.</span>
+</figcaption>
+</figure>
+<div class="detail-links">
+<a class="detail-link" href="assets/timeline.webp" data-image data-caption="Timeline · the hold crosses the third, fourth and fifth lanes from the left (zero-based chart lanes 2, 3 and 4).">
+<span>Note placement</span> <span aria-hidden="true">↗</span>
+</a>
+<a class="detail-link" href="assets/binding-panel.webp" data-image data-caption="Hard difficulty · normal and active hold body materials.">
+<span>Binding</span> <span aria-hidden="true">↗</span>
+</a>
+<a class="detail-link" href="assets/rendered-preview.webp" data-image data-caption="Rendered scene · the selected chart at 17.20 s.">
+<span>Scene preview</span> <span aria-hidden="true">↗</span>
+</a>
+</div>
+</div>
+<div class="device-board">
+<div class="board-head">
+<span>Android · Galaxy S21</span>
+<span>≈17.20 s</span>
+</div>
+<figure class="phone-still">
+<a class="image-link" href="assets/s21-paired.webp" data-image data-caption="Same chart and hold · Standard quality, autoplay.">
+<img src="assets/s21-paired.webp" alt="Same chart and hold · Standard quality, autoplay.">
+</a>
+<figcaption>
+<span>Same chart and hold · Standard quality, autoplay.</span>
+</figcaption>
+</figure>
+<div class="film-call">
+<h3>
+<span>The cross-lane hold</span>
+</h3>
+<p>
+<span>From 16 to 21 seconds one striped hold crosses the third, fourth and fifth lanes from the left (chart indices 2, 3 and 4).</span>
+</p>
+<a class="play" href="assets/hold-study-en.mp4" data-movie data-caption="Drop 2D · Hard · material study">
+<span aria-hidden="true">▶</span> <span>Play study with sound</span>
+</a>
+<small id="film-credit">
+<span>19 s · S21 device audio starts at 0:09</span>
+</small>
+<div class="reader-doors"><a href="#drop2d-hold">Inspect this hold's lane-tracking fix</a><a href="#graphics-lab">See the rendering experiments</a><a href="#casebook">Browse the casebook</a></div><details class="evidence">
+<summary>
+<span>Capture and music credits</span>
+</summary>
+<div class="evidence-body">
+<p>
+<span>The editor sequence uses reproducible Song Editor captures of a project copy. The Hard overrides select Energy Stripes Cyan for the hold body and its active state. The R13d Android build uses the same materials inherited from the song. The Hard chart and original studio.wav in the installed APK match the project files byte for byte.</span>
+</p>
+<p>
+<span>The phone plays the chart in real time with autoplay and its own digital stereo output. The 17.2 s still was aligned using the 24 s song’s HUD progress. The archival 9 s image below shows the earlier straight segment.</span>
+</p>
+<figure class="">
+<a class="image-link" href="assets/s21-program.webp" data-image data-caption="S21 · archived 9 s material check">
+<img src="assets/s21-program.webp" alt="S21 · archived 9 s material check" loading="lazy">
+</a>
+<figcaption>
+<span>S21 · archived 9 s material check</span>
+</figcaption>
+</figure>
+ · 
+</div>
+</details>
+</div>
+</div>
+</div>
+<details class="evidence"><summary>Development process and attribution</summary><div class="evidence-body"><p>In the March build journal, the author describes directing AI coding agents that generated most of the code. The journal documents selecting the architecture, breaking down systems, defining interfaces and invariants, reviewing implementations and diagnosing missed failures. The results below are attributed to the project. Individual implementation and authorship claims are pending the author’s confirmation.</p></div></details></section>
+<section id="graphics-lab">
+  <div class="section-title"><p class="overline">Graphics engineering</p><h2>From lighting models to GPU costs on a phone</h2></div>
+  <p>One material program can run on bent holds, the track and the disk. The experiments compare lighting formulas against numerical references, images against fixed-frame captures, and bandwidth and timing on the phone. The results and device budgets guide which effects ship.</p>
+  <div class="graphic-experiments">
+    <figure><a href="assets/lab-disney.webp" data-image="" data-caption="Desktop · Drop 3D · Disney material fixture in R9"><img src="assets/lab-disney.webp" loading="lazy" alt="Drop 3D desktop Disney material test scene"></a><figcaption><b>Reflection model (BRDF)</b> 1,296 inputs were checked against a double-precision CPU reference. Maximum absolute error was below 4 × 10⁻⁶. The image is an in-game desktop capture.</figcaption></figure>
+    <figure><a href="assets/lab-scatter.webp" data-image="" data-caption="Desktop · Drop 3D · screen-space scattering enabled in R13b"><img src="assets/lab-scatter.webp" loading="lazy" alt="Screen-space subsurface scattering in Drop 3D on desktop"></a><figcaption><b>Subsurface scattering</b> Desktop uses per-channel screen-space diffusion. Forcing it on S21 raised the GPU workload to 3.7–4.5×. The phone ships thin-surface backlighting.</figcaption></figure>
+    <figure><a href="assets/lab-gi.webp" data-image="" data-caption="Offline CPU path-traced reference · R13c test scene"><img src="assets/lab-gi.webp" loading="lazy" alt="Global illumination test scene from the offline path tracer"></a><figcaption><b>Global illumination (GI)</b> The image is the offline path-traced reference. Probe-grid indirect light had 38%–44% error against a preset 25% limit, so it stayed experimental.</figcaption></figure>
+  </div>
+  <div class="related"><a href="#gpu">See the mobile GPU counter measurements</a><a href="#materials">Inspect a material on the actual note</a><a href="#group-graphics">Browse graphics cases</a></div>
+<div class="newest-run"><h3>Galaxy S21 baseline on 11 November</h3>
+<p>A/B tests on 11 November used the same assets and the same S21. Across three 120 Hz runs of each mode, the highest per-run GPU p95 was 5.58 ms, within the 6.50 ms budget. SurfaceFlinger counted 11 of 34,575 actual intervals above 1.5 refresh periods at 120 Hz and 0 of 17,288 at 60 Hz.</p>
+<p>Drop 2D caches stable track shading and trades less shading time for more external reads, rising from 85.4 to 550.2 MiB/s in its fixed scene. Scan Line’s tile-local compositing reduced external reads from 2,461.0 to 86.1 MiB/s in its own fixed fixture. Each measurement has its own build and workload.</p>
+<a href="#s21-present-attribution">Trace a missed refresh from game submission to display</a><a href="#november-review">Read the 19 November verification</a></div></section>
+<section id="november-review">
+  <div class="section-title"><p class="overline">2026.11.19</p><h2>Implementation and verification</h2></div>
+  <h3>Six shapes on one scan line</h3>
+  <p><i>Scan Shape Study</i> places six tap notes at the same time. From left to right, the square, circle, triangle, diamond, star and regular hexagon all use the same timing judgment at 9.00 seconds. The star, second from the right, uses the <i>Shape Study Ink</i> material with its image rotated 30° about the texture centre.</p>
+  <article id="drop2d-hold"><h3>Following a cross-lane hold in Drop 2D</h3><p>On Drop 2D Studio / Hard, one hold moves across three lanes between 16 and 21 seconds. In the earlier build its active head stayed in the starting lane. The head now follows the same horizontal coordinate as the hold path at the judgment line. Timed Windows and Galaxy S21 replays verified both lane changes. The phone input replay also hit all four intermediate checkpoints and the tail.</p></article><article id="s21-present-attribution"><h3>Where did the S21 miss a 120 Hz refresh?</h3>
+<p><strong>The display path accounts for 9 of 9 long intervals in the new 120 Hz runs.</strong> The game had queued the next buffer. The GPU finished it 9.38–12.76 ms before the previous image appeared. SurfaceFlinger latched that buffer before its scheduled refresh. Android marked the matching display frame with a SurfaceFlinger CPU deadline miss.</p>
+<p>The same S21 ran 24 full Hard charts across the four modes, with the showcase’s 64-bit engine and its GPU probe off. Both methods traced game buffers and display frames. One also polled the system’s presentation history. The long-interval thresholds were 12.50 ms at 120 Hz and 25.00 ms at 60 Hz.</p>
+<div class="table-scroll"><table><caption>Consecutive game buffers presented during music playback</caption><thead><tr><th scope="col">Refresh</th><th scope="col">Collection method</th><th scope="col">Song runs</th><th scope="col">Long / all intervals</th></tr></thead><tbody>
+<tr><th scope="row">120 Hz</th><td>Trace with latency polling</td><td>8</td><td>4 / 23,048</td></tr>
+<tr><th scope="row">120 Hz</th><td>Trace only</td><td>12</td><td>5 / 34,591</td></tr>
+<tr><th scope="row">60 Hz</th><td>Trace only</td><td>4</td><td>0 / 5,763</td></tr>
+</tbody></table></div>
+<details class="evidence" id="s21-present-example"><summary>Inspect one buffer at 16.19 s in Circle Studio</summary><div class="evidence-body"><div class="table-scroll"><table><caption>120 Hz, trace only, buffer 2177. Time zero is the previous buffer’s presentation.</caption><thead><tr><th scope="col">Event</th><th scope="col">Relative time</th></tr></thead><tbody>
+<tr><th scope="row">Game queues the buffer</th><td>−12.67 ms</td></tr>
+<tr><th scope="row">GPU finishes writing (acquire fence)</th><td>−9.39 ms</td></tr>
+<tr><th scope="row">Previous buffer appears</th><td>0.00 ms</td></tr>
+<tr><th scope="row">SurfaceFlinger latches this buffer</th><td>+3.35 ms</td></tr>
+<tr><th scope="row">Scheduled display presentation</th><td>+8.35 ms</td></tr>
+<tr><th scope="row">Compositor call returns</th><td>+10.32 ms</td></tr>
+<tr><th scope="row">This buffer appears (present fence)</th><td>+16.68 ms</td></tr>
+</tbody></table></div>
+<p>No other display-frame endpoint fell between these consecutive game buffers. Actual presentation trailed the predicted opportunity by one refresh. The trace locates the delay after handoff. Distinguishing scheduling, vendor drivers and display hardware would require platform-level evidence.</p></div></details>
+<p>In all 11 misses from 11 November, the next buffer was GPU-ready 10.20–12.96 ms before the previous image appeared. The older Circle first-use stall had a different signature. Across a 75.22 ms gap its next buffer became ready 60.86 ms after the previous presentation. Pipeline prewarming fixed that engine stall. One separate Scan Line event on the old reference lacks queue and latch timestamps and remains unclassified.</p>
+<div class="related"><a href="https://perfetto.dev/docs/data-sources/frametimeline">Android’s FrameTimeline definitions</a><a href="https://source.android.com/docs/core/graphics/sync">Android’s graphics fence definitions</a></div></article>
+</section>
+<section id="casebook">
+  <div class="section-title"><p class="overline">Engineering casebook</p><h2>Engineering problems, decisions and results</h2></div>
+  <p>Browse by field or search for a term. Each case describes the situation, task, action, result and reflection.</p>
+  <div class="case-controls">
+    <label for="case-query">Search engineering cases</label>
+    <input type="search" id="case-query" placeholder="Search in English or Chinese, e.g. bandwidth, BRDF, undo" autocomplete="off">
+    <fieldset id="case-filters"><legend>Filter by area</legend></fieldset>
+    <div class="selection-controls"><label><input type="checkbox" id="marked-only"> Shortlisted only (<span id="marked-count">0</span> )</label><button type="button" id="export-marked" disabled>Export shortlist</button><small id="mark-storage"></small></div>
+    <div class="case-actions"><span id="case-count" role="status" aria-live="polite"></span><button id="toggle-cases" type="button">Expand matching cases</button></div>
+  </div>
+  <div id="case-groups"></div>
+  <noscript>Enable JavaScript to expand and search the offline cases. The charts, comparisons and tables below are available without it.</noscript>
+</section><section id="architecture">
+<div class="section-title">
+<p class="overline">
+<span>Architecture</span>
+</p>
+<h2>
+<span>One project, two players</span>
+</h2>
+</div>
+<p>The project stores charts, music, material bindings and player settings. Windows Test Game loads the project directly. The Android packager follows asset references. Both players share the chart clock, judgment logic and player views.</p><div class="flow-map" role="group" aria-label="Project architecture">
+<svg aria-hidden="true" viewbox="0 0 1000 244" preserveaspectratio="none">
+<defs>
+<marker id="tip" orient="auto" viewbox="0 0 8 8" refx="7" refy="4" markerwidth="7" markerheight="7">
+<path d="M0 0L8 4L0 8z"></path>
+</marker>
+</defs>
+<g class="edges">
+<path d="M181 108H227"></path>
+<path d="M415 108H448V49H492"></path>
+<path d="M448 108V160H492"></path>
+<path d="M681 160H765"></path>
+</g>
+<g class="shared-edges">
+<path d="M860 80V49H681"></path>
+<path d="M860 114V131"></path>
+</g>
+</svg>
+<div class="node edit">
+<b><a href="#system-editor">
+<span>Windows editor</span>
+</a></b>
+<small>
+<span>Charts, songs, materials, screens</span>
+</small>
+</div>
+<div class="node project">
+<b><a href="#system-resources">
+<span>Saved project</span>
+</a></b>
+<small>
+<span>Events, audio, bindings, configuration</span>
+</small>
+</div>
+<div class="node test">
+<b><a href="#system-core">
+<span>Windows Test Game</span>
+</a></b>
+<small>
+<span>Opens the project directly</span>
+</small>
+</div>
+<div class="node apk">
+<b><a href="#system-android">
+<span>Build APK</span>
+</a></b>
+<small>
+<span>Collect referenced assets and SPIR-V</span>
+</small>
+</div>
+<div class="node player">
+<b><a href="#android">
+<span>Android player</span>
+</a></b>
+<small>
+<span>Reads the packaged project</span>
+</small>
+</div>
+<div class="node common">
+<b><a href="#system-core">
+<span>Shared C++</span>
+</a></b>
+<small>
+<span>Clock, modes, judgment, player views</span>
+</small>
+</div>
+</div>
+<div class="modes">
+<div class="mode" data-mode="drop2d">
+<button class="mode-trigger" type="button" aria-expanded="false" aria-controls="mode-panel-drop2d">
+<img src="assets/cross-lane.webp" alt="Drop 2D desktop capture" loading="lazy">
+<span class="mode-name">Drop 2D <i aria-hidden="true">＋</i>
+</span>
+<small>
+<span>Follow holds across lanes.</span>
+</small>
+</button>
+</div>
+<div class="mode" data-mode="drop3d">
+<button class="mode-trigger" type="button" aria-expanded="false" aria-controls="mode-panel-drop3d">
+<img src="assets/hero.webp" alt="Drop 3D desktop capture" loading="lazy">
+<span class="mode-name">Drop 3D <i aria-hidden="true">＋</i>
+</span>
+<small>
+<span>Play ground notes and sky arcs.</span>
+</small>
+</button>
+</div>
+<div class="mode" data-mode="circle">
+<button class="mode-trigger" type="button" aria-expanded="false" aria-controls="mode-panel-circle">
+<img src="assets/circle.webp" alt="Circle desktop capture" loading="lazy">
+<span class="mode-name">Circle <i aria-hidden="true">＋</i>
+</span>
+<small>
+<span>Read a moving disk.</span>
+</small>
+</button>
+</div>
+<div class="mode" data-mode="scanline">
+<button class="mode-trigger" type="button" aria-expanded="false" aria-controls="mode-panel-scanline">
+<img src="assets/scanline.webp" alt="Scan Line desktop capture" loading="lazy">
+<span class="mode-name">Scan Line <i aria-hidden="true">＋</i>
+</span>
+<small>
+<span>Tap as the sweep crosses.</span>
+</small>
+</button>
+</div>
+</div>
+<div id="mode-panels"></div>
+<div id="systems">
+<h3>
+<span>Eight engine systems</span>
+</h3>
+<div id="system-index">
+</div>
+</div>
+</section>
+<section id="materials">
+<div class="section-title">
+<p class="overline">
+<span>Material authoring &amp; compatibility</span>
+</p>
+<h2>
+<span>Changing the surface, preserving the chart</span>
+</h2>
+</div>
+<p>
+<span>Hard can override a song’s hold-body material. Unbound parts use engine defaults. The editor validates wrapped GLSL and packages compiled SPIR-V for Android. Song time moves stripes along the hold’s path.</span>
+</p>
+<div class="material-study">
+<figure class="comparison">
+<div class="wipe" style="--split:48%">
+<img src="assets/rendered-preview.webp" alt="Energy Stripes" loading="lazy">
+<img class="before" src="assets/plain-hold.webp" alt="Plain" loading="lazy">
+<div class="split-line" aria-hidden="true">
+<b>‹ ›</b>
+</div>
+<span class="state left">
+<span>Plain</span>
+</span>
+<span class="state right">
+<span>Energy Stripes</span>
+</span>
+<input type="range" min="0" max="100" value="48" aria-label="Before and after split">
+</div>
+<figcaption>
+<span>Drop 2D · 17.20 s · fixed camera</span>
+<span class="originals">
+<a class="detail-link" href="assets/plain-hold.webp" data-image data-caption="Plain">
+<span>A</span> <span aria-hidden="true">↗</span>
+</a>
+<a class="detail-link" href="assets/rendered-preview.webp" data-image data-caption="Energy Stripes">
+<span>B</span> <span aria-hidden="true">↗</span>
+</a>
+</span>
+</figcaption>
+</figure>
+<div class="specimen">
+<figure class="">
+<a class="image-link" href="assets/material-sphere.webp" data-image data-caption="Sphere · surface response">
+<img src="assets/sphere-detail.webp" alt="Sphere · surface response" loading="lazy">
+</a>
+<figcaption>
+<span>Sphere · surface response</span>
+</figcaption>
+</figure>
+<figure class="">
+<a class="image-link" href="assets/material-object.webp" data-image data-caption="Object · bent hold">
+<img src="assets/object-detail.webp" alt="Object · bent hold" loading="lazy">
+</a>
+<figcaption>
+<span>Object · bent hold</span>
+</figcaption>
+</figure>
+<figure class="">
+<a class="image-link" href="assets/material-scene.webp" data-image data-caption="Scene · player camera">
+<img src="assets/stage-detail.webp" alt="Scene · player camera" loading="lazy">
+</a>
+<figcaption>
+<span>Scene · player camera</span>
+</figcaption>
+</figure>
+</div>
+</div>
+<p>
+<span>Object inspection reveals the bend. Older songs can preview an upgrade and roll back. In 36 paired regression frames, the recorded hit positions moved by 0 px.</span>
+</p>
+<details class="evidence">
+<summary>
+<span>Binding, upgrade and rollback</span>
+</summary>
+<div class="evidence-body">
+<div class="archive-gallery">
+<figure class="">
+<a class="image-link" href="assets/hard-binding.webp" data-image data-caption="Binding check · Drop 3D tap. Song: Polished Silver; Hard: Cyan Plastic.">
+<img src="assets/override-detail.webp" alt="Binding check · Drop 3D tap. Song: Polished Silver; Hard: Cyan Plastic." loading="lazy">
+</a>
+<figcaption>
+<span>Binding check · Drop 3D tap. Song: Polished Silver; Hard: Cyan Plastic.</span>
+</figcaption>
+</figure>
+<figure class="">
+<a class="image-link" href="assets/look-preview.webp" data-image data-caption="Preview the upgrade plan before applying. Drop 2D Studio, desktop.">
+<img src="assets/upgrade-detail.webp" alt="Preview the upgrade plan before applying. Drop 2D Studio, desktop." loading="lazy">
+</a>
+<figcaption>
+<span>Preview the upgrade plan before applying. Drop 2D Studio, desktop.</span>
+</figcaption>
+</figure>
+<figure class="">
+<a class="image-link" href="assets/look-restore.webp" data-image data-caption="Return a chart to its original look. Drop 3D Studio, desktop.">
+<img src="assets/restore-detail.webp" alt="Return a chart to its original look. Drop 3D Studio, desktop." loading="lazy">
+</a>
+<figcaption>
+<span>Return a chart to its original look. Drop 3D Studio, desktop.</span>
+</figcaption>
+</figure>
+</div>
+<p>
+<span>Bindings identify a part, optional active state and region. The resolver records explicit, inherited or default values. Older songs begin on the legacy path. Upgrade previews the carried bindings; the tested rollback restores the original chart and configuration. HUD glyph edges have their own regression tolerance.</span>
+</p>
+
+ ·  · 
+</div>
+</details>
+</section>
+<section id="gpu">
+<div class="section-title">
+<p class="overline">
+<span>Mobile GPU · controlled experiment</span>
+</p>
+<h2>
+<span>Why optimise a frame already near 120 FPS?</span>
+</h2>
+</div>
+<p>
+<span>A 2400 × 1080 RGBA16F image occupies 20.7 MB. Display conversion reads colour inside the GPU tile, avoiding a full write and read through external memory. The HUD draws separately.</span>
+</p>
+<figure class="comparison">
+<div class="wipe" style="--split:48%">
+<img src="assets/gpu-tile.webp" alt="Tile · 119.5 FPS" loading="lazy">
+<img class="before" src="assets/gpu-baseline.webp" alt="Existing · 119.5 FPS" loading="lazy">
+<div class="split-line" aria-hidden="true">
+<b>‹ ›</b>
+</div>
+<span class="state left">
+<span>Existing · 119.5 FPS</span>
+</span>
+<span class="state right">
+<span>Tile · 119.5 FPS</span>
+</span>
+<input type="range" min="0" max="100" value="48" aria-label="Before and after split">
+</div>
+<figcaption>
+<span>Galaxy S21 · Drop 3D Hard · 1.3 s</span>
+<span class="originals">
+<a class="detail-link" href="assets/gpu-baseline.webp" data-image data-caption="Existing · 119.5 FPS">
+<span>A</span> <span aria-hidden="true">↗</span>
+</a>
+<a class="detail-link" href="assets/gpu-tile.webp" data-image data-caption="Tile · 119.5 FPS">
+<span>B</span> <span aria-hidden="true">↗</span>
+</a>
+</span>
+</figcaption>
+</figure>
+<div class="gpu-analysis">
+<div class="paths">
+<div>
+<span class="meta">
+<span>Existing</span>
+</span>
+<span>HDR → external write → external read → display</span>
+</div>
+<div>
+<span class="meta">
+<span>Tile</span>
+</span>
+<span>HDR → same-tile read → display</span>
+</div>
+</div>
+<figure class="bars">
+<figcaption>
+<span>External GPU traffic · GB/s</span>
+</figcaption>
+<div class="bar-row">
+<span>
+<span>Existing</span>
+</span>
+<i>
+<b style="width:100%">
+</b>
+</i>
+<strong>5.13</strong>
+</div>
+<div class="bar-row">
+<span>
+<span>Tile</span>
+</span>
+<i>
+<b style="width:6.43%">
+</b>
+</i>
+<strong>0.33</strong>
+</div>
+</figure>
+</div>
+<p>
+<span>External traffic fell about 93.6% in this fixed S21 scene with GPU clocks unlocked. Reversing run order reproduced the result.</span>
+</p>
+<details class="evidence">
+<summary>Four bandwidth measurements and visual agreement</summary>
+<div class="evidence-body">
+<div class="table-scroll">
+<table>
+<caption>
+<span>15 s per run after warmup. External reads and writes in GB/s.</span>
+</caption>
+<thead>
+<tr>
+<th scope="col">#</th>
+<th scope="col">
+<span>Path</span>
+</th>
+<th scope="col">
+<span>GPU busy</span>
+</th>
+<th scope="col">MHz</th>
+<th scope="col">FPS</th>
+<th scope="col">
+<span>Read</span>
+</th>
+<th scope="col">
+<span>Write</span>
+</th>
+<th scope="col">
+<span>Total</span>
+</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<th scope="row">1</th>
+<td>
+<span>Existing</span>
+</td>
+<td>76.9%</td>
+<td>152</td>
+<td>119.5</td>
+<td>2.5916</td>
+<td>2.5399</td>
+<td>5.1315</td>
+</tr>
+<tr>
+<th scope="row">2</th>
+<td>
+<span>Tile</span>
+</td>
+<td>53.9%</td>
+<td>130</td>
+<td>119.5</td>
+<td>0.1098</td>
+<td>0.2203</td>
+<td>0.3301</td>
+</tr>
+<tr>
+<th scope="row">3</th>
+<td>
+<span>Tile</span>
+</td>
+<td>54.1%</td>
+<td>130</td>
+<td>119.4</td>
+<td>0.1082</td>
+<td>0.2195</td>
+<td>0.3277</td>
+</tr>
+<tr>
+<th scope="row">4</th>
+<td>
+<span>Existing</span>
+</td>
+<td>78.0%</td>
+<td>165</td>
+<td>119.4</td>
+<td>2.5889</td>
+<td>2.5386</td>
+<td>5.1275</td>
+</tr>
+</tbody>
+</table>
+</div>
+<p>
+<span>Galaxy S21, Android 15, 120 Hz, song time 1.3 s, UI and shader clocks 1 s. HWCPipe counters sampled every 200 ms. At 90° surface rotation, 225 of 2,592,000 pixels differed; three differed by more than two levels. There were zero missed vsyncs in all four windows.</span>
+</p>
+
+ · 
+</div>
+</details>
+</section>
+<section id="runtime">
+<div class="section-title">
+<p class="overline">
+<span>Game runtime · timing</span>
+</p>
+<h2>
+<span>When the line missed its note</span>
+</h2>
+</div>
+<p>
+<span>A chart gives each note a time and position. Tap as the line crosses it. At 106.65 s Ba Hard changed from 89.6 to 134.8 BPM. The player kept its starting tempo.</span>
+</p>
+<div class="pair">
+<figure class="">
+<a class="image-link" href="assets/scan-before.webp" data-image data-caption="Before · note at row 401, line at 671–673.">
+<img src="assets/scan-before.webp" alt="Before · note at row 401, line at 671–673." loading="lazy">
+<i class="line-target" aria-hidden="true"><em>671–673</em></i>
+<i class="reticle" aria-hidden="true"><em>401</em>
+</i>
+</a>
+<figcaption>
+<span>Before · note at row 401, line at 671–673.</span>
+</figcaption>
+</figure>
+<figure class="">
+<a class="image-link" href="assets/scan-after.webp" data-image data-caption="After · line intersects the note at rows 399–401.">
+<img src="assets/scan-after.webp" alt="After · line intersects the note at rows 399–401." loading="lazy">
+<i class="reticle" aria-hidden="true">
+</i>
+</a>
+<figcaption>
+<span>After · line intersects the note at rows 399–401.</span>
+</figcaption>
+</figure>
+</div>
+<p>
+<span>Windows Test Game, 107.32 s. Sharing the editor’s tempo and page schedule brought the line through the note.</span>
+</p>
+<details class="evidence">
+<summary>
+<span>Shared page schedule and capture record</span>
+</summary>
+<div class="evidence-body">
+
+<p>
+<span>With the clocks fixed and resolution set to 1280 × 720, the note stayed at normalised y = 0.556. The old line was at y = 0.934. The outline is a page annotation; either image opens the untouched capture.</span>
+</p>
+ · 
+</div>
+</details>
+</section>
+<section id="android">
+<div class="section-title">
+<p class="overline">
+<span>Android · resource lifetime</span>
+</p>
+<h2>
+<span>The crash that survived the first fix</span>
+</h2>
+</div>
+<div class="lifecycle">
+<figure class="">
+<a class="image-link" href="assets/resume-before.webp" data-image data-caption="Results after resume · font atlas in the cover slot.">
+<img src="assets/resume-before.webp" alt="Results after resume · font atlas in the cover slot." loading="lazy">
+</a>
+<figcaption>
+<span>Results after resume · font atlas in the cover slot.</span>
+</figcaption>
+</figure>
+<ol class="diagnosis">
+<li>
+<span>On backgrounding, screen textures could outlive their Vulkan device. Releasing them before teardown repaired several screens.</span>
+</li>
+<li>
+<span>Pause still crashed on return four. The descriptor-binding stack exposed a cached set from a destroyed pool.</span>
+</li>
+<li>
+<span>Clearing the batcher caches fixed pause. Across five screens, 100/100 returns matched their references.</span>
+</li>
+</ol>
+</div>
+<details class="evidence">
+<summary>Descriptor binding and the recovered results screen</summary>
+<div class="evidence-body">
+<figure class="">
+<a class="image-link" href="assets/resume-after.webp" data-image data-caption="Results · S21 after 20 return cycles.">
+<img src="assets/resume-after.webp" alt="Results · S21 after 20 return cycles." loading="lazy">
+</a>
+<figcaption>
+<span>Results · S21 after 20 return cycles.</span>
+</figcaption>
+</figure>
+<p>
+<span>The incorrect cover was a visible texture-lifetime symptom. The separate pause failure pointed to descriptor reuse, including when a new image view received an old handle value.</span>
+</p>
+
+
+ · 
+</div>
+</details>
+</section>
+<section id="history">
+  <h2>Portfolio projects</h2><div class="related"><a href="/">Portfolio home</a><a href="/polar-expedition/">Polar Expedition</a></div></section></main>
+<footer>
+<div class="wrap">
+<div>
+<span>Music Game Engine · Engineering portfolio</span>
+<small>
+<span>October evidence · 2a5f6ff8 | November implementation · 00243e5d</span>
+</small>
+</div>
+<a href="#overview">
+<span>Back to top ↑</span>
+</a>
+</div>
+</footer>
+<template id="pacing-evidence">
+<div class="table-scroll">
+<table>
+<caption>
+<span>S21 Standard · new-look charts · October 28, 2026</span>
+</caption>
+<thead>
+<tr>
+<th scope="col">
+<span>Mode</span>
+</th>
+<th scope="col">GPU p95 (ms)</th>
+<th scope="col">MHz</th>
+<th scope="col">FPS</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<th scope="row">Drop 2D</th>
+<td>7.48</td>
+<td>139</td>
+<td>120.0</td>
+</tr>
+<tr>
+<th scope="row">Drop 3D</th>
+<td>6.20</td>
+<td>130</td>
+<td>120.0</td>
+</tr>
+<tr>
+<th scope="row">Circle</th>
+<td>4.75</td>
+<td>130</td>
+<td>120.0</td>
+</tr>
+<tr>
+<th scope="row">Scan Line</th>
+<td>8.63</td>
+<td>166</td>
+<td>120.0</td>
+</tr>
+</tbody>
+</table>
+</div>
+<p>
+<span>Hard, fixed at 9 s for about 15.6 s. GPU p95 is the median of the 240-frame window p95s. The project targeted 6.5 ms at the lowest 130 MHz clock. Drop 2D and Scan Line exceeded this budget despite meeting the refresh rate.</span>
+</p>
+<p>The table uses fixed frames from 28 October. The 11 November same-asset device runs used a newer build.<a href="#graphics-lab">See November GPU times and actual present intervals</a>。</p></template>
+<dialog id="viewer" aria-labelledby="viewer-caption">
+<div class="viewer-actions">
+<a id="viewer-file" target="_blank" rel="noopener">
+<span>Original file ↗</span>
+</a>
+<button id="viewer-close" type="button">
+<span>Close ×</span>
+</button>
+</div>
+<div class="viewer-media" id="viewer-media">
+</div>
+<p id="viewer-caption">
+</p>
+</dialog>
+</body>
+</html>
