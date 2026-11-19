@@ -1,0 +1,34 @@
+AI runtime implementation notes - reviewed 2026-11-19
+Source package label 0.6.167-test. This excerpt describes implementation and recorded validation, not an adversarial-security certification.
+
+Language-model decisions and engine execution
+
+Explorers use a language model to choose destinations, search for supplies, talk, cooperate and respond to danger. INpcModelClient connects the same decision system to DeepSeek through Ark or to Claude. The runtime selects Ark when its key is present. The latest recorded live validation used DeepSeek. Each request contains the explorer’s own observations, knowledge, personality and immediate action options.
+The reply contains a goal, speech, one to four commands, and a short memory of the conversation. A JSON Schema constrains the response. PolarNpcMind validates commands and references, and PolarActions checks the live world when each action executes. Movement, hunger, temperature, possession and consent are enforced by the engine. A reply arriving after a superseding decision is discarded.
+The world continues while requests are in flight. When a request fails, the explorer can finish its approved plan, then waits for a retry. Failures back off through 2, 4, 8, 16 and 30 seconds. This keeps a network interruption from blocking simulation or inventing an unreceived decision.
+
+Bounded context, shared prompts and request cost
+
+Context is assembled from structured state. The snapshot admits up to 16 recent dialogue lines, 16 relevant events and eight prioritized beliefs. A per-partner memo retains the conversation’s agreements in up to 25 words. The request-specific system and input text have a 16,000-byte UTF-8 limit. When exceeded, the formatter removes old claims, lower-priority beliefs, older dialogue and distant references in order. Body state, owned items, available commands and the current trigger remain mandatory.
+The role instructions, survival handbook and command descriptions form a stable shared prefix. Reusing the same bytes makes provider prompt caching possible; the Claude integration also records cache reads and writes. A compact text projection of the snapshot and omission of null fields reduce repeated JSON overhead. Ark limits output to 512 tokens and disables thinking. These settings are specific to that transport; Claude has its own output and effort settings.
+Decisions are driven by new information, plan results and a 60-second review. Repeated notices merge, each explorer has one decision in flight, and at most one queued decision starts per frame. Ark has separate slots for player dialogue, planning and NPC conversation. Its local ledger records input/output usage and a conservative rolling-hour cost estimate, with file writes on a worker. The current version has no hourly spending ceiling. Recorded costs are run-specific; prompt caching and these limits do not establish a fixed cost per player-hour.
+
+Topic screening and action authority
+
+Typed dialogue passes through a separate classifier with three schema-constrained results: game_related, ambiguous and unrelated. Its fixed instructions treat the player’s message as data, including attempts to wrap an outside task in roleplay. The answer may begin computing while screening is pending, but speech is released and actions applied only after the gate passes. An unmistakable outside-task request cancels the answer and makes that explorer permanently hostile under the game’s rules. Ambiguous messages remain allowed.
+The November 19 update applies the same gate to player-written hut notes. Each note saves its screening state. NPCs can read it only after approval; a rejected note stays on the board for the player, and a failed screening retries after 30 seconds. Screening a note does not change an explorer’s attitude. This closes the alternate path by which instructions could enter through a shared notice board.
+Untrusted speech, reports and notes remain attributed claims in the prompt. They cannot directly edit inventory or grant consent. Commands must pass structural and identifier checks, then the engine’s range, ownership and resource rules. Topic screening reduces misuse but remains a fallible model classifier. The current client-side integration still needs a shipping decision on key custody and per-user service limits.
+
+Source files reviewed
+Assets/Scripts/Polar/Gameplay/ArkNpcClient.cs
+Assets/Scripts/Polar/Gameplay/ClaudeNpcClient.cs
+Assets/Scripts/Polar/Gameplay/PolarNpcDirector.cs
+Assets/Scripts/Polar/Gameplay/PolarNpcMind.cs
+Assets/Scripts/Polar/Gameplay/PolarNpcInformation.cs
+Assets/Scripts/Polar/Gameplay/PolarMvpController.cs
+docs/engineering/systems/polar-cloud-npcs.md
+
+Recorded checks
+0.6.165-test: CloudNpcCheck 218 core checks, shared gameplay 2750 checks; no new paid live note-gate run.
+0.6.156-test mr-04a: 108 live DeepSeek checks, including dialogue and an unrelated request. The November 19 implementation was not itself covered by that earlier live run.
+Current NpcApiBudget retains usage and estimated cost without an hourly ceiling. Its constants are local estimates, not verified current provider prices.
