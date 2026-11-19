@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="从手机 GPU 带宽、跨轨长按和扫描线变速到屏幕呈现与后台恢复，五项引擎实测记录。">
+  <title>五个工程难题 · Music Game Engine</title>
+  <link rel="icon" href="assets/mge.svg" type="image/svg+xml">
+  <link rel="alternate" hreflang="zh-CN" href="challenges.html">
+  <link rel="alternate" hreflang="en" href="challenges-en.html">
+  <link rel="stylesheet" href="showcase.css">
+  <script defer src="showcase-language.js"></script>
+</head>
+<body>
+  <a class="skip" href="#main">跳到正文</a>
+  <header class="topbar"><div class="shell topbar-inner">
+    <a class="portfolio-home" href="index.html">返回引擎概览</a>
+    <nav class="languages" aria-label="页面语言"><a lang="zh-CN" hreflang="zh-CN" href="challenges.html" aria-current="page">中文</a><a lang="en" hreflang="en" href="challenges-en.html">EN</a></nav>
+  </div></header>
+  <main id="main" class="shell">
+    <section id="casebook" class="case-page" aria-labelledby="challenges-title">
+      <p class="project-name" lang="en">Music Game Engine</p>
+      <h1 id="challenges-title">五个工程难题</h1>
+      <ol class="challenges"><li id="gpu"><h3>接近 120 FPS，还能省掉哪次读写？</h3><div><p>原路径把一张 2400 × 1080 的 RGBA16F 图像（约 20.7 MB）写回外部内存，做显示转换时再读入。把转换放进同一个 GPU 分块（tile-local rendering）后，四轮测量中两条路径均达到 119.4–119.5 FPS，平均外部读写带宽从 5.13 降至 0.33 GB/s。</p><table class="run-table"><caption>Galaxy S21（Mali-G78）· Drop 3D / Hard · 固定在歌曲第 1.3 秒 · 120 Hz · GPU 频率未锁定</caption><thead><tr><th scope="col">轮次</th><th scope="col">转换路径</th><th scope="col">实际上屏（FPS）</th><th scope="col">外部读写（GB/s）</th></tr></thead><tbody><tr><th scope="row">1</th><td>写回后读入</td><td>119.5</td><td>5.1315</td></tr><tr><th scope="row">2</th><td>分块内转换</td><td>119.5</td><td>0.3301</td></tr><tr><th scope="row">3</th><td>分块内转换</td><td>119.4</td><td>0.3277</td></tr><tr><th scope="row">4</th><td>写回后读入</td><td>119.4</td><td>5.1275</td></tr></tbody></table></div></li>
+<li id="drop2d-hold"><h3>跨轨时，长按头为什么留在起始轨？</h3><div><p>激活的长按头一直按起始轨绘制。修复让它跟随长按路径与判定线的交点。桌面第 17.625 秒，头部横坐标从 614.5 px 移到 719.5 px，谱面预期为 720.0 px。S21 上跟随两次换轨，四个采样点和尾部全部命中。</p></div></li>
+<li id="runtime"><h3>变速后，扫描线为什么越过了音符？</h3><div><p>谱面在 106.65 秒从 89.6 BPM 变为 134.8 BPM，旧运行时仍按开头的速度扫描。编辑器和运行时改为从同一组变速与逐页设置构建分页时间表（page schedule）。两张 Windows 试玩抓帧固定在 107.32 秒，音符中心都在第 401 行。</p><div class="scan-pair"><figure><a class="full-frame" href="assets/scan-before.webp" aria-label="查看原图 · 修复前 · 扫描线在第 671–673 行"><img src="assets/scan-before.webp" width="1280" height="720" loading="lazy" decoding="async" alt=""></a><figcaption>修复前 · 扫描线在第 671–673 行</figcaption></figure><figure><a class="full-frame" href="assets/scan-after.webp" aria-label="查看原图 · 修复后 · 扫描线在第 399–401 行"><img src="assets/scan-after.webp" width="1280" height="720" loading="lazy" decoding="async" alt=""></a><figcaption>修复后 · 扫描线在第 399–401 行</figcaption></figure></div></div></li>
+<li id="s21-present-attribution"><h3>120 Hz 漏刷，是在哪一步迟了？</h3><div><p>旧版圆盘首次创建点光源管线花了 73.696 ms，移到开歌前预热解决了这次卡顿。对剩余漏刷，按游戏缓冲编号对齐入队、GPU 就绪、合成器接收和实际上屏的时刻。</p><p class="finding">这台 S21 在 120 Hz 下有 9 / 57,639 个上屏间隔超过 12.50 ms。这 9 次的下一帧都在上一张上屏前 9.38–12.76 ms 就绪，系统合成器（SurfaceFlinger）已在目标刷新前接收缓冲，对应显示帧被标记为合成器 CPU 超时。60 Hz 下有 0 / 5,763 个间隔超过 25 ms。</p></div></li>
+<li id="android"><h3>清理纹理后，第 4 次恢复为何仍会崩？</h3><div><p>结算页把字体图集画成封面，暴露出纹理寿命超过 Vulkan 设备的问题。清理纹理后，暂停页第 4 次恢复仍崩溃。新的调用栈指向描述符绑定（descriptor binding），由此找到批处理器复用的失效缓存。清理第二处状态后，五个界面各恢复 20 次，100/100 次画面匹配。</p><div class="scan-pair"><figure><a class="full-frame" href="assets/resume-before.webp" aria-label="查看原图 · S21 结算页 · 恢复后，封面位置显示字体图集"><img src="assets/resume-before.webp" width="1200" height="540" loading="lazy" decoding="async" alt=""></a><figcaption>S21 结算页 · 恢复后，封面位置显示字体图集</figcaption></figure><figure><a class="full-frame" href="assets/resume-after.webp" aria-label="查看原图 · 同一结算页 · 修复后第 20 次恢复，封面正常"><img src="assets/resume-after.webp" width="1200" height="540" loading="lazy" decoding="async" alt=""></a><figcaption>同一结算页 · 修复后第 20 次恢复，封面正常</figcaption></figure></div></div></li></ol>
+    </section>
+
+  </main>
+</body>
+</html>
