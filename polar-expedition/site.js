@@ -5,6 +5,53 @@
   const list = (selector, root = document) => Array.from(root.querySelectorAll(selector));
   const film = query("#film-dialog");
   const reel = film?.querySelector("video");
+  const connection = typeof navigator === "undefined" ? null : navigator.connection;
+  const saveData = connection?.saveData || /(^|-)2g$/.test(connection?.effectiveType || "");
+  const warmedImages = new Set();
+  const pendingImages = new Set();
+  function warmImage(img, expandedSizes) {
+    if (saveData || typeof Image === "undefined" || film?.open) return;
+    const source = img?.src;
+    if (!source) return;
+    const sizes = expandedSizes || img.sizes || "100vw";
+    const key = [img.srcset, sizes, source].join("|");
+    if (warmedImages.has(key)) return;
+    warmedImages.add(key);
+    const next = new Image();
+    next.decoding = "async";
+    next.fetchPriority = "low";
+    next.onload = () => pendingImages.delete(next);
+    next.onerror = () => { pendingImages.delete(next); warmedImages.delete(key); };
+    pendingImages.add(next);
+    next.sizes = sizes;
+    next.srcset = img.srcset || "";
+    next.src = source;
+  }
+  // Warm only the neighbours of an album near the viewport, using its responsive sizes.
+  function nearbyAlbum(root, neighbours, expandedSizes) {
+    let nearby = false;
+    const warm = (full = false) => {
+      if (!nearby && !full) return;
+      for (const item of neighbours()) warmImage(item.image, full ? expandedSizes : null);
+    };
+    if (!saveData && typeof IntersectionObserver !== "undefined") {
+      const observer = new IntersectionObserver(entries => {
+        nearby = entries.some(entry => entry.isIntersecting);
+        if (nearby) warm();
+      }, {rootMargin:"240px 0px"});
+      observer.observe(root);
+    }
+    for (const event of ["pointerenter", "focusin", "touchstart"]) {
+      root.addEventListener(event, () => { nearby = true; warm(); }, {passive:true});
+    }
+    return warm;
+  }
+  function showResponsive(target, source, fallback, sizes) {
+    target.sizes = sizes;
+    target.srcset = source.srcset || "";
+    target.src = source.src || fallback;
+    target.alt = source.alt;
+  }
   // Browser file origins restrict external caption tracks. Populate native captions from the same edit offline.
   if (reel && location.protocol === "file:" && typeof VTTCue === "function") {
     const cues = JSON.parse(query("#film-cues", film).textContent);
@@ -33,28 +80,32 @@
     query("[data-close]", dialog)?.focus({ preventScroll: true });
   };
   function playAt(time) {
-    const start = () => {
-      reel.currentTime = time;
-      const result = reel.play();
-      if (result) result.catch(() => {});
-    };
-    if (reel.readyState >= 1) start();
+    filmStart = time;
+    reel.preload = "auto";
+    if (reel.readyState >= 1) reel.currentTime = time;
     else {
-      filmStart = time;
       if (!reel.dataset.waiting) {
         reel.dataset.waiting = "true";
         reel.addEventListener("loadedmetadata", () => {
           delete reel.dataset.waiting;
-          if (film.open) playAt(filmStart);
+          if (film.open) reel.currentTime = filmStart;
         }, {once: true});
       }
-      reel.load();
     }
+    // Start in the click's activation scope; play() also starts the network request.
+    const result = reel.play();
+    if (result) result.catch(() => {});
   }
   if (film && typeof film.showModal === "function") {
-    list("[data-film]").forEach(link => link.addEventListener("click", event => {
-      event.preventDefault(); open(film); playAt(Number(link.dataset.start) || 0);
-    }));
+    list("[data-film]").forEach(link => {
+      const prepare = () => { if (!saveData) reel.preload = "auto"; };
+      link.addEventListener("pointerenter", prepare);
+      link.addEventListener("focus", prepare);
+      link.addEventListener("touchstart", prepare, {passive:true});
+      link.addEventListener("click", event => {
+        event.preventDefault(); open(film); playAt(Number(link.dataset.start) || 0);
+      });
+    });
     film.addEventListener("close", () => reel.pause());
   }
 
@@ -163,6 +214,10 @@
     const photos = slides.map(slide => query("[data-zoom]",slide));
     const status = query("[data-pair-status]",gallery);
     let current = 0;
+    const warmSlides = nearbyAlbum(gallery, () => [1,-1].map(offset => {
+      const i = (current + offset + slides.length) % slides.length;
+      return {image:query("img",slides[i]), href:photos[i].href};
+    }), "(max-width:1280px) 94vw, 1220px");
     const session = {
       side: i => show(current - current % 2 + i),
       move: step => show(current + step),
@@ -180,8 +235,9 @@
       if (viewer?.open && activePair === session) {
         showViewerControls(current,slides.length);
         const img = query("[data-zoom-image]",viewer);
-        img.src = photos[current].href;
-        img.alt = query("img",slide).alt;
+        showResponsive(img,query("img",slide),photos[current].href,"(max-width:1280px) 94vw, 1220px");
+        const original = query("[data-comparison-original]",viewer);
+        if (original) original.href = photos[current].href;
         query("#comparison-title",viewer).textContent = name;
         query("[data-zoom-caption]",viewer).textContent = caption;
         if (announce) query("[data-pair-status]",viewer).textContent = name;
@@ -189,6 +245,7 @@
         if (announce) status.textContent = name;
         if (announce && focusWasOnPhoto) session.focus();
       }
+      warmSlides(viewer?.open && activePair === session);
     }
     onSwipe(track,session.move);
     if (showViewerControls) {
@@ -218,6 +275,10 @@
     const status = query("[data-gallery-status]", gallery);
     const album = query("#image-dialog");
     let current = 0;
+    const warmSlides = nearbyAlbum(gallery, () => [1,-1].map(offset => {
+      const i = (current + offset + frames.length) % frames.length;
+      return {image:query("img",frames[i]), href:frames[i].href};
+    }), "(max-width:1480px) 92vw, 1420px");
 
     function select(index, announce = true) {
       const moveFocus = document.activeElement === frames[current] && !album?.open;
@@ -233,10 +294,10 @@
         query("[data-image-caption]", album).textContent = link.dataset.caption;
         query("[data-image-version]", album).textContent = link.dataset.version;
         const img = query(".full-still", album);
-        img.src = link.href;
-        img.alt = query("img",link).alt;
+        showResponsive(img,query("img",link),link.href,"(max-width:1480px) 92vw, 1420px");
         query("[data-original]", album).href = link.href;
       }
+      warmSlides(!!album?.open);
     }
     function arrowKey(event) {
       if (event.altKey || event.ctrlKey || event.metaKey || event.shiftKey) return;
