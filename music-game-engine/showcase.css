@@ -17,7 +17,6 @@
   --muted: #52645b;
   --line: #ccd6cd;
   --teal: #096453;
-  --soft: #eaf0e9;
   color-scheme: light;
   scroll-padding-top: 74px;
 }
@@ -97,7 +96,7 @@ h3 { font-size: clamp(19px, 1.55vw, 23px); line-height: 1.34; letter-spacing: -.
 .system-body .tech-points { margin: 0; }
 .system-body .tech-points > div + div { margin-top: 18px; }
 .system-body .tech-points dd { margin-top: 4px; }
-.system-evidence { min-width: 0; padding: clamp(15px,1.8vw,25px); background: var(--soft); border-radius: 4px; }
+.system-evidence { min-width: 0; padding: clamp(15px,1.8vw,25px); }
 .system-rule figcaption { margin-bottom: 6px; color: var(--ink); font-weight: 700; }
 .system-evidence pre { margin: 0 0 18px; padding: 0 0 0 12px; border-left: 2px solid var(--teal); white-space: pre-wrap; overflow-wrap: anywhere; }
 .system-evidence code { font: 400 .84em/1.55 Consolas, "SFMono-Regular", monospace; }
@@ -131,7 +130,7 @@ h3 { font-size: clamp(19px, 1.55vw, 23px); line-height: 1.34; letter-spacing: -.
 .modes figcaption, .scan-pair figcaption { margin-top: 8px; }
 .modes figcaption span { margin-top: 3px; }
 .material-study, .profiles { display: grid; grid-template-columns: minmax(0,.95fr) minmax(0,1.3fr); gap: clamp(25px, 4vw, 65px); align-items: center; }
-.material-study { padding: clamp(18px, 2.8vw, 36px); background: var(--soft); border-radius: 5px; }
+.material-study { padding: clamp(18px, 2.8vw, 36px); }
 .material-study p, .profiles p { margin-top: 9px; }
 .material-study { row-gap: 22px; }
 .material-notes, .gpu-check { grid-column: 1 / -1; }
@@ -158,7 +157,7 @@ h3 { font-size: clamp(19px, 1.55vw, 23px); line-height: 1.34; letter-spacing: -.
 .scan-art-frames { margin: 17px 0; }
 .scan-art-frames img, .author-figures img { display: block; width: 100%; height: auto; border-radius: 4px; }
 .scan-art .tech-points { grid-template-columns: repeat(2,minmax(0,1fr)); }
-.author-figures { grid-column: 1/-1; padding: 16px clamp(12px,3vw,42px); margin-bottom: 24px; background: var(--soft); }
+.author-figures { grid-column: 1/-1; padding: 16px clamp(12px,3vw,42px); margin-bottom: 24px; }
 .author-figures .full-frame { display: flex; align-items: center; justify-content: center; background: #202025; border-radius: 4px; }
 .author-figures img { max-height: 200px; object-fit: contain; }
 .profiles { margin-top: 32px; padding-top: 24px; border-top: 1px solid var(--line); }
@@ -168,7 +167,6 @@ h3 { font-size: clamp(19px, 1.55vw, 23px); line-height: 1.34; letter-spacing: -.
 .gpu-check a { display: inline-block; padding-block: 7px; font-size: 15px; }
 table { width: 100%; border-collapse: collapse; font-size: 15px; line-height: 1.45; text-align: left; }
 th, td { border-bottom: 1px solid var(--line); padding: 9px 7px; vertical-align: top; }
-thead th { background: var(--soft); }
 tbody th { color: var(--body); }
 .case-studies { margin-top: 30px; }
 .case-copy, .case-measurement {
@@ -176,12 +174,12 @@ tbody th { color: var(--body); }
   align-items: start; gap: 14px clamp(24px,4.7vw,68px); margin-top: 16px;
 }
 .case-text p + p, .case-data .finding { margin-top: 12px; }
-.case-data { padding: clamp(14px,1.8vw,25px); border-radius: 4px; background: var(--soft); }
+.case-data { padding: clamp(14px,1.8vw,25px); }
 .case-data .finding { font-size: 15px; }
 .run-table { font-variant-numeric: tabular-nums; }
 .run-table caption { text-align: left; font-weight: 700; padding-bottom: 8px; }
 .case-study .scan-pair { margin-top: 22px; }
-.bandwidth { margin-top: 15px; max-width: 550px; padding: 13px 16px 12px; background: var(--soft); border-radius: 4px; }
+.bandwidth { margin-top: 15px; max-width: 550px; padding: 13px 16px 12px; }
 .bandwidth figcaption { color: var(--ink); font-weight: 700; }
 .bar-row { display: grid; grid-template-columns: minmax(108px, 1fr) minmax(70px, 1.5fr) 3em; gap: 10px; align-items: center; margin-top: 8px; font-size: 14px; line-height: 1.4; }
 .bar-row i { display: block; width: var(--bar); height: 8px; background: var(--teal); }
