@@ -74,6 +74,54 @@
     }
   }
   let filmStart = 0;
+  let adaptive = null, streamReady = false, streamPaused = false, usingFallback = false;
+  function fallbackFilm() {
+    if (usingFallback || !reel.dataset.fallback) return;
+    usingFallback = true;
+    const time = reel.currentTime || filmStart;
+    if (adaptive) { adaptive.destroy(); adaptive = null; }
+    reel.dataset.transport = "mp4-fallback";
+    reel.src = reel.dataset.fallback;
+    reel.preload = "auto";
+    reel.addEventListener("loadedmetadata", () => {
+      reel.currentTime = time;
+      if (film.open) reel.play()?.catch(() => {});
+    }, {once:true});
+    reel.load();
+  }
+  function prepareFilm(startTime = null) {
+    if (!reel.dataset.stream || location.protocol === "file:") {
+      reel.preload = "auto";
+      return;
+    }
+    if (streamReady) {
+      if (adaptive && streamPaused && startTime != null) { adaptive.startLoad(startTime); streamPaused = false; }
+      return;
+    }
+    streamReady = true;
+    const manifest = new URL(reel.dataset.stream, location.href).href;
+    if (window.Hls?.isSupported()) {
+      adaptive = new window.Hls({
+        startLevel:0, abrEwmaDefaultEstimate:400000,
+        abrBandWidthFactor:0.8, abrBandWidthUpFactor:0.65,
+        maxBufferLength:45, maxMaxBufferLength:90, maxBufferSize:16*1024*1024,
+        backBufferLength:8, capLevelToPlayerSize:true, ignoreDevicePixelRatio:true,
+        lowLatencyMode:false
+      });
+      reel.dataset.transport = "hls";
+      adaptive.on(window.Hls.Events.LEVEL_SWITCHED, (_,data) => {
+        reel.dataset.rendition = String(adaptive.levels[data.level].height);
+      });
+      adaptive.on(window.Hls.Events.ERROR, (_,data) => { if (data.fatal) fallbackFilm(); });
+      adaptive.loadSource(manifest);
+      adaptive.attachMedia(reel);
+    } else if (reel.canPlayType?.("application/vnd.apple.mpegurl")) {
+      reel.dataset.transport = "native-hls";
+      reel.src = manifest;
+      reel.preload = "auto";
+      reel.addEventListener("error", fallbackFilm, {once:true});
+    } else fallbackFilm();
+  }
   const open = dialog => {
     if (!dialog.open) dialog.showModal();
     document.body.classList.add("dialog-open");
@@ -81,6 +129,7 @@
   };
   function playAt(time) {
     filmStart = time;
+    prepareFilm(time);
     reel.preload = "auto";
     if (reel.readyState >= 1) reel.currentTime = time;
     else {
@@ -98,7 +147,7 @@
   }
   if (film && typeof film.showModal === "function") {
     list("[data-film]").forEach(link => {
-      const prepare = () => { if (!saveData) reel.preload = "auto"; };
+      const prepare = () => { if (!saveData) prepareFilm(); };
       link.addEventListener("pointerenter", prepare);
       link.addEventListener("focus", prepare);
       link.addEventListener("touchstart", prepare, {passive:true});
@@ -106,7 +155,11 @@
         event.preventDefault(); open(film); playAt(Number(link.dataset.start) || 0);
       });
     });
-    film.addEventListener("close", () => reel.pause());
+    film.addEventListener("close", () => {
+      if (film.open) return;
+      reel.pause();
+      if (adaptive) { adaptive.stopLoad(); streamPaused = true; }
+    });
   }
 
 
@@ -332,6 +385,6 @@
       const box = dialog.getBoundingClientRect();
       if (event.clientX < box.left || event.clientX > box.right || event.clientY < box.top || event.clientY > box.bottom) dialog.close();
     });
-    dialog.addEventListener("close", () => document.body.classList.remove("dialog-open"));
+    dialog.addEventListener("close", () => { if (!query("dialog[open]")) document.body.classList.remove("dialog-open"); });
   }
 })();

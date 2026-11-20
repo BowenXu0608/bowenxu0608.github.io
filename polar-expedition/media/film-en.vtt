@@ -1,53 +1,50 @@
 WEBVTT
 
-00:00:00.267 --> 00:00:03.800
-Prepare for the journey in your hut.
+00:00:00.000 --> 00:00:03.000
+Survive in the polar wilderness and reach the relief ship rendezvous.
 
-00:00:04.267 --> 00:00:07.800
-Search the stores for food. Supplies are finite.
+00:00:03.000 --> 00:00:06.500
+Search hut stores for food. Carry enough for the next leg.
 
-00:00:08.267 --> 00:00:11.800
-Carry fuel to keep a stove burning when you stop.
+00:00:06.500 --> 00:00:10.000
+Take stove fuel. Without heat, the cold becomes a survival risk.
 
-00:00:12.267 --> 00:00:16.600
-Consult the field map and choose your next supply hut.
+00:00:10.000 --> 00:00:15.000
+Use the field map to choose the next supply hut.
 
-00:00:17.200 --> 00:00:20.500
-[Wind across the open snow]
+00:00:15.000 --> 00:00:19.000
+Travel between huts while managing hunger, fatigue and body temperature.
 
-00:00:21.067 --> 00:00:24.667
-[Footsteps in the snow] A line of prints leads back across the slope.
+00:00:19.000 --> 00:00:25.000 line:10% size:70%
+Ask other explorers about routes and supplies. Their information is personal.
 
-00:00:27.000 --> 00:00:31.767 line:10% size:70%
-Adler (on screen)  “Along the ridge to the next hut, while the weather holds. There should be oil in its store.”
+00:00:25.000 --> 00:00:33.000
+Thin ice can break. Climb out and find warmth after falling in.
 
-00:00:32.033 --> 00:00:34.100
-The ice bows underfoot.
+00:00:33.000 --> 00:00:37.000
+Poor visibility and strong wind can force a change of route or a stop.
 
-00:00:34.233 --> 00:00:37.700
-[Ice cracks. A splash.]
+00:00:37.000 --> 00:00:48.500
+Away from a hut, pitch the carried tent to make shelter.
 
-00:00:37.833 --> 00:00:39.567
-The explorer hauls themself back onto the ice.
+00:00:48.500 --> 00:00:51.700
+Use fuel to light the tent stove and recover body temperature.
 
-00:00:39.900 --> 00:00:43.633
-[Wind rises] Powder streams off the roof.
+00:00:51.700 --> 00:00:56.700
+Rest with heat and supplies, then continue exploring as the days pass.
 
-00:00:44.067 --> 00:00:55.100
-Away from a hut, pitch your tent and make shelter.
+00:00:56.700 --> 00:01:08.700 line:15% size:70%
+Day 12: the relief ship announces a coastal rendezvous and its pickup window.
 
-00:00:55.567 --> 00:00:58.300
-Fuel the tent burner to warm the shelter.
+00:01:08.700 --> 00:01:14.700 line:85% size:70%
+The radio adds the rendezvous to your map. Plan the final journey.
 
-00:00:59.033 --> 00:01:04.000
-The stove lights. Its glow reaches the floorboards.
+00:01:14.700 --> 00:01:21.800 line:85% size:70%
+Day 17: reach the coastal cairn and flag during the pickup window.
 
-00:01:06.767 --> 00:01:10.300
-Keep warm through the night, then continue the journey.
+00:01:21.800 --> 00:01:24.800 line:85% size:70%
+Press E at the cairn to signal the relief ship.
 
-00:01:10.767 --> 00:01:18.633
-Later, a relief ship calls. The broadcast gives the rendezvous and its arrival window.
-
-00:01:19.100 --> 00:01:24.733
-Mark the coastal rendezvous and plan the journey to reach it in time.
+00:01:24.800 --> 00:01:28.800 line:85% size:70%
+Rescued: the expedition ends and the result is saved.
 
