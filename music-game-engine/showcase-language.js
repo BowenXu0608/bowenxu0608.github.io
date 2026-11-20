@@ -1,9 +1,9 @@
 // Bookmarks to engineering cases published on the original overview still work.
-const companion = document.querySelector('.challenges-link');
+const companion = document.getElementById('engineering-challenges')?.dataset.casePage;
 const moved = new Set(['casebook', 'gpu', 'drop2d-hold', 'runtime', 's21-present-attribution', 'android']);
 if (companion) {
   const followCase = () => {
-    if (moved.has(location.hash.slice(1))) location.replace(companion.getAttribute('href') + location.hash);
+    if (moved.has(location.hash.slice(1))) location.replace(companion + location.hash);
   };
   addEventListener('hashchange', followCase);
   followCase();
