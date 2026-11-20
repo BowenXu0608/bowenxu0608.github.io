@@ -348,7 +348,8 @@
         query("[data-image-version]", album).textContent = link.dataset.version;
         const img = query(".full-still", album);
         showResponsive(img,query("img",link),link.href,"(max-width:1480px) 92vw, 1420px");
-        query("[data-original]", album).href = link.href;
+        const original = query("[data-original]", album);
+        if (original) original.href = link.href;
       }
       warmSlides(!!album?.open);
     }
