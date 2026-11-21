@@ -187,42 +187,10 @@
     target.hash = hash;
     link.href = target.href;
   }
-  const translations = list(".languages a, .reading-language");
+  const translations = list(".languages a");
   const syncLanguage = () => translations.forEach(link => translateAt(link, location.hash));
   syncLanguage();
   window.addEventListener("hashchange", syncLanguage);
-
-  const contents = query(".reading-nav");
-  if (contents) {
-    const links = list("a[href^='#']", contents);
-    const sections = links.map(link => document.getElementById(link.hash.slice(1)));
-    const alternate = query(".reading-language", contents);
-    const anchors = list(".reading-column section[id], .reading-column article[id]");
-    function readingPosition(items, cutoff) {
-      let latest = items[0];
-      for (const item of items) {
-        if (item.getBoundingClientRect().top > cutoff) break;
-        latest = item;
-      }
-      return latest;
-    }
-    function highlight() {
-      const selected = readingPosition(sections, window.innerHeight * 0.42);
-      links.forEach((link,i) => {
-        if (sections[i] === selected) link.setAttribute("aria-current","location");
-        else link.removeAttribute("aria-current");
-      });
-    }
-    if (links.length && "IntersectionObserver" in window) {
-      const observer = new IntersectionObserver(highlight, {rootMargin:"0px 0px -58% 0px"});
-      sections.forEach(section => observer.observe(section));
-      highlight();
-    }
-    if (alternate) alternate.addEventListener("click", () => {
-      const current = readingPosition(anchors, Math.max(85, window.innerHeight * 0.22));
-      if (current) translateAt(alternate, "#" + current.id);
-    });
-  }
 
   const viewer = query("#comparison-dialog");
   let activePair = null;
