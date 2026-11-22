@@ -40,6 +40,9 @@ dialog{width:min(960px,calc(100% - 36px));max-height:90svh;overflow:auto;padding
 .memory-readings th:first-child{text-align:start}
 .memory-readings thead{background:#e4eae4;color:var(--ink)}
 .memory-readings tbody th{font-weight:400}
+.method-comparison{min-width:36rem}
+.method-comparison th,.method-comparison td{text-align:start;vertical-align:top}
+.method-comparison tbody th{font-weight:600;white-space:nowrap}
 .readings-wrap{max-width:100%;overflow-x:auto}
 .case-grid>article{min-width:0}
 .readings-wrap td{font-variant-numeric:tabular-nums}
