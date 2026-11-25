@@ -175,13 +175,13 @@ table { width: 100%; border-collapse: collapse; font-size: 15px; line-height: 1.
 th, td { border-bottom: 1px solid var(--line); padding: 9px 7px; vertical-align: top; }
 tbody th { color: var(--body); }
 .case-studies { margin-top: 30px; }
-.case-copy, .case-measurement {
-  display: grid; grid-template-columns: minmax(0,1.12fr) minmax(0,1fr);
-  align-items: start; gap: 14px clamp(24px,4.7vw,68px); margin-top: 16px;
-}
-.case-text p + p, .case-data .finding { margin-top: 12px; }
-.case-data { padding: clamp(14px,1.8vw,25px); }
-.case-data .finding { font-size: 15px; }
+.star-table { margin-top: 18px; max-width: 58rem; table-layout: fixed; border-top: 1px solid var(--line);
+  font-size: 1rem; line-height: 1.6; }
+.star-table th, .star-table td { padding: 12px 0; }
+.star-table th { color: var(--teal); width: 9rem; padding-right: 18px; }
+.star-table td { color: var(--body); }
+.star-term { color: var(--muted); font-size: .85em; font-weight: 400; white-space: nowrap; }
+.case-study .run-table { margin-top: 24px; max-width: 58rem; }
 .run-table { font-variant-numeric: tabular-nums; }
 .run-table caption { text-align: left; font-weight: 700; padding-bottom: 8px; }
 .case-study .scan-pair { margin-top: 22px; }
@@ -213,9 +213,11 @@ tbody th { color: var(--body); }
   .material-study { grid-template-columns: 1fr 1.05fr; gap: 16px; }
   .render-studies { column-gap: 22px; }
   .topic-body { grid-template-columns: minmax(0,1fr); }
-  .case-copy, .case-measurement { grid-template-columns: minmax(0,1fr); }
 }
 @media (max-width: 640px) {
+  .star-table tr { display: grid; }
+  .star-table th { width: auto; padding: 12px 0 3px; border-bottom: 0; }
+  .star-table td { padding: 0 0 12px; }
   .glass-pair, .hdr-path { grid-template-columns: minmax(0,1fr); }
   .hdr-path ol { grid-template-columns: minmax(0,1fr); gap: 13px; padding-left: 16px; }
   .hdr-path li + li::before { content: "↓"; left: -15px; top: -10px; }
