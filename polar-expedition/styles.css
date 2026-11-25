@@ -289,7 +289,15 @@ dialog{width:min(960px,calc(100% - 36px));max-height:90svh;overflow:auto;padding
 .measurement h5 { font-size: clamp(22px,2.1vw,30px); }
 .measurement p { margin-top: 10px; }
 .chapter-story { margin: 28px 0 0; padding-top: 20px; border-top: 1px solid var(--line); }
-.chapter-story > p { margin: 12px 0 0; }
+.challenge-star { width: 100%; margin: 14px 0 0; table-layout: fixed; border-collapse: collapse; }
+.challenge-star th, .challenge-star td { padding: 11px 12px; border-block: 1px solid var(--line); text-align: start; vertical-align: top; }
+.challenge-star th { width: clamp(6rem, 15vw, 8.5rem); background: #173f4310; font-weight: 650; }
+.challenge-star td { overflow-wrap: anywhere; }
+.challenge-star td p { margin: 0; }
+.challenge-star td p + p { margin-top: 8px; }
+@media (max-width: 600px) {
+  .challenge-star th, .challenge-star td { padding: 9px 8px; }
+}
 :lang(zh-CN) .roadmap-title h2, :lang(zh-CN) .challenges-section h2, :lang(zh-CN) .discipline-heading h3, :lang(zh-CN) .reading-column :is(h3,h4,h5) { letter-spacing: 0; line-height: 1.26; }
 :lang(zh-CN) .discipline-heading p, :lang(zh-CN) .measurement p, :lang(zh-CN) .chapter-story > p { line-height: 1.78; }
 
