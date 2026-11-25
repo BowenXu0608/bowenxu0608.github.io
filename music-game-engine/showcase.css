@@ -81,6 +81,23 @@ figcaption strong, figcaption span { display: block; }
 figcaption strong { color: var(--ink); font-size: 16px; }
 .hero-media figcaption { margin-top: 10px; }
 .hero-media figcaption span { margin-top: 3px; max-width: 60ch; }
+.source-sample {
+  min-width: 0; max-width: 100%; margin-top: 20px;
+}
+.hero-media + .source-sample { margin-top: 32px; }
+.profiles > .source-sample, .material-study > .source-sample {
+  grid-column: 1 / -1; margin-top: 0;
+}
+.source-location {
+  margin-top: 3px; font: 13px/1.5 Consolas, monospace; overflow-wrap: anywhere;
+}
+.source-sample pre {
+  margin: 10px 0 0; padding: 3px 0 3px clamp(10px, 1.4vw, 19px);
+  border-inline-start: 2px solid var(--teal); color: var(--ink);
+  font: 14px/1.55 Consolas, "Liberation Mono", monospace;
+  white-space: pre-wrap; overflow-wrap: anywhere; tab-size: 4;
+}
+.source-sample pre code { font: inherit; }
 .chapter { border-top: 1px solid var(--line); padding-block: clamp(42px, 5.7vw, 80px); }
 h2 { font-size: clamp(34px, 4.4vw, 60px); line-height: 1.12; letter-spacing: -.047em; }
 :lang(zh-CN) h2 { letter-spacing: -.045em; }

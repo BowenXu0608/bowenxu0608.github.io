@@ -8,7 +8,7 @@
   <link rel="icon" href="assets/mge.svg" type="image/svg+xml">
   <link rel="alternate" hreflang="zh-CN" href="index.html">
   <link rel="alternate" hreflang="en" href="en.html">
-  <link rel="stylesheet" href="showcase.css?v=daee5e15cee4">
+  <link rel="stylesheet" href="showcase.css?v=77c3e27f00dd">
   <script defer src="showcase-language.js"></script>
 </head>
 <body>
@@ -31,26 +31,498 @@
           <source src="assets/preview/hold-study-en-1280.mp4" type="video/mp4"></video>
           <figcaption><strong>Editor and Galaxy S21 demo (19 s, with audio)</strong><span>One hold crosses three lanes at 16–21 s. The S21 footage includes the project’s original soundtrack.</span></figcaption></figure>
       </div>
+      <figure class="source-sample" id="source-overview"><figcaption><strong>Renderer selection from the game mode configuration</strong><span class="source-location" dir="ltr">engine/src/engine/Engine.cpp · L2033–2049</span></figcaption><pre dir="ltr"><code>std::unique_ptr&lt;GameModeRenderer&gt; Engine::createRenderer(const GameModeConfig&amp; config) {
+    switch (config.type) {
+        case GameModeType::DropNotes:
+            if (config.dimension == DropDimension::ThreeD)
+                return std::make_unique&lt;Drop3DRenderer&gt;();
+            return std::make_unique&lt;Drop2DRenderer&gt;();
+        case GameModeType::Circle:
+            // Circle = rotating disk with ring notes (Circle-style).
+            // Dimension toggle isn't exposed for this mode in the editor, so
+            // there's only one renderer here regardless of config.dimension.
+            return std::make_unique&lt;CircleRenderer&gt;();
+        case GameModeType::ScanLine:
+            // ScanLine = horizontal sweep line crossing notes (ScanLine-style).
+            return std::make_unique&lt;ScanLineRenderer&gt;();
+    }
+    return std::make_unique&lt;Drop2DRenderer&gt;();
+}</code></pre></figure>
     </section>
     <section id="architecture" class="chapter" aria-labelledby="systems-title">
       <div class="section-heading"><h2 id="systems-title">Eight engine systems</h2><p>Windows Test Game opens the saved project. The Android packager follows asset references to collect charts, music and materials for the APK. Both players share the C++ gameplay code and Vulkan renderer.</p></div>
-      <div class="systems"><article class="system" id="system-rendering" aria-labelledby="title-rendering"><h3 id="title-rendering">Rendering and materials</h3><p class="system-lead">The CPU and shaders share a fixed byte layout for vertices, time and hit anchors. Hold ribbons use path coordinates for animated stripes. Hit testing uses chart coordinates.</p><section class="system-topic" id="topic-buffer-layout" aria-labelledby="heading-buffer-layout"><h4 id="heading-buffer-layout">Uniform-buffer layout and frames in flight</h4><div class="topic-body"><div><p>The CPU packs matrices, viewport and song time into a uniform buffer. Shaders read fields at fixed byte offsets. Two frame slots keep resources alive until their respective Vulkan fences signal. Each draw also needs an aligned starting address for its pass constants, even when the fields themselves fit in fewer bytes.</p><p class="system-proof">A pass record occupies 352 B. On a device requiring 256 B alignment, the next record starts at byte 512, leaving 160 B of padding. The table lists the actual interface layouts. Compile-time assertions check critical offsets, including byte 48 for the spatial vertex’s path UV.</p></div><div class="system-evidence"><pre><code>stride = ceil(sizeof(pass) / alignment) × alignment</code></pre><table class="system-table"><caption>The CPU–shader application binary interface</caption><thead><tr><th scope="col">Record</th><th scope="col">Size</th><th scope="col">Fields and byte offsets</th></tr></thead><tbody><tr><th scope="row">PassUniforms</th><td>352 B</td><td>Four matrices at 0 / 64 / 128 / 192, viewport at 288</td></tr><tr><th scope="row">ObjectRecord</th><td>256 B</td><td>Model matrix at 0, normal matrix at 64, logical anchor at 224</td></tr><tr><th scope="row">SurfaceVertex</th><td>80 B</td><td>Tangent at 24, UV at 40, path UV at 48</td></tr><tr><th scope="row">CartoonVertex</th><td>48 B</td><td>2D position at 0, colour at 16, reference-space path at 32</td></tr></tbody></table><p class="system-source"><span>Implementation and regressions</span> <code>SurfaceAbi.h</code> · <code>SurfaceRenderer.cpp</code> · <code>program_layout_test.cpp</code></p></div></div></section><section class="system-topic" id="topic-path-material" aria-labelledby="heading-path-material"><h4 id="heading-path-material">Hold ribbons and path-space materials</h4><div class="topic-body"><div><p>A hold can bend across lanes while its visible ribbon shortens during playback. The CPU accumulates distance along the centreline and emits two vertices per cross-section. The energy_stripes material uses this distance for stripe phase and song time for motion. Restarting distance at each visible segment would introduce a seam.</p><figure class="topic-clip"><video controls playsinline preload="none" loading="lazy" width="768" height="432" poster="assets/preview/s21-held-stripes-640.webp" aria-label="Cross-lane hold · Galaxy S21 capture (7 s, with game audio)" aria-describedby="clip-path-material"><source src="assets/preview/s21-held-stripes-768.mp4" type="video/mp4"><a href="assets/preview/s21-held-stripes-768.mp4">Cross-lane hold · Galaxy S21 capture (7 s, with game audio)</a></video><figcaption id="clip-path-material"><strong>Cross-lane hold · Galaxy S21 capture (7 s, with game audio)</strong> Drop 2D Studio Program / Hard, 15–22 s, autoplay. Follow the cyan head along the judgment line from lane 2 to lane 4, then follow the stripes up the body through both bends.</figcaption></figure></div><div class="system-evidence"><p class="system-proof">The mesh test constructs seven cross-sections and checks 14 vertices, 36 indices and the coordinates at both ribbon edges. It then rebuilds only the middle three sections. At an overlapping vertex, both ordinary UV and path UV must equal their full-ribbon values. That comparison tests continuity when the visible range changes.</p><pre><code>phase = along × stripeScale − songTime × stripeSpeed</code></pre><p class="system-source"><span>Implementation and regressions</span> <code>energy_stripes.surface.glsl</code> · <code>surface_frame_test.cpp</code></p></div></div></section><section class="system-topic" id="topic-surface-order" aria-labelledby="heading-surface-order"><h4 id="heading-surface-order">Surface ordering and HDR composition</h4><div class="topic-body"><div><p>Spatial modes draw opaque and cutout geometry first, preserve scene colour for glass to sample, then draw translucent surfaces from far to near. Score and combo are drawn after the display transform so scene exposure can be adjusted independently. The 2D cartoon path preserves submission order within a layer.</p></div><div class="system-evidence"><p class="system-proof">A pixel-readback test blends half-transparent red over opaque blue and checks for linear RGB (0.5, 0, 0.5). Reversing two opaque draws must still leave the nearer surface visible. A separate fixed-scene S21 experiment measured the memory cost of HDR conversion at 5.13 and 0.33 GB/s for the two paths.</p><pre><code>C = α × Csrc + (1 − α) × Cdst</code></pre><p class="system-source"><span>Implementation and regressions</span> <code>SurfaceRenderer.cpp</code> · <code>program_layout_test.cpp</code> · <code>hdr_display_test.cpp</code></p><a class="system-related" href="#gpu-summary">See the S21 HDR bandwidth chart and capture conditions</a></div></div></section></article>
+      <div class="systems"><article class="system" id="system-rendering" aria-labelledby="title-rendering"><h3 id="title-rendering">Rendering and materials</h3><p class="system-lead">The CPU and shaders share a fixed byte layout for vertices, time and hit anchors. Hold ribbons use path coordinates for animated stripes. Hit testing uses chart coordinates.</p><section class="system-topic" id="topic-buffer-layout" aria-labelledby="heading-buffer-layout"><h4 id="heading-buffer-layout">Uniform-buffer layout and frames in flight</h4><div class="topic-body"><div><p>The CPU packs matrices, viewport and song time into a uniform buffer. Shaders read fields at fixed byte offsets. Two frame slots keep resources alive until their respective Vulkan fences signal. Each draw also needs an aligned starting address for its pass constants, even when the fields themselves fit in fewer bytes.</p><p class="system-proof">A pass record occupies 352 B. On a device requiring 256 B alignment, the next record starts at byte 512, leaving 160 B of padding. The table lists the actual interface layouts. Compile-time assertions check critical offsets, including byte 48 for the spatial vertex’s path UV.</p></div><div class="system-evidence"><pre><code>stride = ceil(sizeof(pass) / alignment) × alignment</code></pre><table class="system-table"><caption>The CPU–shader application binary interface</caption><thead><tr><th scope="col">Record</th><th scope="col">Size</th><th scope="col">Fields and byte offsets</th></tr></thead><tbody><tr><th scope="row">PassUniforms</th><td>352 B</td><td>Four matrices at 0 / 64 / 128 / 192, viewport at 288</td></tr><tr><th scope="row">ObjectRecord</th><td>256 B</td><td>Model matrix at 0, normal matrix at 64, logical anchor at 224</td></tr><tr><th scope="row">SurfaceVertex</th><td>80 B</td><td>Tangent at 24, UV at 40, path UV at 48</td></tr><tr><th scope="row">CartoonVertex</th><td>48 B</td><td>2D position at 0, colour at 16, reference-space path at 32</td></tr></tbody></table><p class="system-source"><span>Implementation and regressions</span> <code>SurfaceAbi.h</code> · <code>SurfaceRenderer.cpp</code> · <code>program_layout_test.cpp</code></p></div></div><figure class="source-sample" id="source-buffer-layout"><figcaption><strong>Writing pass uniforms at aligned offsets</strong><span class="source-location" dir="ltr">engine/src/renderer/surface/ProgramLayout.cpp · L424–434</span></figcaption><pre dir="ltr"><code>bool ProgramLayout::addPass(int frame, const PassUniforms&amp; pass, uint32_t&amp; dynamicOffset) {
+    Frame&amp; f = m_frames.at(frame);
+    if (f.passCount &gt;= kMaxPassesPerFrame) {
+        fail("more than " + std::to_string(kMaxPassesPerFrame) + " surface passes in one frame");
+        return false;
+    }
+    dynamicOffset = f.passCount * m_passStride;
+    std::memcpy(static_cast&lt;char*&gt;(f.pass.mapped) + dynamicOffset, &amp;pass, sizeof(PassUniforms));
+    ++f.passCount;
+    return true;
+}</code></pre></figure></section><section class="system-topic" id="topic-path-material" aria-labelledby="heading-path-material"><h4 id="heading-path-material">Hold ribbons and path-space materials</h4><div class="topic-body"><div><p>A hold can bend across lanes while its visible ribbon shortens during playback. The CPU accumulates distance along the centreline and emits two vertices per cross-section. The energy_stripes material uses this distance for stripe phase and song time for motion. Restarting distance at each visible segment would introduce a seam.</p><figure class="topic-clip"><video controls playsinline preload="none" loading="lazy" width="768" height="432" poster="assets/preview/s21-held-stripes-640.webp" aria-label="Cross-lane hold · Galaxy S21 capture (7 s, with game audio)" aria-describedby="clip-path-material"><source src="assets/preview/s21-held-stripes-768.mp4" type="video/mp4"><a href="assets/preview/s21-held-stripes-768.mp4">Cross-lane hold · Galaxy S21 capture (7 s, with game audio)</a></video><figcaption id="clip-path-material"><strong>Cross-lane hold · Galaxy S21 capture (7 s, with game audio)</strong> Drop 2D Studio Program / Hard, 15–22 s, autoplay. Follow the cyan head along the judgment line from lane 2 to lane 4, then follow the stripes up the body through both bends.</figcaption></figure></div><div class="system-evidence"><p class="system-proof">The mesh test constructs seven cross-sections and checks 14 vertices, 36 indices and the coordinates at both ribbon edges. It then rebuilds only the middle three sections. At an overlapping vertex, both ordinary UV and path UV must equal their full-ribbon values. That comparison tests continuity when the visible range changes.</p><pre><code>phase = along × stripeScale − songTime × stripeSpeed</code></pre><p class="system-source"><span>Implementation and regressions</span> <code>energy_stripes.surface.glsl</code> · <code>surface_frame_test.cpp</code></p></div></div><figure class="source-sample" id="source-path-material"><figcaption><strong>Animating emissive stripes in path space</strong><span class="source-location" dir="ltr">tools/rendering/fixtures/r4-programs/assets/material_programs/energy_stripes.surface.glsl · L2–13</span></figcaption><pre dir="ltr"><code>void evaluateSurface(const SurfaceContext context, inout SurfaceParameters surface) {
+    // Along a hold or arc the bands follow its path; on a tap they run across
+    // its top.
+    float along = context.object.pathLength &gt; 0.0 ? context.pathUv.x : context.uv0.y;
+    float phase = along * material.stripeScale - context.object.songTime * material.stripeSpeed;
+    float band = smoothPeriodicBand(phase, material.stripeWidth, 0.08);
+    surface.baseColorLinear = material.baseColor;
+    surface.perceptualRoughness = 0.35;
+    surface.clearcoat = 0.5;
+    surface.emissionLinear = material.stripeColor * band;
+    surface.emissionStrength = material.emissionStrength;
+}</code></pre></figure></section><section class="system-topic" id="topic-surface-order" aria-labelledby="heading-surface-order"><h4 id="heading-surface-order">Surface ordering and HDR composition</h4><div class="topic-body"><div><p>Spatial modes draw opaque and cutout geometry first, preserve scene colour for glass to sample, then draw translucent surfaces from far to near. Score and combo are drawn after the display transform so scene exposure can be adjusted independently. The 2D cartoon path preserves submission order within a layer.</p></div><div class="system-evidence"><p class="system-proof">A pixel-readback test blends half-transparent red over opaque blue and checks for linear RGB (0.5, 0, 0.5). Reversing two opaque draws must still leave the nearer surface visible. A separate fixed-scene S21 experiment measured the memory cost of HDR conversion at 5.13 and 0.33 GB/s for the two paths.</p><pre><code>C = α × Csrc + (1 − α) × Cdst</code></pre><p class="system-source"><span>Implementation and regressions</span> <code>SurfaceRenderer.cpp</code> · <code>program_layout_test.cpp</code> · <code>hdr_display_test.cpp</code></p><a class="system-related" href="#gpu-summary">See the S21 HDR bandwidth chart and capture conditions</a></div></div><figure class="source-sample" id="source-surface-order"><figcaption><strong>Ordering draws around the scene snapshot and sorting transparent surfaces</strong><span class="source-location" dir="ltr">engine/src/renderer/surface/SurfaceRenderer.cpp · L238–262</span></figcaption><pre dir="ltr"><code>auto afterSnapshot = [&amp;](uint32_t i) {
+    const Queued&amp; q = m_queue[i];
+    return static_cast&lt;uint32_t&gt;(q.draw.layer) &gt;= firstTransmissiveLayer &amp;&amp;
+           (q.cartoon || rank(q.draw.queue) &gt; 0);
+};
+std::stable_sort(order.begin(), order.end(), [&amp;](uint32_t a, uint32_t b) {
+    const SurfaceDraw&amp; da = m_queue[a].draw;
+    const SurfaceDraw&amp; db = m_queue[b].draw;
+    const bool sa = afterSnapshot(a), sb = afterSnapshot(b);
+    if (sa != sb) return !sa;
+    if (da.layer != db.layer) return da.layer &lt; db.layer;
+    // Cartoon draws follow the layer's spatial ones, in the order queued.
+    const bool ca = m_queue[a].cartoon, cb = m_queue[b].cartoon;
+    if (ca || cb) return !ca &amp;&amp; cb;
+    const int ra = rank(da.queue), rb = rank(db.queue);
+    if (ra != rb) return ra &lt; rb;
+    if (ra &gt; 0) return distance[a] &gt; distance[b];
+    // Opaque: grouped by pipeline, then material, to bind less.
+    const SurfaceMaterial&amp; ma = m_materials[m_queue[a].material];
+    const SurfaceMaterial&amp; mb = m_materials[m_queue[b].material];
+    if (ma.program != mb.program) return ma.program &lt; mb.program;
+    if (da.queue != db.queue) return da.queue &lt; db.queue;
+    if (da.cullBackFaces != db.cullBackFaces) return db.cullBackFaces;
+    return m_queue[a].material &lt; m_queue[b].material;
+});</code></pre></figure></section></article>
 <article class="system" id="system-resources" aria-labelledby="title-resources"><h3 id="title-resources">Assets and serialization</h3><p class="system-lead">The Unified Chart Format puts different note types on one timeline. Opening and saving a song must preserve hold end times, the order of simultaneous notes and links between arcs and their children.</p><section class="system-topic" id="topic-hold-precision" aria-labelledby="heading-hold-precision"><h4 id="heading-hold-precision">Round-trip precision for hold times</h4><div class="topic-body"><div><p>The loader holds a floating-point end time, but the chart stores duration as decimal text. On save, the serializer simulates a reload and checks two conditions. The original start plus the candidate duration must reproduce the original end, and the duration must cover the last waypoint. Either failure can change the hold when the author reopens it.</p><p class="system-proof">The example starts at 45.117188 s. Rounding the final waypoint’s 6.796875 s to six significant digits gives 6.79688 s and changes the reconstructed end. A Windows regression also re-saved temporary copies of 18 charts containing 4,649 notes and checked reload times and stability on a second save.</p></div><div class="system-evidence"><pre><code>start + parsedDuration == loadedEnd
-parsedDuration ≥ lastWaypointOffset</code></pre><table class="system-table"><caption>Hold-duration round-trip test</caption><thead><tr><th scope="col">Field</th><th scope="col">Test value</th><th scope="col">Reload check</th></tr></thead><tbody><tr><th scope="row">Start</th><td>45.117188 s</td><td>Start from the original floating-point time</td></tr><tr><th scope="row">Last waypoint</th><td>6.796875 s</td><td>Recover exactly the same waypoint offset</td></tr><tr><th scope="row">Six significant digits</th><td>6.79688 s</td><td>Adding this value to the start changes the end</td></tr><tr><th scope="row">Duration</th><td>≥ last offset</td><td>Rebuild the originally loaded end time</td></tr></tbody></table><p class="system-source"><span>Implementation and regressions</span> <code>ChartSerializer.cpp</code> · <code>writeNoteDuration</code> · <code>chart_roundtrip_test.cpp</code></p></div></div></section><section class="system-topic" id="topic-stable-chart" aria-labelledby="heading-stable-chart"><h4 id="heading-stable-chart">Stable ordering for simultaneous notes and material slots</h4><div class="topic-body"><div><p>A tap and a flick can share a beat. Stable sorting by time preserves their relative order on export. Materials are identified by slot number, so the writer sorts by slot before serializing. Changes in hash-table iteration order then produce no unrelated file differences.</p></div><div class="system-evidence"><p class="system-proof">The material fixture supplies slots in the order 8, 4, 9, 1, 0, then checks their order on disk and saves the file again. A separate chart contains tied notes at multiple times. After inserting a note and re-saving, the test checks the relative order within the original groups.</p><pre><code>8, 4, 9, 1, 0  →  0, 1, 4, 8, 9</code></pre><p class="system-source"><span>Implementation and regressions</span> <code>testMaterialsSaveInSlotOrder</code> · <code>testStableNoteOrder</code> · <code>chart_roundtrip_test.cpp</code></p></div></div></section><section class="system-topic" id="topic-atomic-save" aria-labelledby="heading-atomic-save"><h4 id="heading-atomic-save">Atomic saves and recovery after a failed write</h4><div class="topic-body"><div><p>Overwriting a chart in place can destroy its last good version if a write stops halfway. The editor writes a .tmp~ sibling, flushes it and replaces the destination only after that succeeds. A save failure is reported for the affected difficulty, which stays dirty so the author can retry the edit.</p></div><div class="system-evidence"><p class="system-proof">The regression occupies the temporary path with a directory to force a write failure and compares the original chart byte for byte. Releasing that path allows the pending edit to be saved. A separate unreadable-chart case writes recovered edits to a .recovered.json sibling so the original can be inspected.</p><pre><code>chart.json.tmp~  →  flush  →  chart.json</code></pre><p class="system-source"><span>Implementation and regressions</span> <code>fileutil::writeFileAtomic</code> · <code>FileUtil.h</code> · <code>chart_roundtrip_test.cpp</code></p></div></div></section></article>
+parsedDuration ≥ lastWaypointOffset</code></pre><table class="system-table"><caption>Hold-duration round-trip test</caption><thead><tr><th scope="col">Field</th><th scope="col">Test value</th><th scope="col">Reload check</th></tr></thead><tbody><tr><th scope="row">Start</th><td>45.117188 s</td><td>Start from the original floating-point time</td></tr><tr><th scope="row">Last waypoint</th><td>6.796875 s</td><td>Recover exactly the same waypoint offset</td></tr><tr><th scope="row">Six significant digits</th><td>6.79688 s</td><td>Adding this value to the start changes the end</td></tr><tr><th scope="row">Duration</th><td>≥ last offset</td><td>Rebuild the originally loaded end time</td></tr></tbody></table><p class="system-source"><span>Implementation and regressions</span> <code>ChartSerializer.cpp</code> · <code>writeNoteDuration</code> · <code>chart_roundtrip_test.cpp</code></p></div></div><figure class="source-sample" id="source-hold-precision"><figcaption><strong>Serializing a hold duration that reproduces its end time</strong><span class="source-location" dir="ltr">engine/src/editor/ChartSerializer.cpp · L69–98</span></figcaption><pre dir="ltr"><code>static void writeNoteDuration(std::ostream&amp; f, float t, float dur, float minD) {
+    const float end = t + dur;
+    char buf[48];
+    auto tryText = [&amp;](double x, int precision) {
+        const auto r = std::to_chars(buf, buf + sizeof buf, x, std::chars_format::general, precision);
+        if (r.ec != std::errc()) return false;
+        const float d = std::strtof(std::string(buf, r.ptr).c_str(), nullptr);
+        if (!(t + d == end &amp;&amp; d &gt;= minD)) return false;
+        f.write(buf, r.ptr - buf);
+        return true;
+    };
+    if (tryText(dur, 6)) return;
+    if (dur &gt; 0.f &amp;&amp; std::isfinite(dur)) {
+        // The durations that rebuild `end` form an interval of floats; for
+        // d &gt;= 0 the bit patterns are ordered like the values.
+        auto same = [&amp;](uint32_t bits) { return t + std::bit_cast&lt;float&gt;(bits) == end; };
+        const uint32_t b0 = std::bit_cast&lt;uint32_t&gt;(dur);
+        uint32_t lo = 0, hi = b0;                  // lowest bits with the same end
+        while (lo &lt; hi) { const uint32_t m = lo + (hi - lo) / 2; if (same(m)) hi = m; else lo = m + 1; }
+        const uint32_t loBits = lo;
+        lo = b0; hi = 0x7F7FFFFFu;                 // highest finite bits with the same end
+        while (lo &lt; hi) { const uint32_t m = lo + (hi - lo + 1) / 2; if (same(m)) lo = m; else hi = m - 1; }
+        const float cands[] = {std::bit_cast&lt;float&gt;(loBits), std::bit_cast&lt;float&gt;(lo), dur,
+                               std::bit_cast&lt;float&gt;(loBits + (lo - loBits) / 2)};
+        for (int p = 1; p &lt;= 9; ++p)
+            for (float x : cands)
+                if (tryText(x, p)) return;
+    }
+    writeExactFloat(f, dur);
+}</code></pre></figure></section><section class="system-topic" id="topic-stable-chart" aria-labelledby="heading-stable-chart"><h4 id="heading-stable-chart">Stable ordering for simultaneous notes and material slots</h4><div class="topic-body"><div><p>A tap and a flick can share a beat. Stable sorting by time preserves their relative order on export. Materials are identified by slot number, so the writer sorts by slot before serializing. Changes in hash-table iteration order then produce no unrelated file differences.</p></div><div class="system-evidence"><p class="system-proof">The material fixture supplies slots in the order 8, 4, 9, 1, 0, then checks their order on disk and saves the file again. A separate chart contains tied notes at multiple times. After inserting a note and re-saving, the test checks the relative order within the original groups.</p><pre><code>8, 4, 9, 1, 0  →  0, 1, 4, 8, 9</code></pre><p class="system-source"><span>Implementation and regressions</span> <code>testMaterialsSaveInSlotOrder</code> · <code>testStableNoteOrder</code> · <code>chart_roundtrip_test.cpp</code></p></div></div><figure class="source-sample" id="source-stable-chart"><figcaption><strong>Preserving simultaneous note order and remapping parent arcs</strong><span class="source-location" dir="ltr">engine/src/editor/agent/chart/ChartNormalize.cpp · L6–37</span></figcaption><pre dir="ltr"><code>void normalizeNotes(std::vector&lt;EditorNote&gt;&amp; notes) {
+    const size_t n = notes.size();
+    if (n &lt; 2) return;
+
+    std::vector&lt;size_t&gt; order(n);
+    std::iota(order.begin(), order.end(), size_t{0});
+    std::stable_sort(order.begin(), order.end(), [&amp;](size_t a, size_t b) {
+        return notes[a].time &lt; notes[b].time;
+    });
+
+    bool identity = true;
+    for (size_t i = 0; i &lt; n; ++i)
+        if (order[i] != i) { identity = false; break; }
+    if (identity) return;
+
+    // oldToNew[old index] = new index
+    std::vector&lt;int&gt; oldToNew(n);
+    for (size_t newIdx = 0; newIdx &lt; n; ++newIdx)
+        oldToNew[order[newIdx]] = (int)newIdx;
+
+    std::vector&lt;EditorNote&gt; sorted;
+    sorted.reserve(n);
+    for (size_t newIdx = 0; newIdx &lt; n; ++newIdx)
+        sorted.push_back(std::move(notes[order[newIdx]]));
+
+    for (auto&amp; note : sorted) {
+        if (note.type == EditorNoteType::ArcTap
+            &amp;&amp; note.arcTapParent &gt;= 0 &amp;&amp; note.arcTapParent &lt; (int)n)
+            note.arcTapParent = oldToNew[note.arcTapParent];
+    }
+    notes = std::move(sorted);
+}</code></pre></figure></section><section class="system-topic" id="topic-atomic-save" aria-labelledby="heading-atomic-save"><h4 id="heading-atomic-save">Atomic saves and recovery after a failed write</h4><div class="topic-body"><div><p>Overwriting a chart in place can destroy its last good version if a write stops halfway. The editor writes a .tmp~ sibling, flushes it and replaces the destination only after that succeeds. A save failure is reported for the affected difficulty, which stays dirty so the author can retry the edit.</p></div><div class="system-evidence"><p class="system-proof">The regression occupies the temporary path with a directory to force a write failure and compares the original chart byte for byte. Releasing that path allows the pending edit to be saved. A separate unreadable-chart case writes recovered edits to a .recovered.json sibling so the original can be inspected.</p><pre><code>chart.json.tmp~  →  flush  →  chart.json</code></pre><p class="system-source"><span>Implementation and regressions</span> <code>fileutil::writeFileAtomic</code> · <code>FileUtil.h</code> · <code>chart_roundtrip_test.cpp</code></p></div></div><figure class="source-sample" id="source-atomic-save"><figcaption><strong>Writing, flushing and renaming the temporary file</strong><span class="source-location" dir="ltr">engine/src/core/FileUtil.h · L18–53</span></figcaption><pre dir="ltr"><code>inline bool writeFileAtomic(const std::filesystem::path&amp; path,
+                            std::string_view data,
+                            std::string* err = nullptr) {
+    namespace fs = std::filesystem;
+    std::error_code ec;
+    if (path.has_parent_path())
+        fs::create_directories(path.parent_path(), ec);
+
+    fs::path tmp = path;
+    tmp += ".tmp~";
+    {
+        std::ofstream f(tmp, std::ios::binary | std::ios::trunc);
+        if (!f) {
+            if (err) *err = "cannot open " + tmp.string() + " for writing";
+            return false;
+        }
+        f.write(data.data(), (std::streamsize)data.size());
+        f.flush();
+        if (!f) {
+            if (err) *err = "write failed: " + tmp.string();
+            f.close();
+            fs::remove(tmp, ec);
+            return false;
+        }
+    }
+    // std::filesystem::rename replaces an existing target on every
+    // platform we build for (MSVC implements it with MOVEFILE_REPLACE_EXISTING).
+    fs::rename(tmp, path, ec);
+    if (ec) {
+        if (err) *err = "rename failed: " + ec.message();
+        std::error_code ec2;
+        fs::remove(tmp, ec2);
+        return false;
+    }
+    return true;
+}</code></pre></figure></section></article>
 <article class="system" id="system-core" aria-labelledby="title-core"><h3 id="title-core">Core runtime</h3><p class="system-lead">The engine tracks the position in the music file and the time in the chart. The editor, desktop player and Android player share the conversion. Android also estimates when audio already in the buffer will reach the output.</p><section class="system-topic" id="topic-song-offset" aria-labelledby="heading-song-offset"><h4 id="heading-song-offset">Chart time and song offset</h4><div class="topic-body"><div><p>The waveform is indexed in music-file time. Notes, tempo changes and scan pages are indexed in chart time. The editor and both players share the forward and inverse conversions. A run starts at the earlier of minus the lead-in and minus the song offset, so audio can start before the first chart beat.</p></div><div class="system-evidence"><p class="system-proof">With a +0.10 s offset, audio starts at chart time −0.10 s. The offset regression places the music cursor at 1.10 s and obtains a Perfect on a note charted at 1.00 s. This exercises the sign convention all the way through judgment.</p><pre><code>chartTime = musicTime − songOffset
-musicTime = chartTime + songOffset</code></pre><p class="system-source"><span>Implementation and regressions</span> <code>SongClock.h</code> · <code>songclock::chartTime</code> · <code>audio_offset_test.cpp</code></p></div></div></section><section class="system-topic" id="topic-clock-sync" aria-labelledby="heading-clock-sync"><h4 id="heading-clock-sync">Audio output latency and clock correction</h4><div class="topic-body"><div><p>On Android the write cursor can run ahead of the speaker. AAudio timestamps estimate how many written frames have yet to play. The first valid estimate is adopted immediately, then new samples receive 5% weight. The chart clock predicts one frame ahead and corrects 10% of the difference to the audio target. Errors above 50 ms trigger a snap, subject to a monotonic floor.</p><p class="system-proof">Each row starts independently from 0.984 s with a 0.016 s step, giving a prediction of 1.000 s. When the target is 80 ms behind, the floor holds the output at 0.984 s. In a separate S21 observation the timestamp estimate was 24.2 ms, compared with a buffer estimate of 32 ms.</p></div><div class="system-evidence"><pre><code>T = audioCursor − outputLatency − songOffset
+musicTime = chartTime + songOffset</code></pre><p class="system-source"><span>Implementation and regressions</span> <code>SongClock.h</code> · <code>songclock::chartTime</code> · <code>audio_offset_test.cpp</code></p></div></div><figure class="source-sample" id="source-song-offset"><figcaption><strong>Converting music and chart time and scheduling the lead-in</strong><span class="source-location" dir="ltr">engine/src/game/SongClock.h · L18–30</span></figcaption><pre dir="ltr"><code>inline double chartTime(double musicSec, double offset) { return musicSec - offset; }
+inline double musicTime(double chartSec, double offset) { return chartSec + offset; }
+
+// The chart time at which the music starts playing from its beginning.
+inline double musicStartsAt(double offset) { return -offset; }
+
+// Where a run's clock starts: `leadIn` seconds before the chart's time 0 (the
+// notes scroll in), and never after the music's start.
+inline double runStart(double leadIn, double offset) { return std::min(-leadIn, musicStartsAt(offset)); }
+
+// The lead-in is over and the music starts this frame: the clock reached the
+// music's start.
+inline bool musicDue(double chartNow, double offset) { return chartNow &gt;= musicStartsAt(offset); }</code></pre></figure></section><section class="system-topic" id="topic-clock-sync" aria-labelledby="heading-clock-sync"><h4 id="heading-clock-sync">Audio output latency and clock correction</h4><div class="topic-body"><div><p>On Android the write cursor can run ahead of the speaker. AAudio timestamps estimate how many written frames have yet to play. The first valid estimate is adopted immediately, then new samples receive 5% weight. The chart clock predicts one frame ahead and corrects 10% of the difference to the audio target. Errors above 50 ms trigger a snap, subject to a monotonic floor.</p><p class="system-proof">Each row starts independently from 0.984 s with a 0.016 s step, giving a prediction of 1.000 s. When the target is 80 ms behind, the floor holds the output at 0.984 s. In a separate S21 observation the timestamp estimate was 24.2 ms, compared with a buffer estimate of 32 ms.</p></div><div class="system-evidence"><pre><code>T = audioCursor − outputLatency − songOffset
 P = previous + dt
-next = max(previous, |T − P| &gt; 0.050 ? T : P + 0.1 × (T − P))</code></pre><table class="system-table"><caption>Android clock correction examples (seconds)</caption><thead><tr><th scope="col">Audio target T</th><th scope="col">Prediction error</th><th scope="col">Output chart time</th></tr></thead><tbody><tr><th scope="row">1.010 s</th><td>+10 ms</td><td>1.001 s · 10% correction</td></tr><tr><th scope="row">1.080 s</th><td>+80 ms</td><td>1.080 s · snap to target</td></tr><tr><th scope="row">0.920 s</th><td>−80 ms</td><td>0.984 s · keep previous time</td></tr></tbody></table><p class="system-source"><span>Implementation and regressions</span> <code>AndroidEngine.cpp</code> · <code>AudioEngine.cpp</code> · <code>SongClock.h</code></p></div></div></section><section class="system-topic" id="topic-update-order" aria-labelledby="heading-update-order"><h4 id="heading-update-order">Main loop and scene updates</h4><div class="topic-body"><div><p>The main loop polls window events, updates the song clock, then processes gesture timeouts, hold samples and overdue notes. The active mode advances before drawing. Hit detection and the corresponding note position therefore consume the same frame time. Pause and retry also coordinate audio, the clock and active touches.</p></div><div class="system-evidence"><p class="system-proof">Component pools store components of one type contiguously. The scene graph handles hierarchy by propagating a changed parent transform through its descendants. For example, a parent translated two units along X and a child translated three locally produce a world X of five with identity rotation and scale.</p><pre><code>worldChild = worldParent × localChild</code></pre><p class="system-source"><span>Implementation and regressions</span> <code>Engine.cpp</code> · <code>ECS.h</code> · <code>SceneNode.h</code></p></div></div></section></article>
+next = max(previous, |T − P| &gt; 0.050 ? T : P + 0.1 × (T − P))</code></pre><table class="system-table"><caption>Android clock correction examples (seconds)</caption><thead><tr><th scope="col">Audio target T</th><th scope="col">Prediction error</th><th scope="col">Output chart time</th></tr></thead><tbody><tr><th scope="row">1.010 s</th><td>+10 ms</td><td>1.001 s · 10% correction</td></tr><tr><th scope="row">1.080 s</th><td>+80 ms</td><td>1.080 s · snap to target</td></tr><tr><th scope="row">0.920 s</th><td>−80 ms</td><td>0.984 s · keep previous time</td></tr></tbody></table><p class="system-source"><span>Implementation and regressions</span> <code>AndroidEngine.cpp</code> · <code>AudioEngine.cpp</code> · <code>SongClock.h</code></p></div></div><figure class="source-sample" id="source-clock-sync"><figcaption><strong>Smoothing output latency and correcting the monotonic song clock</strong><span class="source-location" dir="ltr">engine/src/android/AndroidEngine.cpp · L802–819</span></figcaption><pre dir="ltr"><code>const double measured = m_audio.measuredOutputLatencySeconds();
+if (measured &gt; 0.0) {
+    if (m_latencySamples == 0)
+        LOGI("Audio latency measured: %.1f ms (buffer estimate %.1f ms)",
+             measured * 1000.0, m_audioOutputLatency * 1000.0);
+    m_audioOutputLatency = m_latencySamples++ == 0 ? measured
+                         : m_audioOutputLatency * 0.95 + measured * 0.05;
+}
+// The cursor moves in audio-buffer steps: run the clock on the
+// frame time and pull it a tenth of the way to the cursor each
+// frame, never backwards; a jump over 50 ms (resume, seek) snaps.
+// Chart time: the music's audible place minus the song's Audio
+// offset (songclock, as on the desktop).
+const double target = songclock::chartTime(dspPos - m_audioOutputLatency, m_gameplayConfig.audioOffset);
+double t = m_clock.songTime() + dt;
+const double err = target - t;
+t = std::abs(err) &gt; 0.05 ? target : t + err * 0.1;
+m_clock.setSongTime(std::max(t, m_clock.songTime()));</code></pre></figure></section><section class="system-topic" id="topic-update-order" aria-labelledby="heading-update-order"><h4 id="heading-update-order">Main loop and scene updates</h4><div class="topic-body"><div><p>The main loop polls window events, updates the song clock, then processes gesture timeouts, hold samples and overdue notes. The active mode advances before drawing. Hit detection and the corresponding note position therefore consume the same frame time. Pause and retry also coordinate audio, the clock and active touches.</p></div><div class="system-evidence"><p class="system-proof">Component pools store components of one type contiguously. The scene graph handles hierarchy by propagating a changed parent transform through its descendants. For example, a parent translated two units along X and a child translated three locally produce a world X of five with identity rotation and scale.</p><pre><code>worldChild = worldParent × localChild</code></pre><p class="system-source"><span>Implementation and regressions</span> <code>Engine.cpp</code> · <code>ECS.h</code> · <code>SceneNode.h</code></p></div></div><figure class="source-sample" id="source-update-order"><figcaption><strong>Propagating world transforms and dirty state down the scene tree</strong><span class="source-location" dir="ltr">engine/src/core/SceneNode.h · L102–113</span></figcaption><pre dir="ltr"><code>void updateNode(NodeID id, const glm::mat4&amp; parentWorld, bool parentDirty) {
+    auto it = m_nodes.find(id);
+    if (it == m_nodes.end()) return;
+    SceneNode&amp; node = it-&gt;second;
+    bool needsUpdate = node.m_dirty || parentDirty;
+    if (needsUpdate) {
+        node.m_worldMatrix = parentWorld * node.localTransform.toMatrix();
+        node.m_dirty = false;
+    }
+    for (NodeID child : node.m_children)
+        updateNode(child, node.m_worldMatrix, needsUpdate);
+}</code></pre></figure></section></article>
 <article class="system" id="system-input" aria-labelledby="title-input"><h3 id="title-input">Input and gestures</h3><p class="system-lead">A single display frame can deliver several fingers and older motion samples. Each finger has an ID, a state and a timestamp. Judgment uses the chart time corresponding to the touch.</p><section class="system-topic" id="topic-event-time" aria-labelledby="heading-event-time"><h4 id="heading-event-time">Touch timestamps and chart synchronization</h4><div class="topic-body"><div><p>An Android move callback can contain several historical samples. The engine preserves each monotonic timestamp and keeps the chart time of its last clock synchronization. The difference from that sync point is clamped to −250 through +100 ms, then added to the synchronized chart time. Samples delivered in one render frame can therefore receive different judgment times.</p></div><div class="system-evidence"><p class="system-proof">For a sync point at chart time 10.000 s, samples from 12 ms and 4 ms earlier map to 9.988 and 9.996 s. This is a worked conversion. A separate S21 replay injected six simultaneous contacts. Two runs for each of two note appearances produced six distinct note IDs and six Perfects per run.</p><pre><code>Δ = clamp(touchMono − syncMono, −0.250, +0.100)
-eventChartTime = syncedChartTime + Δ</code></pre><p class="system-source"><span>Implementation and regressions</span> <code>AndroidEngine.cpp</code> · <code>GestureRecognizer.cpp</code> · <code>TouchTypes.h</code></p></div></div></section><section class="system-topic" id="topic-finger-state" aria-labelledby="heading-finger-state"><h4 id="heading-finger-state">Per-finger gestures and single-hit judgment</h4><div class="topic-body"><div><p>Each finger tracks its origin, start time and recent movement. Touch-down emits Press immediately. A nearly stationary finger can enter the held state after about 150 ms. Tap and slide tolerances scale from 20 and 25 px with DPI, and a flick uses recent velocity samples over about 80 ms. A tap can be judged on contact while the finger continues to move or lift.</p><p class="system-proof">The desktop regression schedules a note for 1.000 s, presses at 0.990 s and releases at 1.190 s. It checks the cumulative count at each step. The 10 ms early press earns a Perfect, and both the scheduled beat and the later release must leave the count at one.</p></div><div class="system-evidence"><table class="system-table"><caption>Tap event sequence (desktop regression)</caption><thead><tr><th scope="col">Chart time</th><th scope="col">Event</th><th scope="col">Judgment count</th></tr></thead><tbody><tr><th scope="row">0.990 s</th><td>Finger down for the 1.000 s note</td><td>1 Perfect</td></tr><tr><th scope="row">1.000 s</th><td>The chart reaches the note marker</td><td>Still 1</td></tr><tr><th scope="row">1.190 s</th><td>The same finger lifts</td><td>Still 1</td></tr></tbody></table><p class="system-source"><span>Implementation and regressions</span> <code>GestureRecognizer.cpp</code> · <code>Drop2DInput.cpp</code> · <code>turn_camera_test.cpp</code></p></div></div></section><section class="system-topic" id="topic-lane-picking" aria-labelledby="heading-lane-picking"><h4 id="heading-lane-picking">Camera rotation and screen-space picking</h4><div class="topic-body"><div><p>Drop 2D allows camera roll, so fixed horizontal hit bands can identify the wrong lane. The input code projects the two outer lane anchors on the judgment line into screen space and uses the line joining them as its axis. Projecting the contact onto that axis gives the nearest lane centre in the rendered orientation.</p></div><div class="system-evidence"><p class="system-proof">The desktop camera regression projects known lane anchors and feeds their pixel positions back to the picker, checking that each returns its original lane. At +90° the axis is nearly vertical. At −135° its horizontal order is reversed. Both exercise cases that a fixed screen-X mapping mishandles.</p><pre><code>axis = normalize(lastAnchor − firstAnchor)
-distanceOnAxis = dot(touch − firstAnchor, axis)</code></pre><p class="system-source"><span>Implementation and regressions</span> <code>Drop2DRenderer.cpp</code> · <code>Drop2DInput.cpp</code> · <code>turn_camera_test.cpp</code></p></div></div></section></article>
-<article class="system" id="system-gameplay" aria-labelledby="title-gameplay"><h3 id="title-gameplay">Gameplay, judgment and feedback</h3><p class="system-lead">A note head, a hold checkpoint and a release can each produce a judgment. They feed one scoring and feedback path so the combo, the on-screen judgment and the results screen agree about what happened.</p><section class="system-topic" id="topic-hit-windows" aria-labelledby="heading-hit-windows"><h4 id="heading-hit-windows">Candidate selection and timing windows</h4><div class="topic-body"><div><p>Notes are ordered by time. For a tap, the detector first filters by lane, then compares candidate target times with the input timestamp. Miss detection only needs the prefix that could already have expired. Directional flicks also compare the measured swipe direction with the chart’s required direction.</p><p class="system-proof">The table gives the default tap windows, which a song can override. For a directional flick, Perfect also requires direction accuracy of at least 0.95. A 15 ms error with direction accuracy 0.90 satisfies the Perfect timing window and earns Good under the combined rule.</p></div><div class="system-evidence"><table class="system-table"><caption>Default tap windows and scoring</caption><thead><tr><th scope="col">Judgment</th><th scope="col">Error interval</th><th scope="col">Points</th><th scope="col">Combo</th></tr></thead><tbody><tr><th scope="row">Perfect</th><td>0–20 ms</td><td>1,000</td><td>+1</td></tr><tr><th scope="row">Good</th><td>&gt;20–60 ms</td><td>500</td><td>+1</td></tr><tr><th scope="row">Bad</th><td>&gt;60–100 ms</td><td>100</td><td>Reset</td></tr><tr><th scope="row">Miss</th><td>&gt;100 ms</td><td>0</td><td>Reset</td></tr></tbody></table><p class="system-source"><span>Implementation and regressions</span> <code>HitDetector.cpp</code> · <code>JudgmentSystem.h</code> · <code>JudgmentSetup.h</code></p></div></div></section><section class="system-topic" id="topic-hold-scoring" aria-labelledby="heading-hold-scoring"><h4 id="heading-hold-scoring">Hold paths and sustained judgment</h4><div class="topic-body"><div><p>Hitting the head associates the note with an active input. As the song clock crosses each checkpoint, the detector evaluates the required lane on the path and compares it with the finger’s current lane. The tail is scored separately. An early release assigns misses to unfinished checkpoints and the tail. A 3D arc is graded when it ends. Perfect requires at least 95% coverage and mean lateral error of at most 0.6 hit-tolerance units.</p></div><div class="system-evidence"><p class="system-proof">The S21 replay injects one continuous finger movement along the 16–21 s Studio / Hard hold. Across two lane changes it records Perfect at the head and tail and passes all four checkpoints. The tail is scored at 21.000 s, before the injected release at 21.010 s.</p><p class="system-source"><span>Implementation and regressions</span> <code>HitDetector.cpp</code> · <code>Drop2DInput.cpp</code> · <code>turn_camera_test.cpp</code></p><a class="system-related" href="#drop2d-hold">Cross-lane hold verification</a></div></div></section><section class="system-topic" id="topic-score-feedback" aria-labelledby="heading-score-feedback"><h4 id="heading-score-feedback">Scoring, results and hit feedback</h4><div class="topic-body"><div><p>A sequence number identifies each judgment so the interface plays its hit feedback once across frames. A 64-bit accumulator tracks score alongside current and best combo. Particle and sound slots distinguish head, checkpoint and tail. Active holds and arcs control their sustain loops, and a song can silence an individual sound slot.</p></div><div class="system-evidence"><p class="system-proof">Accuracy is calculated independently on the results screen. The regression has 680 Perfects, 55 Goods, 9 Bads and 6 Misses across 750 judgments. Its weighted accuracy is 96.16%, rank S, while its default point total is 708,400. The Bad and Miss results break the combo.</p><pre><code>accuracy = (P + 0.7 × G + 0.3 × B) / (P + G + B + M + unjudged)</code></pre><p class="system-source"><span>Implementation and regressions</span> <code>ResultsSummary.h</code> · <code>player_screens_test.cpp</code> · <code>note_sfx_test.cpp</code></p></div></div></section></article>
+eventChartTime = syncedChartTime + Δ</code></pre><p class="system-source"><span>Implementation and regressions</span> <code>AndroidEngine.cpp</code> · <code>GestureRecognizer.cpp</code> · <code>TouchTypes.h</code></p></div></div><figure class="source-sample" id="source-event-time"><figcaption><strong>Converting a touch timestamp into judgment time for each mode</strong><span class="source-location" dir="ltr">engine/src/android/AndroidEngine.cpp · L99–123</span></figcaption><pre dir="ltr"><code>m_input.setGestureCallback([this](const GestureEvent&amp; evt) {
+    if (m_screen != GameScreen::Gameplay || !m_activeMode) return;
+    // Paused or on the results the overlay takes the taps, not the notes;
+    // a touch that began on the pause button is the button's.
+    if (m_gameplayPaused || m_showResults) return;
+    if (m_hudView.pauseButtonAt(ImVec2(evt.startPos.x, evt.startPos.y))) return;
+    // Judged at the moment the finger moved: the song time at the last
+    // clock sync plus the time from then to the event.
+    const double t = m_clock.songTime() + std::clamp(evt.timestamp - m_songSyncMono, -0.25, 0.1);
+
+    // Mirror the desktop Engine's per-mode dispatch. checkHitPosition()
+    // (the old single path) only matches Drop3D-style position notes, so
+    // lane-based modes (Drop2D 2D/3D drop, etc.) never registered taps
+    // and never began holds.
+    if (auto* d3 = dynamic_cast&lt;Drop3DRenderer*&gt;(m_activeMode.get()))
+        handleGestureDrop3D(*d3, evt, t);
+    else if (dynamic_cast&lt;PhigrosRenderer*&gt;(m_activeMode.get()))
+        handleGesturePhigros(evt, t);
+    else if (auto* lan = dynamic_cast&lt;CircleRenderer*&gt;(m_activeMode.get()))
+        handleGestureCircle(*lan, evt, t);
+    else if (auto* cyt = dynamic_cast&lt;ScanLineRenderer*&gt;(m_activeMode.get()))
+        handleGestureScanLine(*cyt, evt, t);
+    else
+        handleGestureLaneBased(evt, t);
+});</code></pre></figure></section><section class="system-topic" id="topic-finger-state" aria-labelledby="heading-finger-state"><h4 id="heading-finger-state">Per-finger gestures and single-hit judgment</h4><div class="topic-body"><div><p>Each finger tracks its origin, start time and recent movement. Touch-down emits Press immediately. A nearly stationary finger can enter the held state after about 150 ms. Tap and slide tolerances scale from 20 and 25 px with DPI, and a flick uses recent velocity samples over about 80 ms. A tap can be judged on contact while the finger continues to move or lift.</p><p class="system-proof">The desktop regression schedules a note for 1.000 s, presses at 0.990 s and releases at 1.190 s. It checks the cumulative count at each step. The 10 ms early press earns a Perfect, and both the scheduled beat and the later release must leave the count at one.</p></div><div class="system-evidence"><table class="system-table"><caption>Tap event sequence (desktop regression)</caption><thead><tr><th scope="col">Chart time</th><th scope="col">Event</th><th scope="col">Judgment count</th></tr></thead><tbody><tr><th scope="row">0.990 s</th><td>Finger down for the 1.000 s note</td><td>1 Perfect</td></tr><tr><th scope="row">1.000 s</th><td>The chart reaches the note marker</td><td>Still 1</td></tr><tr><th scope="row">1.190 s</th><td>The same finger lifts</td><td>Still 1</td></tr></tbody></table><p class="system-source"><span>Implementation and regressions</span> <code>GestureRecognizer.cpp</code> · <code>Drop2DInput.cpp</code> · <code>turn_camera_test.cpp</code></p></div></div><figure class="source-sample" id="source-finger-state"><figcaption><strong>Recognizing the start of a hold for each finger</strong><span class="source-location" dir="ltr">engine/src/input/GestureRecognizer.cpp · L16–32</span></figcaption><pre dir="ltr"><code>void GestureRecognizer::update(double currentTime) {
+    for (auto&amp; [id, t] : m_touches) {
+        if (t.state != TouchState::PotentialTap) continue;
+
+        float movement = glm::length(t.lastPos - t.startPos);
+        float elapsed  = static_cast&lt;float&gt;(currentTime - t.startTime);
+
+        if (elapsed &gt; TouchThresholds::TAP_MAX_DURATION_S &amp;&amp;
+            movement &lt; TouchThresholds::TAP_SLOP_PX)
+        {
+            t.state = TouchState::Holding;
+            emit({GestureType::HoldBegin, id, t.lastPos, t.startPos,
+                  glm::vec2{0.f}, currentTime,
+                  static_cast&lt;float&gt;(currentTime - t.startTime)});
+        }
+    }
+}</code></pre></figure></section><section class="system-topic" id="topic-lane-picking" aria-labelledby="heading-lane-picking"><h4 id="heading-lane-picking">Camera rotation and screen-space picking</h4><div class="topic-body"><div><p>Drop 2D allows camera roll, so fixed horizontal hit bands can identify the wrong lane. The input code projects the two outer lane anchors on the judgment line into screen space and uses the line joining them as its axis. Projecting the contact onto that axis gives the nearest lane centre in the rendered orientation.</p></div><div class="system-evidence"><p class="system-proof">The desktop camera regression projects known lane anchors and feeds their pixel positions back to the picker, checking that each returns its original lane. At +90° the axis is nearly vertical. At −135° its horizontal order is reversed. Both exercise cases that a fixed screen-X mapping mishandles.</p><pre><code>axis = normalize(lastAnchor − firstAnchor)
+distanceOnAxis = dot(touch − firstAnchor, axis)</code></pre><p class="system-source"><span>Implementation and regressions</span> <code>Drop2DRenderer.cpp</code> · <code>Drop2DInput.cpp</code> · <code>turn_camera_test.cpp</code></p></div></div><figure class="source-sample" id="source-lane-picking"><figcaption><strong>Picking the nearest lane along the projected judgment line</strong><span class="source-location" dir="ltr">engine/src/game/modes/GameModeRenderer.h · L131–153</span></figcaption><pre dir="ltr"><code>int laneAtScreen(glm::vec2 pos) const {
+    const int n = laneCount();
+    if (n &lt;= 0) return -1;
+    int first = -1, last = -1;
+    for (int l = 0; l &lt; n; ++l) {
+        if (laneScreenPos(l).x &lt; -1e8f) continue;
+        if (first &lt; 0) first = l;
+        last = l;
+    }
+    if (first &lt; 0) return -1;
+    glm::vec2 axis = laneScreenPos(last) - laneScreenPos(first);
+    const float len = glm::length(axis);
+    axis = len &gt; 1e-3f ? axis / len : glm::vec2{1.f, 0.f};
+    int best = first;
+    float bestDist = 1e30f;
+    for (int l = first; l &lt;= last; ++l) {
+        const glm::vec2 c = laneScreenPos(l);
+        if (c.x &lt; -1e8f) continue;
+        const float d = std::abs(glm::dot(pos - c, axis));
+        if (d &lt; bestDist) { bestDist = d; best = l; }
+    }
+    return best;
+}</code></pre></figure></section></article>
+<article class="system" id="system-gameplay" aria-labelledby="title-gameplay"><h3 id="title-gameplay">Gameplay, judgment and feedback</h3><p class="system-lead">A note head, a hold checkpoint and a release can each produce a judgment. They feed one scoring and feedback path so the combo, the on-screen judgment and the results screen agree about what happened.</p><section class="system-topic" id="topic-hit-windows" aria-labelledby="heading-hit-windows"><h4 id="heading-hit-windows">Candidate selection and timing windows</h4><div class="topic-body"><div><p>Notes are ordered by time. For a tap, the detector first filters by lane, then compares candidate target times with the input timestamp. Miss detection only needs the prefix that could already have expired. Directional flicks also compare the measured swipe direction with the chart’s required direction.</p><p class="system-proof">The table gives the default tap windows, which a song can override. For a directional flick, Perfect also requires direction accuracy of at least 0.95. A 15 ms error with direction accuracy 0.90 satisfies the Perfect timing window and earns Good under the combined rule.</p></div><div class="system-evidence"><table class="system-table"><caption>Default tap windows and scoring</caption><thead><tr><th scope="col">Judgment</th><th scope="col">Error interval</th><th scope="col">Points</th><th scope="col">Combo</th></tr></thead><tbody><tr><th scope="row">Perfect</th><td>0–20 ms</td><td>1,000</td><td>+1</td></tr><tr><th scope="row">Good</th><td>&gt;20–60 ms</td><td>500</td><td>+1</td></tr><tr><th scope="row">Bad</th><td>&gt;60–100 ms</td><td>100</td><td>Reset</td></tr><tr><th scope="row">Miss</th><td>&gt;100 ms</td><td>0</td><td>Reset</td></tr></tbody></table><p class="system-source"><span>Implementation and regressions</span> <code>HitDetector.cpp</code> · <code>JudgmentSystem.h</code> · <code>JudgmentSetup.h</code></p></div></div><figure class="source-sample" id="source-hit-windows"><figcaption><strong>Selecting and consuming one note inside the timing window</strong><span class="source-location" dir="ltr">engine/src/gameplay/HitDetector.cpp · L278–298</span></figcaption><pre dir="ltr"><code>std::optional&lt;HitResult&gt; HitDetector::consumeBest(double songTime, float window,
+                                                   const NoteScoreFn&amp; score) {
+    const double adj = songTime - static_cast&lt;double&gt;(m_audioOffset);
+    auto  best      = m_activeNotes.end();
+    float bestScore = 0.f;
+    float bestDelta = 0.f;
+    for (auto it = m_activeNotes.begin(); it != m_activeNotes.end(); ++it) {
+        float timingDelta = static_cast&lt;float&gt;(it-&gt;time - adj);
+        if (timingDelta &gt; window) break;          // sorted by time: the rest are later
+        if (timingDelta &lt; -window) continue;
+        float s = score(*it, timingDelta);
+        if (s &lt; 0.f) continue;
+        if (best == m_activeNotes.end() || s &lt; bestScore) {
+            best = it; bestScore = s; bestDelta = timingDelta;
+        }
+    }
+    if (best == m_activeNotes.end()) return std::nullopt;
+    HitResult result{best-&gt;id, bestDelta, best-&gt;type};
+    m_activeNotes.erase(best);
+    return result;
+}</code></pre></figure></section><section class="system-topic" id="topic-hold-scoring" aria-labelledby="heading-hold-scoring"><h4 id="heading-hold-scoring">Hold paths and sustained judgment</h4><div class="topic-body"><div><p>Hitting the head associates the note with an active input. As the song clock crosses each checkpoint, the detector evaluates the required lane on the path and compares it with the finger’s current lane. The tail is scored separately. An early release assigns misses to unfinished checkpoints and the tail. A 3D arc is graded when it ends. Perfect requires at least 95% coverage and mean lateral error of at most 0.6 hit-tolerance units.</p></div><div class="system-evidence"><p class="system-proof">The S21 replay injects one continuous finger movement along the 16–21 s Studio / Hard hold. Across two lane changes it records Perfect at the head and tail and passes all four checkpoints. The tail is scored at 21.000 s, before the injected release at 21.010 s.</p><p class="system-source"><span>Implementation and regressions</span> <code>HitDetector.cpp</code> · <code>Drop2DInput.cpp</code> · <code>turn_camera_test.cpp</code></p><a class="system-related" href="#drop2d-hold">Cross-lane hold verification</a></div></div><figure class="source-sample" id="source-hold-scoring"><figcaption><strong>Checking the expected lane at each due hold sample</strong><span class="source-location" dir="ltr">engine/src/gameplay/HitDetector.cpp · L606–615</span></figcaption><pre dir="ltr"><code>void HitDetector::flushDueTicks(ActiveHold&amp; hold, double adj) {
+    if (hold.broken) return;
+    while (hold.nextSampleIdx &lt; hold.sampleOffsets.size()) {
+        const float tOff = hold.sampleOffsets[hold.nextSampleIdx];
+        if (adj &lt; hold.noteStartTime + tOff) break;
+        const int expected = tickLaneAt(hold, tOff);
+        m_dueTicks.push_back({hold.noteId, expected, tickPasses(hold, expected)});
+        hold.nextSampleIdx++;
+    }
+}</code></pre></figure></section><section class="system-topic" id="topic-score-feedback" aria-labelledby="heading-score-feedback"><h4 id="heading-score-feedback">Scoring, results and hit feedback</h4><div class="topic-body"><div><p>A sequence number identifies each judgment so the interface plays its hit feedback once across frames. A 64-bit accumulator tracks score alongside current and best combo. Particle and sound slots distinguish head, checkpoint and tail. Active holds and arcs control their sustain loops, and a song can silence an individual sound slot.</p></div><div class="system-evidence"><p class="system-proof">Accuracy is calculated independently on the results screen. The regression has 680 Perfects, 55 Goods, 9 Bads and 6 Misses across 750 judgments. Its weighted accuracy is 96.16%, rank S, while its default point total is 708,400. The Bad and Miss results break the combo.</p><pre><code>accuracy = (P + 0.7 × G + 0.3 × B) / (P + G + B + M + unjudged)</code></pre><p class="system-source"><span>Implementation and regressions</span> <code>ResultsSummary.h</code> · <code>player_screens_test.cpp</code> · <code>note_sfx_test.cpp</code></p></div></div><figure class="source-sample" id="source-score-feedback"><figcaption><strong>Computing accuracy, full combo and rank from judgments</strong><span class="source-location" dir="ltr">engine/src/gameplay/ResultsSummary.h · L20–36</span></figcaption><pre dir="ltr"><code>inline ResultsSummary summarizeRun(const JudgmentStats&amp; s, int unjudged) {
+    ResultsSummary r;
+    r.unjudged = unjudged &gt; 0 ? unjudged : 0;
+    r.total    = s.perfect + s.good + s.bad + s.miss + r.unjudged;
+    if (r.total &lt;= 0) return r;
+    r.accuracy   = (s.perfect + 0.7f * s.good + 0.3f * s.bad) / (float)r.total;
+    r.fullCombo  = s.bad == 0 &amp;&amp; s.miss == 0 &amp;&amp; r.unjudged == 0;
+    r.allPerfect = s.perfect == r.total;
+    const float a = r.accuracy;
+    r.rank = (r.allPerfect || a &gt;= 0.99f) ? Rank::SPlus
+           : a &gt;= 0.95f ? Rank::S
+           : a &gt;= 0.90f ? Rank::A
+           : a &gt;= 0.80f ? Rank::B
+           : a &gt;= 0.70f ? Rank::C
+                        : Rank::D;
+    return r;
+}</code></pre></figure></section></article>
 <article class="system" id="system-modes" aria-labelledby="title-modes"><h3 id="title-modes">Coordinates and hit testing in four modes</h3><p class="system-lead">The four modes share a chart clock and judgment interface. Each defines its note geometry and maps screen contacts to chart notes. Mode updates advance CPU state. Rendering writes to the current in-flight frame slot.</p><section class="system-topic" id="topic-drop-paths" aria-labelledby="heading-drop-paths"><h4 id="heading-drop-paths">Path geometry in Drop 2D and Drop 3D</h4><div class="topic-body"><div><p>Both drop modes need continuous geometry along a moving path. In 2D, timed waypoints and easing produce a fractional lane shared by the ribbon and its active head. In 3D, a rotation-minimizing frame carries the cross-section along the arc. Two successive reflections determine the next orientation so the hexagonal tube can turn without flipping. Ground notes use lane picking, while taps attached to an arc (ArcTaps) use two axes that rotate with the camera.</p><p class="system-proof">For the 2D hold the Windows capture measures the cyan head on row 737 of a 1440 × 810 frame. At 17.625 s the path lies halfway between zero-based lanes 2 and 3. Its projected centre is 720.0 px and the measured centre is 719.5 px. Separate 3D geometry tests check orthonormal frames and continuity of neighbouring normals.</p><div class="modes"><figure><a class="full-frame" href="assets/cross-lane.webp" aria-label="View full image · Drop 2D"><img src="assets/preview/cross-lane-448.webp" srcset="assets/preview/cross-lane-448.webp 448w, assets/preview/cross-lane-504.webp 504w" sizes="auto, (max-width: 850px) 100vw, 580px" loading="lazy" width="504" height="283" decoding="async" alt=""></a><figcaption><strong>Drop 2D</strong><span>Hold the note and follow it across lanes.</span></figcaption></figure><figure><a class="full-frame" href="assets/hero.webp" aria-label="View full image · Drop 3D"><img src="assets/preview/hero-448.webp" srcset="assets/preview/hero-448.webp 448w, assets/preview/hero-768.webp 768w, assets/preview/hero-1152.webp 1152w" sizes="auto, (max-width: 850px) 100vw, 580px" loading="lazy" width="1280" height="720" decoding="async" alt=""></a><figcaption><strong>Drop 3D</strong><span>Tap ground notes and trace airborne arcs.</span></figcaption></figure></div></div><div class="system-evidence"><pre><code>lane = evalHoldLaneAt(waypoints, songTime − start)
-x = project(lane, judgmentLine).x</code></pre><table class="system-table"><caption>Cross-lane hold · Windows Vulkan captures at 1440 × 810</caption><thead><tr><th scope="col">Song time</th><th scope="col">Lane¹</th><th scope="col">Projected x (px)</th><th scope="col">Measured x (px)</th></tr></thead><tbody><tr><th scope="row">17.625 s</th><td>2.5</td><td>720.00</td><td>719.5</td></tr><tr><th scope="row">18.400 s</th><td>3.0</td><td>824.62</td><td>824.5</td></tr><tr><th scope="row">19.625 s</th><td>3.5</td><td>929.23</td><td>929.5</td></tr><tr><th scope="row">20.400 s</th><td>4.0</td><td>1,033.85</td><td>1,034.5</td></tr></tbody></table><p class="system-source"><span>Implementation and regressions</span> <code>GameModeRenderer.h</code> · <code>PathFrames.cpp</code> · <code>surface_frame_test.cpp</code></p><a class="system-related" href="#drop2d-hold">Compare the Windows captures at 17.625 s</a></div></div></section><section class="system-topic" id="topic-disk-picking" aria-labelledby="heading-disk-picking"><h4 id="heading-disk-picking">Ray picking on the moving Circle disk</h4><div class="topic-body"><div><p>The chart can translate, scale and rotate the disk, and a note can span several sectors. The picker constructs a ray from the touched pixel using the inverse view-projection matrix, intersects the disk plane, then converts the intersection to a disk-local angle after removing the current rotation. Rendering and input can then agree on a sector as the camera moves.</p><div class="modes"><figure><a class="full-frame" href="assets/circle.webp" aria-label="View full image · Circle"><img src="assets/preview/circle-448.webp" srcset="assets/preview/circle-448.webp 448w, assets/preview/circle-768.webp 768w, assets/preview/circle-1152.webp 1152w" sizes="auto, (max-width: 850px) 100vw, 580px" loading="lazy" width="1280" height="720" decoding="async" alt=""></a><figcaption><strong>Circle</strong><span>Meet the judgment ring on a moving disk.</span></figcaption></figure></div></div><div class="system-evidence"><p class="system-proof">The twelve-lane regression first projects a known position in each lane to the screen, then picks from the resulting pixel. It checks all twelve lanes under perspective and again under orthographic projection, for 24 round trips. A picker that measured angles only from the screen centre would drift when the disk moved or tilted.</p><pre><code>θdisk = θplane − diskRotation</code></pre><p class="system-source"><span>Implementation and regressions</span> <code>CircleRenderer.cpp</code> · <code>turn_camera_test.cpp</code></p></div></div></section><section class="system-topic" id="topic-scan-pages" aria-labelledby="heading-scan-pages"><h4 id="heading-scan-pages">Scan Line page timing and note appearance</h4><div class="topic-body"><div><p>The scan line travels in one direction per page and reverses on the next. At unit speed, a four-beat page lasts 2 s at 120 BPM. A tempo change cuts the current page short. Editor and player build a common schedule from tempo changes and page settings, binary-search for the page, then map progress to height. Per-note shapes, materials and textures can change independently.</p><div class="modes"><figure><a class="full-frame" href="assets/scanline.webp" aria-label="View full image · Scan Line"><img src="assets/scanline.webp" loading="lazy" width="1280" height="720" decoding="async" alt=""></a><figcaption><strong>Scan Line</strong><span>Tap as the scanning line crosses the note.</span></figcaption></figure></div></div><div class="system-evidence"><p class="system-proof">A Windows Test Game regression freezes the chart at 107.32 s. The note centre is on row 401. The old line, still using the opening BPM, was on rows 671–673. The shared schedule puts it on rows 399–401. A control frame at 19.96 s, before the tempo change, is pixel-identical across versions.</p><pre><code>p = (t − pageStart) / (pageEnd − pageStart)
-y = p  or  1 − p</code></pre><p class="system-source"><span>Implementation and regressions</span> <code>ScanPageUtils.h</code> · <code>scanline_tempo_test.cpp</code> · <code>ScanLineInput.cpp</code></p><a class="system-related" href="#runtime">Windows captures across the tempo change</a></div></div></section></article>
-<article class="system" id="system-editor" aria-labelledby="title-editor"><h3 id="title-editor">Editor and authoring tools</h3><p class="system-lead">Authors drag, snap and copy notes against the waveform, then verify their edits in the desktop player. The editor handles tempo boundaries, parent–child note references and undo for grouped edits.</p><section class="system-topic" id="topic-tempo-snap" aria-labelledby="heading-tempo-snap"><h4 id="heading-tempo-snap">Beat snapping at tempo boundaries</h4><div class="topic-body"><div><p>While dragging a note, the editor generates the beat grid from the current tempo segment’s origin, BPM and subdivision. The next tempo change may lie between two grid lines. The snapper therefore considers that boundary as a candidate too, keeping the pointer’s destination consistent with the displayed grid.</p><p class="system-proof">The desktop fixture switches from 120 to 90 BPM at 10.100 s with quarter-beat subdivisions. Moving the pointer from 10.045 to 10.055 s must change the nearest target from the old grid line at 10.000 s to the tempo change. The distances in the table make both decisions reproducible.</p></div><div class="system-evidence"><pre><code>step = 240 / (BPM × division)</code></pre><table class="system-table"><caption>Tempo-boundary snap results (desktop regression)</caption><thead><tr><th scope="col">Pointer time</th><th scope="col">Snap result</th><th scope="col">Nearest candidate</th></tr></thead><tbody><tr><th scope="row">10.045 s</th><td>10.000 s</td><td>Old grid line 45 ms away, tempo change 55 ms away</td></tr><tr><th scope="row">10.055 s</th><td>10.100 s</td><td>Old grid line 55 ms away, tempo change 45 ms away</td></tr></tbody></table><p class="system-source"><span>Implementation and regressions</span> <code>SongEditorEdit.cpp</code> · <code>chartops::TimeSnapper::apply</code> · <code>chart_edit_test.cpp</code></p></div></div></section><section class="system-topic" id="topic-drag-history" aria-labelledby="heading-drag-history"><h4 id="heading-drag-history">Selection dragging and undo</h4><div class="topic-body"><div><p>A single drag may span dozens of frames. Once the pointer clears a UI-scaled 4 px threshold, the editor records the initial selection and creates one undo step. Each subsequent frame reapplies the total displacement to those initial values, avoiding cumulative snap error. Child notes travel with their parent arc.</p><figure class="topic-clip"><video controls playsinline preload="none" loading="lazy" width="660" height="242" poster="assets/preview/editor-arc-undo-640.webp" aria-label="Arc drag and undo · Windows editor capture (10 s, silent)" aria-describedby="clip-drag-history"><source src="assets/editor-arc-undo.mp4" type="video/mp4"><a href="assets/editor-arc-undo.mp4">Arc drag and undo · Windows editor capture (10 s, silent)</a></video><figcaption id="clip-drag-history"><strong>Arc drag and undo · Windows editor capture (10 s, silent)</strong> The two yellow diamonds are ArcTaps attached to the parent arc. Dragging the arc two seconds to the right changes their times in the inspector from 3 and 4 s to 5 and 6 s. One Ctrl+Z restores the arc and both taps.</figcaption></figure></div><div class="system-evidence"><p class="system-proof">The editor regression drives the gesture from press through cancellation. It checks that notes stay in place below threshold and that Escape restores both values and selection. A playback case holds the timeline still during the drag and resumes following afterwards, keeping the edited note under the pointer.</p><pre><code>editedTime = snap(initialTime + totalDragDelta)</code></pre><p class="system-source"><span>Implementation and regressions</span> <code>SongEditorEdit.cpp</code> · <code>ChartEditOps.cpp</code> · <code>chart_edit_test.cpp</code></p><a class="system-related" href="#ai-copilot">Undo order for Copilot and manual edits</a></div></div></section><section class="system-topic" id="topic-arc-paste" aria-labelledby="heading-arc-paste"><h4 id="heading-arc-paste">Clipboard paste and parent-reference remapping</h4><div class="topic-body"><div><p>Copying a 3D arc and its attached taps would leave stale parent references if the original chart indices were reused at the destination. The clipboard stores relative times and indexes parents within the copied group. Paste creates the destination arc first, maps its children to that parent and checks the destination for duplicates.</p></div><div class="system-evidence"><p class="system-proof">The desktop regression pastes a parent at 10.000 s. Its children must land at 10.500 and 11.500 s and both must refer to the new parent. Pasting the same group again at the same position skips three duplicates while preserving the existing relationships.</p><pre><code>childTime = pasteTime + relativeTime
-newParent = pastedArcs[clipboardParent]</code></pre><p class="system-source"><span>Implementation and regressions</span> <code>ChartEditOps.cpp</code> · <code>chart_edit_test.cpp</code></p></div></div></section></article>
-<article class="system" id="system-android" aria-labelledby="title-android"><h3 id="title-android">Android delivery and runtime quality</h3><p class="system-lead">Desktop Test Game opens the saved project directly. The packager follows asset references to build an Android APK. Package inspection, first launch and an upgrade each give a different way to check the result.</p><section class="system-topic" id="topic-apk-dependencies" aria-labelledby="heading-apk-dependencies"><h4 id="heading-apk-dependencies">APK dependency traversal and package audit</h4><div class="topic-body"><div><p>Windows Test Game opens the saved project directly. The Android packager starts at the title screen, song selection and playable charts, follows their references to materials, textures, compiled SPIR-V, particles and sounds, and drops songs with no charts from the staged catalog. Editor, command-line and Copilot exports share this plan.</p></div><div class="system-evidence"><p class="system-proof">For the same test project, the APK shrank from 111.9 MB to 39.5 MB. The audit checked 104 used items in the built package, with zero missing and zero unused. Including compiled custom shaders in that inventory checks a rendering dependency that merely launching the song would not establish.</p><pre><code>chart → material → texture / SPIR-V</code></pre><p class="system-source"><span>Implementation and regressions</span> <code>GamePackager.cpp</code> · <code>game_packager_test.cpp</code> · <code>audit_apk.py</code></p></div></div></section><section class="system-topic" id="topic-incremental-install" aria-labelledby="heading-incremental-install"><h4 id="heading-incremental-install">Manifest comparison and incremental extraction</h4><div class="topic-body"><div><p>The player records each path’s access mode, byte count and 64-bit FNV-1a hash. On upgrade it compares manifests, copies changes, keeps matches and removes obsolete paths from the old manifest. Long music tracks stream from the APK through a virtual file system, while short hit sounds can reuse decoded PCM samples.</p><p class="system-proof">On first launch the S21 read 103 manifest entries, extracted 100 files (2.6 MB) and streamed three. After changing one chart and replacing its cover, the upgrade extracted three entries, kept 97 and removed one old cover. These counts come from the device startup manifest. The preceding package audit counts used items in the built APK.</p></div><div class="system-evidence"><table class="system-table"><caption>Galaxy S21 first launch and upgrade</caption><thead><tr><th scope="col">Stage</th><th scope="col">Observation</th><th scope="col">File accounting</th></tr></thead><tbody><tr><th scope="row">First launch</th><td>103 manifest entries</td><td>100 files extracted (2.6 MB), 3 streamed</td></tr><tr><th scope="row">One chart edit and cover swap</th><td>3 extracted</td><td>97 kept, 1 obsolete cover removed</td></tr></tbody></table><p class="system-source"><span>Implementation and regressions</span> <code>AndroidFileIO::syncPackage</code> · <code>AndroidFileIO.cpp</code> · <code>AudioEngine.cpp</code></p></div></div></section><section class="system-topic" id="topic-idle-redraw" aria-labelledby="heading-idle-redraw"><h4 id="heading-idle-redraw">On-demand menu rendering and device restoration</h4><div class="topic-body"><div><p>A static menu need not submit the same image on every refresh. The engine hashes UI vertices, indices, textures and clip rectangles. A touch, window change or new animation frame can trigger a redraw. Gameplay continues on the song clock. Device reconstruction also requires retiring textures and cached batch descriptors so the first resumed frame uses valid resources.</p></div><div class="system-evidence"><p class="system-proof">Over separate 20 s observations on the S21, the static Classic title submitted zero frames and the animated Neon title submitted 574. A separate device-recovery regression compared the rendered output after 20 resumes on each of five screens. All 100/100 comparisons passed. The two experiments test idle submission and restored output separately.</p><p class="system-source"><span>Implementation and regressions</span> <code>redraw::hashDrawData</code> · <code>redraw_test.cpp</code> · <code>AndroidEngine.cpp</code></p><a class="system-related" href="#android">Android resume failure and regression results</a></div></div></section></article></div>
+x = project(lane, judgmentLine).x</code></pre><table class="system-table"><caption>Cross-lane hold · Windows Vulkan captures at 1440 × 810</caption><thead><tr><th scope="col">Song time</th><th scope="col">Lane¹</th><th scope="col">Projected x (px)</th><th scope="col">Measured x (px)</th></tr></thead><tbody><tr><th scope="row">17.625 s</th><td>2.5</td><td>720.00</td><td>719.5</td></tr><tr><th scope="row">18.400 s</th><td>3.0</td><td>824.62</td><td>824.5</td></tr><tr><th scope="row">19.625 s</th><td>3.5</td><td>929.23</td><td>929.5</td></tr><tr><th scope="row">20.400 s</th><td>4.0</td><td>1,033.85</td><td>1,034.5</td></tr></tbody></table><p class="system-source"><span>Implementation and regressions</span> <code>GameModeRenderer.h</code> · <code>PathFrames.cpp</code> · <code>surface_frame_test.cpp</code></p><a class="system-related" href="#drop2d-hold">Compare the Windows captures at 17.625 s</a></div></div><figure class="source-sample" id="source-drop-paths"><figcaption><strong>Positioning the head of a held, lane-changing note</strong><span class="source-location" dir="ltr">engine/src/game/modes/Drop2DRenderer.cpp · L309–321</span></figcaption><pre dir="ltr"><code>std::optional&lt;Drop2DRenderer::HeadPose&gt; Drop2DRenderer::headPose(const NoteEvent&amp; note) const {
+    const float elapsed = static_cast&lt;float&gt;(m_songTime - note.time);
+    const float speed = SCROLL_SPEED * m_noteSpeedMul;
+    const float z = HIT_ZONE_Z + elapsed * speed;
+    if (const auto* hold = std::get_if&lt;HoldData&gt;(&amp;note.data)) {
+        if (m_activeHoldIds.count(note.id))
+            return HeadPose{evalHoldLaneAt(*hold, elapsed), std::min(z, HIT_ZONE_Z), true};
+        return HeadPose{hold-&gt;laneX, z, false};
+    }
+    if (const auto* tap = std::get_if&lt;TapData&gt;(&amp;note.data)) return HeadPose{tap-&gt;laneX, z, false};
+    if (const auto* flick = std::get_if&lt;FlickData&gt;(&amp;note.data)) return HeadPose{flick-&gt;laneX, z, false};
+    return std::nullopt;
+}</code></pre></figure></section><section class="system-topic" id="topic-disk-picking" aria-labelledby="heading-disk-picking"><h4 id="heading-disk-picking">Ray picking on the moving Circle disk</h4><div class="topic-body"><div><p>The chart can translate, scale and rotate the disk, and a note can span several sectors. The picker constructs a ray from the touched pixel using the inverse view-projection matrix, intersects the disk plane, then converts the intersection to a disk-local angle after removing the current rotation. Rendering and input can then agree on a sector as the camera moves.</p><div class="modes"><figure><a class="full-frame" href="assets/circle.webp" aria-label="View full image · Circle"><img src="assets/preview/circle-448.webp" srcset="assets/preview/circle-448.webp 448w, assets/preview/circle-768.webp 768w, assets/preview/circle-1152.webp 1152w" sizes="auto, (max-width: 850px) 100vw, 580px" loading="lazy" width="1280" height="720" decoding="async" alt=""></a><figcaption><strong>Circle</strong><span>Meet the judgment ring on a moving disk.</span></figcaption></figure></div></div><div class="system-evidence"><p class="system-proof">The twelve-lane regression first projects a known position in each lane to the screen, then picks from the resulting pixel. It checks all twelve lanes under perspective and again under orthographic projection, for 24 round trips. A picker that measured angles only from the screen centre would drift when the disk moved or tilted.</p><pre><code>θdisk = θplane − diskRotation</code></pre><p class="system-source"><span>Implementation and regressions</span> <code>CircleRenderer.cpp</code> · <code>turn_camera_test.cpp</code></p></div></div><figure class="source-sample" id="source-disk-picking"><figcaption><strong>Unprojecting a touch and intersecting the disk plane</strong><span class="source-location" dir="ltr">engine/src/game/modes/CircleRenderer.cpp · L721–734</span></figcaption><pre dir="ltr"><code>bool CircleRenderer::screenToDisk(glm::vec2 screenPx, glm::vec2&amp; world) const {
+    if (m_width == 0 || m_height == 0) return false;
+    const glm::vec2 ndc = screenPx / glm::vec2(m_width, m_height) * 2.f - 1.f;
+    const glm::mat4 inverse = glm::inverse(m_perspVP);
+    glm::vec4 a = inverse * glm::vec4(ndc, 0.f, 1.f);
+    glm::vec4 b = inverse * glm::vec4(ndc, 1.f, 1.f);
+    a /= a.w; b /= b.w;
+    const glm::vec3 direction = glm::vec3(b - a);
+    if (std::abs(direction.z) &lt; 1e-6f) return false;
+    const float t = -a.z / direction.z;
+    if (t &lt; 0.f) return false;
+    world = glm::vec2(a) + glm::vec2(direction) * t;
+    return std::isfinite(world.x) &amp;&amp; std::isfinite(world.y);
+}</code></pre></figure></section><section class="system-topic" id="topic-scan-pages" aria-labelledby="heading-scan-pages"><h4 id="heading-scan-pages">Scan Line page timing and note appearance</h4><div class="topic-body"><div><p>The scan line travels in one direction per page and reverses on the next. At unit speed, a four-beat page lasts 2 s at 120 BPM. A tempo change cuts the current page short. Editor and player build a common schedule from tempo changes and page settings, binary-search for the page, then map progress to height. Per-note shapes, materials and textures can change independently.</p><div class="modes"><figure><a class="full-frame" href="assets/scanline.webp" aria-label="View full image · Scan Line"><img src="assets/scanline.webp" loading="lazy" width="1280" height="720" decoding="async" alt=""></a><figcaption><strong>Scan Line</strong><span>Tap as the scanning line crosses the note.</span></figcaption></figure></div></div><div class="system-evidence"><p class="system-proof">A Windows Test Game regression freezes the chart at 107.32 s. The note centre is on row 401. The old line, still using the opening BPM, was on rows 671–673. The shared schedule puts it on rows 399–401. A control frame at 19.96 s, before the tempo change, is pixel-identical across versions.</p><pre><code>p = (t − pageStart) / (pageEnd − pageStart)
+y = p  or  1 − p</code></pre><p class="system-source"><span>Implementation and regressions</span> <code>ScanPageUtils.h</code> · <code>scanline_tempo_test.cpp</code> · <code>ScanLineInput.cpp</code></p><a class="system-related" href="#runtime">Windows captures across the tempo change</a></div></div><figure class="source-sample" id="source-scan-pages"><figcaption><strong>Finding the active page and evaluating its sweep height</strong><span class="source-location" dir="ltr">engine/src/game/chart/ScanPageUtils.h · L127–145</span></figcaption><pre dir="ltr"><code>inline int scanPageIndexFor(const std::vector&lt;ScanPageInfo&gt;&amp; pages, double t) {
+    if (pages.empty() || t &lt;= pages.front().startTime) return 0;
+    int lo = 0, hi = (int)pages.size() - 1;
+    if (t &gt;= pages.back().startTime) return hi;
+    while (lo + 1 &lt; hi) {
+        const int mid = (lo + hi) / 2;
+        if (pages[mid].startTime &lt;= t) lo = mid; else hi = mid;
+    }
+    return lo;
+}
+
+// The scan line's height on page `p` at time `t` (0 = top, 1 = bottom; a
+// page going up starts at the bottom). Clamped to the page.
+inline float scanPageY(const ScanPageInfo&amp; p, double t) {
+    if (p.duration &lt;= 1e-6) return 0.f;
+    double u = (t - p.startTime) / p.duration;
+    u = u &lt; 0.0 ? 0.0 : (u &gt; 1.0 ? 1.0 : u);
+    return p.goingUp ? (float)(1.0 - u) : (float)u;
+}</code></pre></figure></section></article>
+<article class="system" id="system-editor" aria-labelledby="title-editor"><h3 id="title-editor">Editor and authoring tools</h3><p class="system-lead">Authors drag, snap and copy notes against the waveform, then verify their edits in the desktop player. The editor handles tempo boundaries, parent–child note references and undo for grouped edits.</p><section class="system-topic" id="topic-tempo-snap" aria-labelledby="heading-tempo-snap"><h4 id="heading-tempo-snap">Beat snapping at tempo boundaries</h4><div class="topic-body"><div><p>While dragging a note, the editor generates the beat grid from the current tempo segment’s origin, BPM and subdivision. The next tempo change may lie between two grid lines. The snapper therefore considers that boundary as a candidate too, keeping the pointer’s destination consistent with the displayed grid.</p><p class="system-proof">The desktop fixture switches from 120 to 90 BPM at 10.100 s with quarter-beat subdivisions. Moving the pointer from 10.045 to 10.055 s must change the nearest target from the old grid line at 10.000 s to the tempo change. The distances in the table make both decisions reproducible.</p></div><div class="system-evidence"><pre><code>step = 240 / (BPM × division)</code></pre><table class="system-table"><caption>Tempo-boundary snap results (desktop regression)</caption><thead><tr><th scope="col">Pointer time</th><th scope="col">Snap result</th><th scope="col">Nearest candidate</th></tr></thead><tbody><tr><th scope="row">10.045 s</th><td>10.000 s</td><td>Old grid line 45 ms away, tempo change 55 ms away</td></tr><tr><th scope="row">10.055 s</th><td>10.100 s</td><td>Old grid line 55 ms away, tempo change 45 ms away</td></tr></tbody></table><p class="system-source"><span>Implementation and regressions</span> <code>SongEditorEdit.cpp</code> · <code>chartops::TimeSnapper::apply</code> · <code>chart_edit_test.cpp</code></p></div></div><figure class="source-sample" id="source-tempo-snap"><figcaption><strong>Snapping to the nearest grid point at a tempo boundary</strong><span class="source-location" dir="ltr">engine/src/editor/chart/ChartEditOps.cpp · L460–482</span></figcaption><pre dir="ltr"><code>case SnapMode::Grid: {
+    if (division &lt;= 0) return tf;
+    size_t n = 0;
+    const chartmut::BpmSection* s = sectionsData(sections, n);
+    const double t = tf;
+    const size_t i = sectionAt(s, n, t);
+    if (s[i].bpm &lt;= 0.f) return tf;
+    const double start = s[i].time, step = gridStep(s[i], division);
+    // The nearest point of this section's own grid, kept inside the
+    // section: from its start (a late first section's grid runs back
+    // to 0 s, not past it) to its last point before the next section.
+    double k = std::round((t - start) / step);
+    if (i + 1 &lt; n) k = std::min(k, std::ceil(((double)s[i + 1].time - start) / step - 1e-6) - 1.0);
+    if (i &gt; 0) k = std::max(k, 0.0);
+    else if (start + k * step &lt; 0.0) k = std::ceil((0.0 - start) / step - 1e-6);
+    double r = std::max(0.0, start + k * step);
+    // The next section's start is a grid point too. When it starts off
+    // this grid, a time up to half a step before it can be nearer to
+    // it than to this section's last point: take the nearer of the
+    // two (a tie keeps this section's point).
+    if (i + 1 &lt; n &amp;&amp; std::fabs((double)s[i + 1].time - t) &lt; std::fabs(t - r)) r = s[i + 1].time;
+    return (float)r;
+}</code></pre></figure></section><section class="system-topic" id="topic-drag-history" aria-labelledby="heading-drag-history"><h4 id="heading-drag-history">Selection dragging and undo</h4><div class="topic-body"><div><p>A single drag may span dozens of frames. Once the pointer clears a UI-scaled 4 px threshold, the editor records the initial selection and creates one undo step. Each subsequent frame reapplies the total displacement to those initial values, avoiding cumulative snap error. Child notes travel with their parent arc.</p><figure class="topic-clip"><video controls playsinline preload="none" loading="lazy" width="660" height="242" poster="assets/preview/editor-arc-undo-640.webp" aria-label="Arc drag and undo · Windows editor capture (10 s, silent)" aria-describedby="clip-drag-history"><source src="assets/editor-arc-undo.mp4" type="video/mp4"><a href="assets/editor-arc-undo.mp4">Arc drag and undo · Windows editor capture (10 s, silent)</a></video><figcaption id="clip-drag-history"><strong>Arc drag and undo · Windows editor capture (10 s, silent)</strong> The two yellow diamonds are ArcTaps attached to the parent arc. Dragging the arc two seconds to the right changes their times in the inspector from 3 and 4 s to 5 and 6 s. One Ctrl+Z restores the arc and both taps.</figcaption></figure></div><div class="system-evidence"><p class="system-proof">The editor regression drives the gesture from press through cancellation. It checks that notes stay in place below threshold and that Escape restores both values and selection. A playback case holds the timeline still during the drag and resumes following afterwards, keeping the edited note under the pointer.</p><pre><code>editedTime = snap(initialTime + totalDragDelta)</code></pre><p class="system-source"><span>Implementation and regressions</span> <code>SongEditorEdit.cpp</code> · <code>ChartEditOps.cpp</code> · <code>chart_edit_test.cpp</code></p><a class="system-related" href="#ai-copilot">Undo order for Copilot and manual edits</a></div></div><figure class="source-sample" id="source-drag-history"><figcaption><strong>Comparing notes and committing once when a drag ends</strong><span class="source-location" dir="ltr">engine/src/ui/SongEditorEdit.cpp · L1304–1317</span></figcaption><pre dir="ltr"><code>NoteDrag d = std::move(m_drag);
+m_drag = NoteDrag{};
+auto&amp; ns = notes();
+size_t changed = 0;
+for (size_t k = 0; k &lt; d.idx.size(); ++k)
+    if (chartmut::hashNote(ns[d.idx[k]]) != chartmut::hashNote(d.copies[k])) ++changed;
+if (changed == 0) return;   // let go where it started: nothing to record
+const bool scan = m_song-&gt;gameMode.type == GameModeType::ScanLine;
+if (!scan)
+    for (size_t i : d.idx)
+        if (ns[i].type == EditorNoteType::Hold) chartops::sanitizeHold(ns[i]);
+// Scan Line: the notes were placed on their pages each frame; the page
+// table follows the chart's new end (commitEdit).
+commitEdit();</code></pre></figure></section><section class="system-topic" id="topic-arc-paste" aria-labelledby="heading-arc-paste"><h4 id="heading-arc-paste">Clipboard paste and parent-reference remapping</h4><div class="topic-body"><div><p>Copying a 3D arc and its attached taps would leave stale parent references if the original chart indices were reused at the destination. The clipboard stores relative times and indexes parents within the copied group. Paste creates the destination arc first, maps its children to that parent and checks the destination for duplicates.</p></div><div class="system-evidence"><p class="system-proof">The desktop regression pastes a parent at 10.000 s. Its children must land at 10.500 and 11.500 s and both must refer to the new parent. Pasting the same group again at the same position skips three duplicates while preserving the existing relationships.</p><pre><code>childTime = pasteTime + relativeTime
+newParent = pastedArcs[clipboardParent]</code></pre><p class="system-source"><span>Implementation and regressions</span> <code>ChartEditOps.cpp</code> · <code>chart_edit_test.cpp</code></p></div></div><figure class="source-sample" id="source-arc-paste"><figcaption><strong>Restoring parent references and handling duplicate arc taps during paste</strong><span class="source-location" dir="ltr">engine/src/editor/chart/ChartEditOps.cpp · L860–901</span></figcaption><pre dir="ltr"><code>// Pass 2: ArcTaps, on their pasted (or already present) arc, else attached.
+for (size_t k = 0; k &lt; clip.notes.size(); ++k) {
+    const EditorNote&amp; src = clip.notes[k];
+    if (src.type != EditorNoteType::ArcTap) continue;
+    if (!arcs) { ++r.droppedArcs; continue; }
+    EditorNote c = src;
+    c.uid = 0;
+    c.time = src.time + t;
+    const int cp = src.arcTapParent;
+    int parent = (cp &gt;= 0 &amp;&amp; cp &lt; (int)clip.notes.size() &amp;&amp; clip.notes[(size_t)cp].type == EditorNoteType::Arc)
+                     ? where[(size_t)cp] : -1;
+    const bool orphan = parent &lt; 0;
+    float x = src.arcStartX;
+    if (orphan) parent = findArcFor(notes, c.time, x, L);
+    if (opt.skipDuplicates &amp;&amp; parent &gt;= 0) {
+        int dup = -1;
+        for (size_t i = 0; i &lt; base &amp;&amp; dup &lt; 0; ++i)
+            if (notes[i].type == EditorNoteType::ArcTap &amp;&amp; notes[i].arcTapParent == parent
+                &amp;&amp; std::fabs(notes[i].time - c.time) &lt;= 0.001f)
+                dup = (int)i;
+        if (dup &gt;= 0) {
+            ++r.skippedDuplicates;
+            r.matched.push_back((size_t)dup);
+            continue;
+        }
+    }
+    if (!orphan) {
+        const auto&amp; arc = notes[(size_t)parent];
+        c.time = std::clamp(c.time, arc.time, std::max(arc.time, arc.endTime));
+        c.arcTapParent = parent;
+        notes.push_back(std::move(c));
+        continue;
+    }
+    bool spawned = false;
+    const int at = attachArcTap(notes, std::move(c), x, L, &amp;spawned);
+    if (spawned) {
+        ++r.voidArcs;
+        r.voidArcIdx.push_back((size_t)at - 1);   // pushed right before its ArcTap
+    } else {
+        ++r.reattached;
+    }
+}</code></pre></figure></section></article>
+<article class="system" id="system-android" aria-labelledby="title-android"><h3 id="title-android">Android delivery and runtime quality</h3><p class="system-lead">Desktop Test Game opens the saved project directly. The packager follows asset references to build an Android APK. Package inspection, first launch and an upgrade each give a different way to check the result.</p><section class="system-topic" id="topic-apk-dependencies" aria-labelledby="heading-apk-dependencies"><h4 id="heading-apk-dependencies">APK dependency traversal and package audit</h4><div class="topic-body"><div><p>Windows Test Game opens the saved project directly. The Android packager starts at the title screen, song selection and playable charts, follows their references to materials, textures, compiled SPIR-V, particles and sounds, and drops songs with no charts from the staged catalog. Editor, command-line and Copilot exports share this plan.</p></div><div class="system-evidence"><p class="system-proof">For the same test project, the APK shrank from 111.9 MB to 39.5 MB. The audit checked 104 used items in the built package, with zero missing and zero unused. Including compiled custom shaders in that inventory checks a rendering dependency that merely launching the song would not establish.</p><pre><code>chart → material → texture / SPIR-V</code></pre><p class="system-source"><span>Implementation and regressions</span> <code>GamePackager.cpp</code> · <code>game_packager_test.cpp</code> · <code>audit_apk.py</code></p></div></div><figure class="source-sample" id="source-apk-dependencies"><figcaption><strong>Collecting compiled shader variants for the material family</strong><span class="source-location" dir="ltr">engine/src/packaging/GamePackager.cpp · L86–98</span></figcaption><pre dir="ltr"><code>std::vector&lt;std::string&gt; compiledVariantFiles(const fs::path&amp; folder, bool cartoon) {
+    std::vector&lt;std::string&gt; out;
+    std::ifstream in(folder / "program.json", std::ios::binary);
+    const nlohmann::json info = nlohmann::json::parse(in, nullptr, false);
+    if (info.is_discarded() || !info.is_object()) return out;
+    auto variants = info.find("variants");
+    if (variants == info.end() || !variants-&gt;is_object()) return out;
+    for (const surface::ProgramVariant v : surface::programVariants(cartoon)) {
+        auto it = variants-&gt;find(surface::variantFileName(v));
+        if (it != variants-&gt;end() &amp;&amp; it-&gt;is_string()) out.push_back(it-&gt;get&lt;std::string&gt;());
+    }
+    return out;
+}</code></pre></figure></section><section class="system-topic" id="topic-incremental-install" aria-labelledby="heading-incremental-install"><h4 id="heading-incremental-install">Manifest comparison and incremental extraction</h4><div class="topic-body"><div><p>The player records each path’s access mode, byte count and 64-bit FNV-1a hash. On upgrade it compares manifests, copies changes, keeps matches and removes obsolete paths from the old manifest. Long music tracks stream from the APK through a virtual file system, while short hit sounds can reuse decoded PCM samples.</p><p class="system-proof">On first launch the S21 read 103 manifest entries, extracted 100 files (2.6 MB) and streamed three. After changing one chart and replacing its cover, the upgrade extracted three entries, kept 97 and removed one old cover. These counts come from the device startup manifest. The preceding package audit counts used items in the built APK.</p></div><div class="system-evidence"><table class="system-table"><caption>Galaxy S21 first launch and upgrade</caption><thead><tr><th scope="col">Stage</th><th scope="col">Observation</th><th scope="col">File accounting</th></tr></thead><tbody><tr><th scope="row">First launch</th><td>103 manifest entries</td><td>100 files extracted (2.6 MB), 3 streamed</td></tr><tr><th scope="row">One chart edit and cover swap</th><td>3 extracted</td><td>97 kept, 1 obsolete cover removed</td></tr></tbody></table><p class="system-source"><span>Implementation and regressions</span> <code>AndroidFileIO::syncPackage</code> · <code>AndroidFileIO.cpp</code> · <code>AudioEngine.cpp</code></p></div></div><figure class="source-sample" id="source-incremental-install"><figcaption><strong>Choosing APK streaming, file reuse or extraction</strong><span class="source-location" dir="ltr">engine/src/android/AndroidFileIO.cpp · L161–186</span></figcaption><pre dir="ltr"><code>int unpacked = 0, kept = 0, removed = 0, streamed = 0, failed = 0;
+long long unpackedBytes = 0;
+for (const auto&amp; [path, e] : s_package) {
+    const std::string out = s_internalPath + path;
+    if (e.stream) {
+        // Read in place from the APK; drop a copy an older build unpacked.
+        if (std::remove(out.c_str()) == 0) ++removed;
+        ++streamed;
+        continue;
+    }
+    struct stat st;
+    auto it = installed.find(path);
+    if (it != installed.end() &amp;&amp; !it-&gt;second.stream &amp;&amp; it-&gt;second.hash == e.hash &amp;&amp;
+        stat(out.c_str(), &amp;st) == 0 &amp;&amp; (long long)st.st_size == e.bytes) {
+        s_extracted.insert(path);
+        ++kept;
+        continue;
+    }
+    if (unpack(path, out)) {
+        s_extracted.insert(path);
+        ++unpacked;
+        unpackedBytes += e.bytes;
+    } else {
+        ++failed;
+    }
+}</code></pre></figure></section><section class="system-topic" id="topic-idle-redraw" aria-labelledby="heading-idle-redraw"><h4 id="heading-idle-redraw">On-demand menu rendering and device restoration</h4><div class="topic-body"><div><p>A static menu need not submit the same image on every refresh. The engine hashes UI vertices, indices, textures and clip rectangles. A touch, window change or new animation frame can trigger a redraw. Gameplay continues on the song clock. Device reconstruction also requires retiring textures and cached batch descriptors so the first resumed frame uses valid resources.</p></div><div class="system-evidence"><p class="system-proof">Over separate 20 s observations on the S21, the static Classic title submitted zero frames and the animated Neon title submitted 574. A separate device-recovery regression compared the rendered output after 20 resumes on each of five screens. All 100/100 comparisons passed. The two experiments test idle submission and restored output separately.</p><p class="system-source"><span>Implementation and regressions</span> <code>redraw::hashDrawData</code> · <code>redraw_test.cpp</code> · <code>AndroidEngine.cpp</code></p><a class="system-related" href="#android">Android resume failure and regression results</a></div></div><figure class="source-sample" id="source-idle-redraw"><figcaption><strong>Deciding whether to present from the frame signature and forced redraws</strong><span class="source-location" dir="ltr">engine/src/game/Redraw.cpp · L152–164</span></figcaption><pre dir="ltr"><code>bool RedrawScheduler::built(double now, uint64_t picture, const redraw::Hints&amp; hints, bool inputQueued) {
+    const bool changed = !m_hasPicture || picture != m_picture;
+    const bool show = changed || m_force &gt; 0;
+    if (m_force &gt; 0) --m_force;
+    m_unchanged  = changed ? 0 : m_unchanged + 1;
+    m_picture    = picture;
+    m_hasPicture = true;
+    m_lastBuild  = now;
+    m_lastShown  = show;
+    m_input      = inputQueued;
+    m_hints      = hints;
+    return show;
+}</code></pre></figure></section></article></div>
     </section>
     <section id="graphics-lab" class="chapter" aria-labelledby="graphics-title">
       <div class="section-heading"><h2 id="graphics-title">Graphics engineering</h2><p>Three spatial modes share geometry, lighting and display conversion. Scan Line takes a fixed-camera 2D path. Authors can edit the material on a real note, then check the image against a desktop reference and its cost against phone hardware counters.</p></div>
@@ -60,22 +532,217 @@ newParent = pastedArcs[clipboardParent]</code></pre><p class="system-source"><sp
 <figure><img src="assets/object-detail.webp" loading="lazy" width="348" height="348" decoding="async" alt=""><figcaption>Actual hold</figcaption></figure>
 <figure><img src="assets/preview/stage-detail-448.webp" srcset="assets/preview/stage-detail-448.webp 448w, assets/preview/stage-detail-504.webp 504w" sizes="auto, (max-width: 850px) 100vw, 580px" loading="lazy" width="504" height="283" decoding="async" alt=""><figcaption>Game scene</figcaption></figure></div>
         <div class="material-notes"><dl class="tech-points"><div><dt>Path UV sampling</dt> <dd>Stripe phase is distance along the path times density, minus song time times speed. Using cumulative distance across segments keeps the pattern continuous through a bend and reproducible when seeking to the same time.</dd></div><div><dt>Binding and compilation</dt> <dd>The renderer checks difficulty, song and engine defaults, including separate normal and active hold states. Desktop wrappers compile author GLSL, then validate SPIR-V and its resource layout. A failed edit leaves the last working version installed. The APK ships the compiled program.</dd></div><div><dt>Hit-anchor regression test</dt> <dd>Across 36 paired captures of updated and original looks, the recorded hit-anchor displacement was 0 px in every pair.</dd></div></dl></div>
+        <figure class="source-sample" id="source-materials"><figcaption><strong>Building the material lookup order across part states, difficulty, song and project</strong><span class="source-location" dir="ltr">engine/src/renderer/MaterialBindingResolver.cpp · L67–88</span></figcaption><pre dir="ltr"><code>// The four steps within a level, most specific first.
+std::vector&lt;std::pair&lt;MaterialTarget, bool&gt;&gt; steps;   // target, exact
+steps.push_back({target, true});
+if (target.active &amp;&amp; !target.region.empty()) steps.push_back({{target.key, true, ""}, false});
+if (!target.region.empty()) steps.push_back({{target.key, false, target.region}, false});
+if (target.active || !target.region.empty()) steps.push_back({{target.key, false, ""}, false});
+
+struct Level { const MaterialBindingMap* map; std::string name; bool difficulty; };
+std::vector&lt;Level&gt; levels;
+std::string passedOver;   // bindings that could not be used, for the diagnostic
+auto note = [&amp;passedOver](const std::string&amp; why) {
+    if (!passedOver.empty()) passedOver += "; ";
+    passedOver += why;
+};
+if (c.song) {
+    if (c.difficulty &gt;= 0 &amp;&amp; c.difficulty &lt; 3)
+        levels.push_back({&amp;c.song-&gt;difficulty[c.difficulty], kDifficultyNames[c.difficulty], true});
+    else
+        note("difficulty " + std::to_string(c.difficulty) + " is not easy, medium or hard; its bindings are not read");
+    levels.push_back({&amp;c.song-&gt;song, "song", false});
+}
+if (c.project) levels.push_back({c.project, "project", false});</code></pre></figure>
       </div>
       <div class="profiles gpu-study" id="gpu-summary">
         <div><h3>External GPU memory bandwidth on the S21</h3><p>A 2400 × 1080 RGBA16F image takes 20.7 MB per frame. The original path stored it to memory and read it back for display conversion. The new path reads the tile colour within the same Vulkan subpass and writes the sRGB swapchain. The HUD still draws in its own pass.</p></div>
         <figure class="bandwidth"><figcaption>External GPU reads and writes (GB/s)</figcaption><div class="bar-row"><span>Store and reload</span><i aria-hidden="true" style="--bar:100.00000%"></i><b>5.13</b></div><div class="bar-row"><span>Tile-local conversion</span><i aria-hidden="true" style="--bar:6.41181%"></i><b>0.33</b></div><p>Galaxy S21 (Mali-G78) · Drop 3D / Hard · song fixed at 1.3 s · 120 Hz · GPU frequency unlocked</p></figure>
         <div class="gpu-check"><p>Baseline, tile-local, tile-local, baseline yielded 119.4–119.5 FPS across all four runs. External GPU reads and writes fell about 93.6%. In the original 90° landscape captures, only three of 2,592,000 pixels differed by more than two 8-bit colour levels.</p><a href="#gpu">See the four runs and matched captures</a></div>
+        <figure class="source-sample" id="source-gpu-summary"><figcaption><strong>Reading the HDR input attachment and applying the display transform</strong><span class="source-location" dir="ltr">shaders/tile_display.frag · L1–16</span></figcaption><pre dir="ltr"><code>#version 450
+layout(input_attachment_index=0,set=0,binding=0) uniform subpassInput scene;
+layout(push_constant) uniform Display { float exposureEV; uint toneMap; } pc;
+layout(location=1) out vec4 outColor;
+void main() {
+    vec4 sampleColor = subpassLoad(scene);
+    vec3 color = sampleColor.rgb;
+    if (pc.toneMap != 0u) {
+        // Same fitted curve and RGBA16F input as the sampled display path.
+        vec3 x = max(color, vec3(0.0)) * exp2(pc.exposureEV);
+        color = clamp((x * (2.51*x + 0.03)) / (x * (2.43*x + 0.59) + 0.14), 0.0, 1.0);
+    } else {
+        color = clamp(color, 0.0, 1.0);
+    }
+    outColor = vec4(color, pc.toneMap != 0u ? 1.0 : clamp(sampleColor.a, 0.0, 1.0));
+}</code></pre></figure>
       </div>
-      <div class="render-studies"><article class="render-study" id="brdf"><figure><a class="full-frame" href="assets/lab-disney.webp" aria-label="View full image · Drop 3D · Disney materials in the player"><img src="assets/preview/lab-disney-448.webp" srcset="assets/preview/lab-disney-448.webp 448w, assets/preview/lab-disney-768.webp 768w, assets/preview/lab-disney-1152.webp 1152w" sizes="auto, (max-width: 850px) 100vw, 580px" loading="lazy" width="1280" height="720" decoding="async" alt=""></a><figcaption>Drop 3D · Disney materials in the player</figcaption></figure><h3>Disney 2012 reflectance model (BRDF)</h3><p>Brent Burley’s Disney 2012 model gives note authors controls for roughness, brushing direction, fabric sheen and clearcoat.</p><dl class="tech-points"><div><dt>Shading</dt> <dd>The shader evaluates Burley diffuse, an anisotropic GTR2 specular lobe and a GTR1 clearcoat. A bent-normal approximation controls the sampling cost of anisotropic environment reflections.</dd></div><div><dt>CPU–GPU numerical validation</dt> <dd>Across 1,296 inputs, the GPU stayed within 4 × 10⁻⁶ absolute error of a double-precision CPU reference. Under a point light, velvet, brushed, coated and wax test planes matched within 1/255 per pixel.</dd></div></dl><p class="references"><a href="https://www.disneyanimation.com/publications/physically-based-shading-at-disney/">Original model · Brent Burley (2012)</a></p></article>
-<article class="render-study" id="stage-shadows"><figure><a class="full-frame" href="assets/shadow-after.webp" aria-label="View full image · Drop 3D · directional stage lighting and shadows"><img src="assets/preview/shadow-after-448.webp" srcset="assets/preview/shadow-after-448.webp 448w, assets/preview/shadow-after-768.webp 768w, assets/preview/shadow-after-1152.webp 1152w" sizes="auto, (max-width: 850px) 100vw, 580px" loading="lazy" width="1280" height="720" decoding="async" alt=""></a><figcaption>Drop 3D · directional stage lighting and shadows</figcaption></figure><h3>Shadow mapping for deformed geometry</h3><p>One directional light illuminates the stage and casts shadows. If a material bends a note, its shadow should follow that silhouette.</p><dl class="tech-points"><div><dt>Vertex deformation and shadow depth</dt> <dd>The shadow caster runs the scene’s vertex deformation and alpha mask when writing depth from the light’s view. Its outline follows the animated geometry.</dd></div><div><dt>Shadow resolution and occlusion validation</dt> <dd>Desktop uses a 2048² map and four depth comparisons. S21 High uses 1024² and one comparison. Sampled pixels in low-angle, masked and deformed-caster tests matched CPU ray-occlusion results at 0/255 maximum difference.</dd></div></dl></article>
-<article class="render-study" id="glass"><figure><a class="full-frame" href="assets/glass-after.webp" aria-label="View full image · Drop 3D · the checkerboard reveals refraction offsets"><img src="assets/preview/glass-after-448.webp" srcset="assets/preview/glass-after-448.webp 448w, assets/preview/glass-after-768.webp 768w, assets/preview/glass-after-1152.webp 1152w" sizes="auto, (max-width: 850px) 100vw, 580px" loading="lazy" width="1280" height="720" decoding="async" alt=""></a><figcaption>Drop 3D · the checkerboard reveals refraction offsets</figcaption></figure><h3>Screen-space refraction</h3><p>A transparent note looks up the displaced background in a snapshot of opaque colour and linear depth. Rough glass samples a blurrier mip level.</p><dl class="tech-points"><div><dt>Ray marching and intersection refinement</dt> <dd>Desktop marches 24 steps along the refracted ray and refines the hit with four bisections. S21 High takes 12 steps and two refinements at half resolution. Rays leaving the screen sample the environment.</dd></div><div><dt>Pixel error and refraction limits</dt> <dd>Against a CPU ray model for a clear slab, the desktop path misclassified zero of 8,489 pixels and the half-resolution path misclassified one. The snapshot contains opaque geometry, so refraction between successive glass layers is outside its scope.</dd></div></dl><div class="glass-pair"><figure><a class="full-frame" href="assets/glass-note-before.webp" aria-label="View full image · Original material path. Windows, Drop 3D at 9.00 s. The solid white note in the centre hides the checkerboard beneath it."><img src="assets/preview/glass-note-before-428.webp" loading="lazy" width="428" height="136" decoding="async" alt=""></a><figcaption>Original material path. Windows, Drop 3D at 9.00 s. The solid white note in the centre hides the checkerboard beneath it.</figcaption></figure><figure><a class="full-frame" href="assets/glass-note-after.webp" aria-label="View full image · Screen-space refraction. Identical frame and crop. The checkerboard shifts behind the centre note and its edge picks up an amber tint."><img src="assets/preview/glass-note-after-428.webp" loading="lazy" width="428" height="136" decoding="async" alt=""></a><figcaption>Screen-space refraction. Identical frame and crop. The checkerboard shifts behind the centre note and its edge picks up an amber tint.</figcaption></figure></div></article>
-<article class="render-study" id="scattering"><figure><a class="full-frame" href="assets/lab-scatter.webp" aria-label="View full image · Drop 3D · desktop screen-space scattering"><img src="assets/preview/lab-scatter-448.webp" srcset="assets/preview/lab-scatter-448.webp 448w, assets/preview/lab-scatter-768.webp 768w, assets/preview/lab-scatter-1152.webp 1152w" sizes="auto, (max-width: 850px) 100vw, 580px" loading="lazy" width="1280" height="720" decoding="async" alt=""></a><figcaption>Drop 3D · desktop screen-space scattering</figcaption></figure><h3>Screen-space subsurface scattering</h3><p>Desktop collects diffuse light and spreads it horizontally and vertically, using a different radius for each RGB channel.</p><dl class="tech-points"><div><dt>Edge constraints and specular preservation</dt> <dd>Object ID, depth and normal constrain the blur at silhouettes. Compositing adds the blurred diffuse term minus the original diffuse, preserving the specular detail.</dd></div><div><dt>Desktop and mobile GPU cost</dt> <dd>At 1080p this added about 0.27 ms on an RTX 4070 Laptop GPU. Forcing the full pass on the S21 multiplied GPU work by 3.7–4.5. Both phone tiers retain thin-surface backlighting.</dd></div></dl></article>
-<article class="render-study" id="emissive-lights"><figure><a class="full-frame" href="assets/emission-after.webp" aria-label="View full image · Circle · emissive notes passing over the disk"><img src="assets/preview/emission-after-448.webp" srcset="assets/preview/emission-after-448.webp 448w, assets/preview/emission-after-768.webp 768w, assets/preview/emission-after-1152.webp 1152w" sizes="auto, (max-width: 850px) 100vw, 580px" loading="lazy" width="1280" height="720" decoding="async" alt=""></a><figcaption>Circle · emissive notes passing over the disk</figcaption></figure><h3>Emissive proxy lights</h3><p>Small point lights along held notes and the judgment line approximate light reaching nearby track surfaces. The material can glow independently of that illumination.</p><dl class="tech-points"><div><dt>Light ranking and hysteresis</dt> <dd>The renderer ranks candidates by flux and distance to the judgment area. A 25% hysteresis margin keeps two similarly ranked notes from swapping light slots on consecutive frames.</dd></div><div><dt>Light limits and affected surfaces</dt> <dd>Desktop allows eight proxies. S21 High allows four within the overall stage-light limit. They illuminate the track, judgment line and decorations, with stage lights handling shadows.</dd></div></dl></article>
-<article class="render-study" id="environment-light"><figure><a class="full-frame" href="assets/lab-gi.webp" aria-label="View full image · Offline indirect track light · path-traced reference, probe estimate and absolute difference, left to right"><img src="assets/lab-gi.webp" loading="lazy" width="702" height="240" decoding="async" alt=""></a><figcaption>Offline indirect track light · path-traced reference, probe estimate and absolute difference, left to right</figcaption></figure><h3>Environment lighting and experimental GI</h3><p>Shipped materials sample a pre-baked environment. A separate CPU path tracer supplies a reference for evaluating additional indirect lighting.</p><dl class="tech-points"><div><dt>Image-based lighting (IBL)</dt> <dd>Nine RGB spherical-harmonic coefficients provide diffuse irradiance. Specular reflections sample nine prefiltered cubemap levels by roughness, so a polished note and a rough track reflect the same environment differently.</dd></div><div><dt>Indirect-light probe error</dt> <dd>Across four controlled scenes the grid’s mean relative error in indirect track light was 38–44%, above the pre-set 25% limit. The reference and candidate remain in the test suite. The player uses the baked environment.</dd></div></dl></article></div>
+      <div class="render-studies"><article class="render-study" id="brdf"><figure><a class="full-frame" href="assets/lab-disney.webp" aria-label="View full image · Drop 3D · Disney materials in the player"><img src="assets/preview/lab-disney-448.webp" srcset="assets/preview/lab-disney-448.webp 448w, assets/preview/lab-disney-768.webp 768w, assets/preview/lab-disney-1152.webp 1152w" sizes="auto, (max-width: 850px) 100vw, 580px" loading="lazy" width="1280" height="720" decoding="async" alt=""></a><figcaption>Drop 3D · Disney materials in the player</figcaption></figure><h3>Disney 2012 reflectance model (BRDF)</h3><p>Brent Burley’s Disney 2012 model gives note authors controls for roughness, brushing direction, fabric sheen and clearcoat.</p><dl class="tech-points"><div><dt>Shading</dt> <dd>The shader evaluates Burley diffuse, an anisotropic GTR2 specular lobe and a GTR1 clearcoat. A bent-normal approximation controls the sampling cost of anisotropic environment reflections.</dd></div><div><dt>CPU–GPU numerical validation</dt> <dd>Across 1,296 inputs, the GPU stayed within 4 × 10⁻⁶ absolute error of a double-precision CPU reference. Under a point light, velvet, brushed, coated and wax test planes matched within 1/255 per pixel.</dd></div></dl><p class="references"><a href="https://www.disneyanimation.com/publications/physically-based-shading-at-disney/">Original model · Brent Burley (2012)</a></p><figure class="source-sample" id="source-brdf"><figcaption><strong>Evaluating the anisotropic specular term of the Disney BRDF</strong><span class="source-location" dir="ltr">shaders/surface/disney2012_rt_v1.glsl · L115–131</span></figcaption><pre dir="ltr"><code>vec3 mgDisneyBrdf(MgDisneyParams p, vec3 l, vec3 v, vec3 n, vec3 x, vec3 y) {
+    p = mgDisneyClamp(p);
+    float nl = dot(n, l), nv = dot(n, v);
+    if (nl &lt; 0.0 || nv &lt; 0.0) return vec3(0.0);
+    vec3 sum = l + v;
+    float sumSquared = dot(sum, sum);
+    if (sumSquared &lt; 1e-12) return vec3(0.0);
+    vec3 h = sum * inversesqrt(sumSquared);
+    float nh = dot(n, h), lh = dot(l, h);
+    float hx = dot(h, x), hy = dot(h, y);
+
+    float fh = mgDisneySchlickWeight(lh);
+    vec2 alpha = mgDisneyAlphas(p);
+    vec3 f = mix(mgDisneyF0(p), vec3(1.0), fh);
+    float g = mgDisneyMasking(vec3(dot(l, x), dot(l, y), nl), alpha)
+            * mgDisneyMasking(vec3(dot(v, x), dot(v, y), nv), alpha);
+    vec3 result = mgDisneyGtr2(vec3(hx, hy, nh), alpha) * g * f;</code></pre></figure></article>
+<article class="render-study" id="stage-shadows"><figure><a class="full-frame" href="assets/shadow-after.webp" aria-label="View full image · Drop 3D · directional stage lighting and shadows"><img src="assets/preview/shadow-after-448.webp" srcset="assets/preview/shadow-after-448.webp 448w, assets/preview/shadow-after-768.webp 768w, assets/preview/shadow-after-1152.webp 1152w" sizes="auto, (max-width: 850px) 100vw, 580px" loading="lazy" width="1280" height="720" decoding="async" alt=""></a><figcaption>Drop 3D · directional stage lighting and shadows</figcaption></figure><h3>Shadow mapping for deformed geometry</h3><p>One directional light illuminates the stage and casts shadows. If a material bends a note, its shadow should follow that silhouette.</p><dl class="tech-points"><div><dt>Vertex deformation and shadow depth</dt> <dd>The shadow caster runs the scene’s vertex deformation and alpha mask when writing depth from the light’s view. Its outline follows the animated geometry.</dd></div><div><dt>Shadow resolution and occlusion validation</dt> <dd>Desktop uses a 2048² map and four depth comparisons. S21 High uses 1024² and one comparison. Sampled pixels in low-angle, masked and deformed-caster tests matched CPU ray-occlusion results at 0/255 maximum difference.</dd></div></dl><figure class="source-sample" id="source-stage-shadows"><figcaption><strong>Applying a receiver bias and filtering shadow comparisons</strong><span class="source-location" dir="ltr">shaders/surface/surface_lighting.glsl · L143–162</span></figcaption><pre dir="ltr"><code>float mgMainShadow(vec3 worldPosition, vec3 l) {
+    if (MG_SHADOW_TAPS == 0u) return 1.0;
+    if ((mgPass.lightCountsPassFlags.z &amp; MG_PASS_SHADOW_MAP_VALID) == 0u ||
+        (mgObject.semanticFlags.w &amp; MG_OBJECT_RECEIVES_SHADOW) == 0u)
+        return 1.0;
+    vec3 n = mgSafeNormal(vNormal, l);
+    if (dot(n, l) &lt; 0.0) n = -n;   // double-sided: the side the light falls on
+    float nl = clamp(dot(n, l), 0.0, 1.0);
+    vec3 p = worldPosition + n * (mgPass.exposureFlags.w * (1.0 + 2.0 * sqrt(1.0 - nl * nl)));
+    vec3 c = (mgPass.shadowFromWorld * vec4(p, 1.0)).xyz;
+    float depth = clamp(c.z, 0.0, 1.0);
+    if (MG_SHADOW_TAPS == 1u) return texture(mgShadowMap, vec3(c.xy, depth));
+    // Four lookups half a texel apart: with linear comparison filtering, a
+    // 3x3 tent.
+    vec2 texel = 0.5 / vec2(textureSize(mgShadowMap, 0));
+    return 0.25 * (texture(mgShadowMap, vec3(c.xy + vec2(-texel.x, -texel.y), depth)) +
+                   texture(mgShadowMap, vec3(c.xy + vec2(texel.x, -texel.y), depth)) +
+                   texture(mgShadowMap, vec3(c.xy + vec2(-texel.x, texel.y), depth)) +
+                   texture(mgShadowMap, vec3(c.xy + vec2(texel.x, texel.y), depth)));
+}</code></pre></figure></article>
+<article class="render-study" id="glass"><figure><a class="full-frame" href="assets/glass-after.webp" aria-label="View full image · Drop 3D · the checkerboard reveals refraction offsets"><img src="assets/preview/glass-after-448.webp" srcset="assets/preview/glass-after-448.webp 448w, assets/preview/glass-after-768.webp 768w, assets/preview/glass-after-1152.webp 1152w" sizes="auto, (max-width: 850px) 100vw, 580px" loading="lazy" width="1280" height="720" decoding="async" alt=""></a><figcaption>Drop 3D · the checkerboard reveals refraction offsets</figcaption></figure><h3>Screen-space refraction</h3><p>A transparent note looks up the displaced background in a snapshot of opaque colour and linear depth. Rough glass samples a blurrier mip level.</p><dl class="tech-points"><div><dt>Ray marching and intersection refinement</dt> <dd>Desktop marches 24 steps along the refracted ray and refines the hit with four bisections. S21 High takes 12 steps and two refinements at half resolution. Rays leaving the screen sample the environment.</dd></div><div><dt>Pixel error and refraction limits</dt> <dd>Against a CPU ray model for a clear slab, the desktop path misclassified zero of 8,489 pixels and the half-resolution path misclassified one. The snapshot contains opaque geometry, so refraction between successive glass layers is outside its scope.</dd></div></dl><div class="glass-pair"><figure><a class="full-frame" href="assets/glass-note-before.webp" aria-label="View full image · Original material path. Windows, Drop 3D at 9.00 s. The solid white note in the centre hides the checkerboard beneath it."><img src="assets/preview/glass-note-before-428.webp" loading="lazy" width="428" height="136" decoding="async" alt=""></a><figcaption>Original material path. Windows, Drop 3D at 9.00 s. The solid white note in the centre hides the checkerboard beneath it.</figcaption></figure><figure><a class="full-frame" href="assets/glass-note-after.webp" aria-label="View full image · Screen-space refraction. Identical frame and crop. The checkerboard shifts behind the centre note and its edge picks up an amber tint."><img src="assets/preview/glass-note-after-428.webp" loading="lazy" width="428" height="136" decoding="async" alt=""></a><figcaption>Screen-space refraction. Identical frame and crop. The checkerboard shifts behind the centre note and its edge picks up an amber tint.</figcaption></figure></div><figure class="source-sample" id="source-glass"><figcaption><strong>Tracing refracted rays, refining depth hits and falling back to the environment</strong><span class="source-location" dir="ltr">shaders/surface/surface_glass.frag · L84–127</span></figcaption><pre dir="ltr"><code>vec3 glassBackground(vec3 origin, vec3 direction, float roughness) {
+    vec3 environment = glassEnvironment(direction, roughness);
+    if (!mgSnapshotValid()) return environment;
+    vec2 pixel;
+    float exitDepth;
+    if (!mgSnapshotProject(origin, pixel, exitDepth)) return environment;
+    float previous = 0.0;
+    for (int i = 1; i &lt;= MG_GLASS_STEPS; ++i) {
+        float f = float(i) / float(MG_GLASS_STEPS);
+        float s = MG_GLASS_MAX_DISTANCE * f * f;
+        vec3 p = origin + direction * s;
+        float rayDepth;
+        if (!mgSnapshotProject(p, pixel, rayDepth) || !mgSnapshotInView(pixel)) return environment;
+        float sceneDepth = mgSnapshotDepthAt(pixel);
+        if (rayDepth &lt; sceneDepth) {
+            previous = s;
+            continue;
+        }
+        // Behind a surface: a hit when only just behind it (a tolerance of
+        // the step length) and the surface is not in front of the exit point.
+        float tolerance = max(0.05, 1.5 * (s - previous));
+        if (sceneDepth &lt; exitDepth - 1e-3 || rayDepth - sceneDepth &gt; tolerance) return environment;
+        float lo = previous, hi = s;
+        for (int k = 0; k &lt; MG_GLASS_REFINE; ++k) {
+            float mid = 0.5 * (lo + hi);
+            vec2 midPixel;
+            float midDepth;
+            mgSnapshotProject(origin + direction * mid, midPixel, midDepth);
+            if (midDepth &lt; mgSnapshotDepthAt(midPixel)) lo = mid;
+            else hi = mid;
+        }
+        vec3 hit = origin + direction * hi;
+        mgSnapshotProject(hit, pixel, rayDepth);
+        return mix(environment, glassSnapshot(pixel, hit, hi, roughness), mgSnapshotEdgeWeight(pixel));
+    }
+    // In front of everything to the end: what is drawn at infinity along the
+    // ray, if anything (the stage's background has no depth).
+    vec3 far = origin + direction * 1e4;
+    float farDepth;
+    if (!mgSnapshotProject(far, pixel, farDepth) || !mgSnapshotInView(pixel) ||
+        mgSnapshotDepthAt(pixel) &lt; MG_NO_SURFACE)
+        return environment;
+    return mix(environment, textureLod(mgSnapshotColor, mgSnapshotUv(pixel), 0.0).rgb, mgSnapshotEdgeWeight(pixel));
+}</code></pre></figure></article>
+<article class="render-study" id="scattering"><figure><a class="full-frame" href="assets/lab-scatter.webp" aria-label="View full image · Drop 3D · desktop screen-space scattering"><img src="assets/preview/lab-scatter-448.webp" srcset="assets/preview/lab-scatter-448.webp 448w, assets/preview/lab-scatter-768.webp 768w, assets/preview/lab-scatter-1152.webp 1152w" sizes="auto, (max-width: 850px) 100vw, 580px" loading="lazy" width="1280" height="720" decoding="async" alt=""></a><figcaption>Drop 3D · desktop screen-space scattering</figcaption></figure><h3>Screen-space subsurface scattering</h3><p>Desktop collects diffuse light and spreads it horizontally and vertically, using a different radius for each RGB channel.</p><dl class="tech-points"><div><dt>Edge constraints and specular preservation</dt> <dd>Object ID, depth and normal constrain the blur at silhouettes. Compositing adds the blurred diffuse term minus the original diffuse, preserving the specular detail.</dd></div><div><dt>Desktop and mobile GPU cost</dt> <dd>At 1080p this added about 0.27 ms on an RTX 4070 Laptop GPU. Forcing the full pass on the S21 multiplied GPU work by 3.7–4.5. Both phone tiers retain thin-surface backlighting.</dd></div></dl><figure class="source-sample" id="source-scattering"><figcaption><strong>Filtering per-channel scattering samples by object, depth and normal</strong><span class="source-location" dir="ltr">shaders/scatter_blur.frag · L59–77</span></figcaption><pre dir="ltr"><code>float nAxis = pc.axisScale.x &gt; 0.5 ? n0.x : n0.y;
+float slopePerPixel = nAxis / max(n0.z, 0.25) / scale * (ortho ? 1.0 : z0);
+float tolerance = max(max(max(r0.r, r0.g), r0.b), 1e-3);
+for (int side = -1; side &lt;= 1; side += 2)
+    for (int i = 1; i &lt;= taps; ++i) {
+        float offset = float(side) * floor(float(i) * stride + 0.5);
+        ivec2 q = clamp(p + ivec2(pc.axisScale.xy * offset), ivec2(0), last);
+        vec4 r = texelFetch(radius, q, 0);
+        if (r.a != r0.a || texelFetch(gathered, q, 0).a &lt;= 0.0) continue;
+        vec4 g = texelFetch(geometry, q, 0);
+        float off = (g.w - z0) - slopePerPixel * offset;
+        float w = exp(-0.5 * (off * off) / (tolerance * tolerance));
+        vec3 n = g.xyz * inversesqrt(max(dot(g.xyz, g.xyz), 1e-12));
+        float facing = clamp(0.5 + 0.5 * dot(n0, n), 0.0, 1.0);   // a right angle 1/4, facing away 0
+        w *= facing * facing;
+        vec3 kernel = exp(-0.5 * offset * offset / (sigma * sigma)) * w;
+        sum += kernel * texelFetch(lightInput, q, 0).rgb;
+        weights += kernel;
+    }</code></pre></figure></article>
+<article class="render-study" id="emissive-lights"><figure><a class="full-frame" href="assets/emission-after.webp" aria-label="View full image · Circle · emissive notes passing over the disk"><img src="assets/preview/emission-after-448.webp" srcset="assets/preview/emission-after-448.webp 448w, assets/preview/emission-after-768.webp 768w, assets/preview/emission-after-1152.webp 1152w" sizes="auto, (max-width: 850px) 100vw, 580px" loading="lazy" width="1280" height="720" decoding="async" alt=""></a><figcaption>Circle · emissive notes passing over the disk</figcaption></figure><h3>Emissive proxy lights</h3><p>Small point lights along held notes and the judgment line approximate light reaching nearby track surfaces. The material can glow independently of that illumination.</p><dl class="tech-points"><div><dt>Light ranking and hysteresis</dt> <dd>The renderer ranks candidates by flux and distance to the judgment area. A 25% hysteresis margin keeps two similarly ranked notes from swapping light slots on consecutive frames.</dd></div><div><dt>Light limits and affected surfaces</dt> <dd>Desktop allows eight proxies. S21 High allows four within the overall stage-light limit. They illuminate the track, judgment line and decorations, with stage lights handling shadows.</dd></div></dl><figure class="source-sample" id="source-emissive-lights"><figcaption><strong>Ranking proxy lights by power and distance with hysteresis across frames</strong><span class="source-location" dir="ltr">engine/src/renderer/EmissionLights.cpp · L64–80</span></figcaption><pre dir="ltr"><code>for (size_t i = 0; i &lt; sources.size(); ++i) {
+    const Source&amp; s = sources[i];
+    const float power = sourcePower(s);
+    if (!(power &gt; 0.f) || s.affects == 0u) continue;
+    const glm::vec3 d = s.center - focus;
+    float score = power / std::max(glm::dot(d, d), std::max(focusRadius * focusRadius, 1e-6f));
+    if (std::binary_search(m_chosen.begin(), m_chosen.end(), s.id)) score *= kHysteresis;
+    scored.push_back({i, score});
+}
+// Strongest first; ties by id, so the choice never depends on the order
+// the mode met them in.
+std::sort(scored.begin(), scored.end(), [&amp;](const Scored&amp; a, const Scored&amp; b) {
+    if (a.score != b.score) return a.score &gt; b.score;
+    return sources[a.index].id &lt; sources[b.index].id;
+});
+if (budget &lt; 0) budget = 0;
+if (scored.size() &gt; static_cast&lt;size_t&gt;(budget)) scored.resize(static_cast&lt;size_t&gt;(budget));</code></pre></figure></article>
+<article class="render-study" id="environment-light"><figure><a class="full-frame" href="assets/lab-gi.webp" aria-label="View full image · Offline indirect track light · path-traced reference, probe estimate and absolute difference, left to right"><img src="assets/lab-gi.webp" loading="lazy" width="702" height="240" decoding="async" alt=""></a><figcaption>Offline indirect track light · path-traced reference, probe estimate and absolute difference, left to right</figcaption></figure><h3>Environment lighting and experimental GI</h3><p>Shipped materials sample a pre-baked environment. A separate CPU path tracer supplies a reference for evaluating additional indirect lighting.</p><dl class="tech-points"><div><dt>Image-based lighting (IBL)</dt> <dd>Nine RGB spherical-harmonic coefficients provide diffuse irradiance. Specular reflections sample nine prefiltered cubemap levels by roughness, so a polished note and a rough track reflect the same environment differently.</dd></div><div><dt>Indirect-light probe error</dt> <dd>Across four controlled scenes the grid’s mean relative error in indirect track light was 38–44%, above the pre-set 25% limit. The reference and candidate remain in the test suite. The player uses the baked environment.</dd></div></dl><figure class="source-sample" id="source-environment-light"><figcaption><strong>Rotating the sample direction and evaluating nine irradiance coefficients</strong><span class="source-location" dir="ltr">shaders/surface/surface_lighting.glsl · L49–65</span></figcaption><pre dir="ltr"><code>vec3 mgEnvironmentDirection(vec3 worldDirection) {
+    float c = mgEnvironment.parameters.y, s = mgEnvironment.parameters.z;
+    return vec3(c * worldDirection.x - s * worldDirection.z, worldDirection.y,
+                s * worldDirection.x + c * worldDirection.z);
+}
+
+vec3 mgEnvironmentIrradiance(vec3 normal) {
+    vec3 d = mgEnvironmentDirection(normal);
+    float basis[9] = float[9](
+        0.2820947918, 0.4886025119 * d.y, 0.4886025119 * d.z, 0.4886025119 * d.x,
+        1.0925484306 * d.x * d.y, 1.0925484306 * d.y * d.z,
+        0.3153915653 * (3.0 * d.z * d.z - 1.0), 1.0925484306 * d.x * d.z,
+        0.5462742153 * (d.x * d.x - d.y * d.y));
+    vec3 irradiance = vec3(0.0);
+    for (int i = 0; i &lt; 9; ++i) irradiance += mgEnvironment.irradianceSH[i].rgb * basis[i];
+    return max(irradiance, vec3(0.0));
+}</code></pre></figure></article></div>
       <div class="scan-art" id="scan-art"><h3>Per-note styling in Scan Line</h3>
-        <p>The fixed-camera renderer draws each note as a flat contour. An author can change the texture on a single star while inheriting its song colour or difficulty material. Drawing and hit testing have independent inputs.</p><div class="scan-art-frames"><figure><a class="full-frame" href="assets/scan-six-s21.webp" aria-label="View full image · Galaxy S21 · six contours on the same scan line"><img src="assets/scan-six-s21.webp" loading="lazy" width="2400" height="1080" decoding="async" alt=""></a><figcaption>Galaxy S21 · six contours on the same scan line</figcaption></figure><figure><a class="full-frame" href="assets/scan-uv-study.webp" aria-label="View full image · Windows matched crops · 30°, 0°, texture removed, from left to right"><img src="assets/scan-uv-study.webp" loading="lazy" width="696" height="228" decoding="async" alt=""></a><figcaption>Windows matched crops · 30°, 0°, texture removed, from left to right</figcaption></figure></div><dl class="tech-points"><div><dt>Per-field overrides</dt> <dd>Squares, circles, triangles, diamonds, stars and hexagons share the same inspector. Shape, RGBA, material, texture and UV transform each resolve from note, then difficulty, song and default. Rotating the texture changes the pattern’s orientation.</dd></div><div><dt>Matched frames for texture changes</dt> <dd>Windows was held at 8.875 s. Against a 30° star texture, resetting rotation to 0° changed 271 pixels and removing the image changed 463. In both comparisons, zero pixels changed outside the selected note.</dd></div></dl></div>
+        <p>The fixed-camera renderer draws each note as a flat contour. An author can change the texture on a single star while inheriting its song colour or difficulty material. Drawing and hit testing have independent inputs.</p><div class="scan-art-frames"><figure><a class="full-frame" href="assets/scan-six-s21.webp" aria-label="View full image · Galaxy S21 · six contours on the same scan line"><img src="assets/scan-six-s21.webp" loading="lazy" width="2400" height="1080" decoding="async" alt=""></a><figcaption>Galaxy S21 · six contours on the same scan line</figcaption></figure><figure><a class="full-frame" href="assets/scan-uv-study.webp" aria-label="View full image · Windows matched crops · 30°, 0°, texture removed, from left to right"><img src="assets/scan-uv-study.webp" loading="lazy" width="696" height="228" decoding="async" alt=""></a><figcaption>Windows matched crops · 30°, 0°, texture removed, from left to right</figcaption></figure></div><dl class="tech-points"><div><dt>Per-field overrides</dt> <dd>Squares, circles, triangles, diamonds, stars and hexagons share the same inspector. Shape, RGBA, material, texture and UV transform each resolve from note, then difficulty, song and default. Rotating the texture changes the pattern’s orientation.</dd></div><div><dt>Matched frames for texture changes</dt> <dd>Windows was held at 8.875 s. Against a 30° star texture, resetting rotation to 0° changed 271 pixels and removing the image changed 463. In both comparisons, zero pixels changed outside the selected note.</dd></div></dl><figure class="source-sample" id="source-scan-art"><figcaption><strong>Resolving shape, material and texture properties across song, difficulty and note</strong><span class="source-location" dir="ltr">engine/src/game/chart/ScanNoteStyle.cpp · L51–69</span></figcaption><pre dir="ltr"><code>Style resolve(const Levels&amp; levels, int difficulty, std::string_view key, const Parts* note) {
+    Style out;
+    const auto apply = [&amp;](const Parts&amp; parts) {
+        const auto it = parts.find(key);
+        if (it == parts.end()) return;
+        const Style&amp; s = it-&gt;second;
+        if (s.shape) out.shape = s.shape;
+        if (s.material) out.material = s.material;
+        if (s.texture) out.texture = s.texture;
+        if (s.color) out.color = s.color;
+        if (s.uvScale) out.uvScale = s.uvScale;
+        if (s.uvOffset) out.uvOffset = s.uvOffset;
+        if (s.uvRotation) out.uvRotation = s.uvRotation;
+    };
+    apply(levels[0]);
+    if (difficulty &gt;= 0 &amp;&amp; difficulty &lt; 3) apply(levels[difficulty + 1]);
+    if (note) apply(*note);
+    return out;
+}</code></pre></figure></div>
       <div class="profiles" id="quality-tiers"><div><h3>Device quality tiers</h3><p>Standard keeps the key light and tile-local path. High lets a song request extra lights, shadows and bloom. Bloom extracts bright HDR samples, downsamples, then upsamples. Normalising by the total filter weight controls the energy added before tone mapping. A frame that blooms needs an offscreen texture.</p></div>
-        <table><caption class="sr-only">Device quality tiers</caption><thead><tr><th scope="col">Spatial rendering</th><th scope="col">Desktop</th><th scope="col">S21 Standard</th><th scope="col">S21 High</th></tr></thead><tbody><tr><th scope="row">Stage lights</th><td>Directional and up to 16 local</td><td>Key light only</td><td>Directional and up to 8 local</td></tr><tr><th scope="row">Directional shadows</th><td>2048² shadow map</td><td>Planar projection</td><td>1024² shadow map</td></tr><tr><th scope="row">Bloom</th><td>Per song</td><td>Off</td><td>Per song</td></tr><tr><th scope="row">Glass refraction</th><td>Full resolution, 24 + 4 steps</td><td>Translucency</td><td>Half resolution, 12 + 2 steps</td></tr><tr><th scope="row">Subsurface scattering</th><td>RGB diffusion and backlight</td><td>Backlight</td><td>Backlight</td></tr><tr><th scope="row">Emissive proxies</th><td>Up to 8</td><td>Off</td><td>Up to 4</td></tr></tbody></table></div>
+        <table><caption class="sr-only">Device quality tiers</caption><thead><tr><th scope="col">Spatial rendering</th><th scope="col">Desktop</th><th scope="col">S21 Standard</th><th scope="col">S21 High</th></tr></thead><tbody><tr><th scope="row">Stage lights</th><td>Directional and up to 16 local</td><td>Key light only</td><td>Directional and up to 8 local</td></tr><tr><th scope="row">Directional shadows</th><td>2048² shadow map</td><td>Planar projection</td><td>1024² shadow map</td></tr><tr><th scope="row">Bloom</th><td>Per song</td><td>Off</td><td>Per song</td></tr><tr><th scope="row">Glass refraction</th><td>Full resolution, 24 + 4 steps</td><td>Translucency</td><td>Half resolution, 12 + 2 steps</td></tr><tr><th scope="row">Subsurface scattering</th><td>RGB diffusion and backlight</td><td>Backlight</td><td>Backlight</td></tr><tr><th scope="row">Emissive proxies</th><td>Up to 8</td><td>Off</td><td>Up to 4</td></tr></tbody></table><figure class="source-sample" id="source-quality-tiers"><figcaption><strong>Selecting the local-light budget for desktop and phone quality tiers</strong><span class="source-location" dir="ltr">engine/src/renderer/StageLights.cpp · L153–164</span></figcaption><pre dir="ltr"><code>int phoneLocalLights(const Stage&amp; s, gfx::Quality quality) {
+    if (quality == gfx::Quality::High) return kAndroidLocalLights;
+    const bool directional = std::any_of(s.lights.begin(), s.lights.end(), [](const Light&amp; l) {
+        return l.valid &amp;&amp; l.type == LightType::Directional;
+    });
+    return directional ? 0 : 1;
+}
+
+int localLightLimit(const Stage&amp; s) {
+    const gfx::DrawnAs d = gfx::drawnAs();
+    return d.phone ? phoneLocalLights(s, d.quality) : kDesktopLocalLights;
+}</code></pre></figure></div>
     </section>
     <section id="engineering-challenges" class="chapter" aria-labelledby="challenges-title">
       <h2 id="challenges-title">Engineering challenges</h2>
