@@ -259,6 +259,14 @@ dialog{width:min(960px,calc(100% - 36px));max-height:90svh;overflow:auto;padding
 .chapter-method p, .measurement p, .chapter-story > p { line-height: 1.62; max-width: 76ch; font-size: clamp(16px,1.15vw,19px); overflow-wrap: break-word; }
 .chapter-method, .measurement { margin-top: clamp(24px,3.65vw,46px); border-top: 1px solid var(--line); padding-top: clamp(18px,2vw,29px); }
 .chapter-method .readings-wrap { margin-top: 17px; }
+.graphics-settings-pager[data-paged] { position: relative; margin-block: clamp(24px,3.5vw,40px); }
+.graphics-settings-controls { position: absolute; inset-block-start: 0; inset-inline-end: 0; }
+.graphics-settings-pager[data-paged] .graphics-settings-track { touch-action: pan-y pinch-zoom; overflow-x: clip; overflow-clip-margin: 5px; }
+.graphics-settings-pager[data-paged] .graphics-setting-group { margin: 0; }
+.graphics-settings-pager[data-paged] .graphics-setting-group h5 { display: flex; align-items: center; min-height: 44px; padding-inline-end: 170px; }
+@media (max-width:680px) {
+  .graphics-settings-pager[data-paged] .graphics-setting-group h5 { padding-inline-end: 146px; }
+}
 .graphics-setting-group { margin-block: clamp(24px,3.5vw,40px); }
 .graphics-setting-group h5 { margin: 0 0 8px; color: #294c47; font: 600 clamp(19px,1.6vw,24px)/1.3 var(--serif); }
 .graphics-setting-group dl { margin: 0; }

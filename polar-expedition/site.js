@@ -286,6 +286,50 @@
   window.addEventListener("hashchange",restorePair);
   list("[data-pair-link]").forEach(link => link.addEventListener("click", () => bookmarks.get(link.hash)?.()));
   restorePair();
+  const settingsPager = query("[data-graphics-pager]");
+  if (settingsPager) {
+    const track = query(".graphics-settings-track", settingsPager);
+    const groups = list(".graphics-setting-group", track);
+    const controls = query("[data-graphics-controls]", settingsPager);
+    const counter = query("[data-gallery-count]", controls);
+    const status = query("[data-graphics-status]", settingsPager);
+    let current = 0;
+    let animation;
+
+    function move(offset) {
+      animation?.cancel();
+      const previous = groups[current];
+      current = (current + offset + groups.length) % groups.length;
+      const group = groups[current];
+      const restoreFocus = previous.contains(document.activeElement);
+      previous.hidden = true;
+      group.hidden = false;
+      counter.textContent = (current + 1) + " / " + groups.length;
+      status.textContent = counter.textContent + " · " + query("h5", group).textContent;
+      if (restoreFocus) track.focus({preventScroll:true});
+      if (settingsPager.getBoundingClientRect().top < 0) settingsPager.scrollIntoView({block:"start", behavior:"instant"});
+      if (group.animate && !window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+        animation = group.animate(
+          [{transform:"translateX(" + (offset * 20) + "px)", opacity:0.7}, {transform:"translateX(0)", opacity:1}],
+          {duration:180, easing:"ease-out"}
+        );
+      }
+    }
+
+    groups.forEach((group, index) => { group.hidden = index !== current; });
+    track.tabIndex = 0;
+    settingsPager.dataset.paged = "true";
+    controls.hidden = false;
+    query("[data-graphics-previous]", controls).addEventListener("click", () => move(-1));
+    query("[data-graphics-next]", controls).addEventListener("click", () => move(1));
+    settingsPager.addEventListener("keydown", event => {
+      if (event.altKey || event.ctrlKey || event.metaKey || event.shiftKey) return;
+      if (event.key !== "ArrowLeft" && event.key !== "ArrowRight") return;
+      event.preventDefault();
+      move(event.key === "ArrowLeft" ? -1 : 1);
+    });
+    onSwipe(track, move);
+  }
   const gallery = query("#gallery");
   if (gallery) {
     const track = query("#screenshot-track", gallery);
