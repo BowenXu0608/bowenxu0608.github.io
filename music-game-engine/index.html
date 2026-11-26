@@ -120,38 +120,10 @@ parsedDuration ≥ lastWaypointOffset</code></pre><table class="system-table"><c
                 if (tryText(x, p)) return;
     }
     writeExactFloat(f, dur);
-}</code></pre></figure></section><section class="system-topic" id="topic-stable-chart" aria-labelledby="heading-stable-chart"><h4 id="heading-stable-chart">同刻音符的稳定顺序（stable ordering）</h4><div class="topic-body"><div><p>同一拍可以同时放点击和滑动。保存谱面时，编辑器按时间从早到晚排列音符，时间相同的音符沿用原来的先后顺序。这叫稳定排序（stable sort）。</p></div><div class="system-evidence"><p class="system-proof">比如，列表里已有第 8 秒的点击、第 10 秒开始的弧线，以及第 11 秒附在这条弧线上的点击（ArcTap）。作者后来在第 3 秒补一颗音符，编辑器先把它加到列表末尾。按时间排序时，新音符移到最前面，弧线从第 2 项变成第 3 项。弧线点击用列表位置指向所属弧线，编辑器也把它的引用从第 2 项改为第 3 项。</p><pre><code>[8 s, 10 s, 11 s, 3 s] → [3 s, 8 s, 10 s, 11 s]</code></pre><p class="system-source"><span>实现</span> <code>SongEditor.cpp</code> · <code>ChartNormalize.cpp</code></p></div></div><figure class="source-sample" id="source-stable-chart"><figcaption><strong>同刻音符的稳定排序与父弧线索引重映射</strong><span class="source-location" dir="ltr">engine/src/editor/agent/chart/ChartNormalize.cpp · L6–37</span></figcaption><pre dir="ltr"><code>void normalizeNotes(std::vector&lt;EditorNote&gt;&amp; notes) {
-    const size_t n = notes.size();
-    if (n &lt; 2) return;
-
-    std::vector&lt;size_t&gt; order(n);
-    std::iota(order.begin(), order.end(), size_t{0});
-    std::stable_sort(order.begin(), order.end(), [&amp;](size_t a, size_t b) {
-        return notes[a].time &lt; notes[b].time;
-    });
-
-    bool identity = true;
-    for (size_t i = 0; i &lt; n; ++i)
-        if (order[i] != i) { identity = false; break; }
-    if (identity) return;
-
-    // oldToNew[old index] = new index
-    std::vector&lt;int&gt; oldToNew(n);
-    for (size_t newIdx = 0; newIdx &lt; n; ++newIdx)
-        oldToNew[order[newIdx]] = (int)newIdx;
-
-    std::vector&lt;EditorNote&gt; sorted;
-    sorted.reserve(n);
-    for (size_t newIdx = 0; newIdx &lt; n; ++newIdx)
-        sorted.push_back(std::move(notes[order[newIdx]]));
-
-    for (auto&amp; note : sorted) {
-        if (note.type == EditorNoteType::ArcTap
-            &amp;&amp; note.arcTapParent &gt;= 0 &amp;&amp; note.arcTapParent &lt; (int)n)
-            note.arcTapParent = oldToNew[note.arcTapParent];
-    }
-    notes = std::move(sorted);
-}</code></pre></figure></section><section class="system-topic" id="topic-atomic-save" aria-labelledby="heading-atomic-save"><h4 id="heading-atomic-save">原子保存与失败重试（atomic replacement）</h4><div class="topic-body"><div><p>覆盖谱面时，写到一半出错会破坏上次可用版本。编辑器先在目标文件同目录写入 .tmp~ 临时文件，刷新成功后才替换目标。保存失败会反馈到对应难度，保留待保存状态，作者可以重试刚才的编辑。</p></div><div class="system-evidence"><p class="system-proof">测试用目录占住临时文件的路径，主动触发写入失败，随后按字节比较原谱面。解除阻塞后再次保存，可写回之前的修改。另有读入失败用例把恢复内容写到旁边的 .recovered.json，保留有问题的源文件供检查。</p><pre><code>chart.json.tmp~  →  flush  →  chart.json</code></pre><p class="system-source"><span>实现与回归</span> <code>fileutil::writeFileAtomic</code> · <code>FileUtil.h</code> · <code>chart_roundtrip_test.cpp</code></p></div></div><figure class="source-sample" id="source-atomic-save"><figcaption><strong>临时文件写入、刷新与原子替换</strong><span class="source-location" dir="ltr">engine/src/core/FileUtil.h · L18–53</span></figcaption><pre dir="ltr"><code>inline bool writeFileAtomic(const std::filesystem::path&amp; path,
+}</code></pre></figure></section><section class="system-topic" id="topic-stable-chart" aria-labelledby="heading-stable-chart"><h4 id="heading-stable-chart">同刻音符的稳定顺序（stable ordering）</h4><div class="topic-body"><div><p>同一拍可以同时放点击和滑动。保存谱面时，编辑器按时间从早到晚排列音符，时间相同的音符沿用原来的先后顺序。这叫稳定排序（stable sort）。</p></div><div class="system-evidence"><p class="system-proof">比如，第 10 秒已经有第 1 轨的点击和第 4 轨的滑动，点击在谱面列表里排在滑动前。作者又在同一时刻补上第 6 轨的点击，编辑器把它加在已有记录之后。保存时，三颗音符时间相同，稳定排序会按第 1 轨点击、第 4 轨滑动、第 6 轨点击的顺序写入。这里的先后指文件里的排列，三颗音符的目标击打时刻都是第 10 秒。</p><pre><code>t = 10.000 s
+[tap L1, flick L4] + tap L6
+→ [tap L1, flick L4, tap L6]</code></pre><p class="system-source"><span>实现</span> <code>SongEditor.cpp</code></p></div></div><figure class="source-sample" id="source-stable-chart"><figcaption><strong>保存谱面时按音符时间稳定排序</strong><span class="source-location" dir="ltr">engine/src/ui/SongEditor.cpp · L8427–8428</span></figcaption><pre dir="ltr"><code>std::stable_sort(chart.notes.begin(), chart.notes.end(),
+                 [](const NoteEvent&amp; a, const NoteEvent&amp; b) { return a.time &lt; b.time; });</code></pre></figure></section><section class="system-topic" id="topic-atomic-save" aria-labelledby="heading-atomic-save"><h4 id="heading-atomic-save">原子保存与失败重试（atomic replacement）</h4><div class="topic-body"><div><p>覆盖谱面时，写到一半出错会破坏上次可用版本。编辑器先在目标文件同目录写入 .tmp~ 临时文件，刷新成功后才替换目标。保存失败会反馈到对应难度，保留待保存状态，作者可以重试刚才的编辑。</p></div><div class="system-evidence"><p class="system-proof">测试用目录占住临时文件的路径，主动触发写入失败，随后按字节比较原谱面。解除阻塞后再次保存，可写回之前的修改。另有读入失败用例把恢复内容写到旁边的 .recovered.json，保留有问题的源文件供检查。</p><pre><code>chart.json.tmp~  →  flush  →  chart.json</code></pre><p class="system-source"><span>实现与回归</span> <code>fileutil::writeFileAtomic</code> · <code>FileUtil.h</code> · <code>chart_roundtrip_test.cpp</code></p></div></div><figure class="source-sample" id="source-atomic-save"><figcaption><strong>临时文件写入、刷新与原子替换</strong><span class="source-location" dir="ltr">engine/src/core/FileUtil.h · L18–53</span></figcaption><pre dir="ltr"><code>inline bool writeFileAtomic(const std::filesystem::path&amp; path,
                             std::string_view data,
                             std::string* err = nullptr) {
     namespace fs = std::filesystem;
