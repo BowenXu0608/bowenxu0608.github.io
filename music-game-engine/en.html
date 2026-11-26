@@ -29,10 +29,15 @@
         <figure class="device" id="engine-demo"><video controls playsinline loading="lazy" preload="none" poster="assets/preview/engine-tour-640.webp" width="1440" height="810" aria-label="Editor and Android player walkthrough (2 min 51 s, silent)">
           <source media="(max-width: 640px)" src="assets/preview/engine-tour-960.mp4?v=8c74aa373b23" type="video/mp4">
           <source src="assets/preview/engine-tour-1280.mp4?v=8c74aa373b23" type="video/mp4">
-          <track kind="subtitles" srclang="en" label="English" src="assets/engine-tour-en.vtt?v=8c74aa373b23">
+          <track kind="subtitles" srclang="en" label="English" src="assets/engine-tour-en.vtt?v=8c74aa373b23" default>
           <track kind="subtitles" srclang="zh" label="简体中文" src="assets/engine-tour-zh.vtt?v=8c74aa373b23">
         </video>
-          <figcaption><strong>Editor and Android player walkthrough (2 min 51 s, silent)</strong><span>Six Windows editor pages show how to edit the title, place notes, bind materials and preview a theme. At 1:39 the same title opens on a Galaxy S21. The player tour includes song selection, settings, all four modes in autoplay, pause and results. A Windows Test Game clip shows six Scan Line note shapes. Each segment has an English title. English and Chinese subtitles are available.</span></figcaption></figure>
+          <figcaption><strong>Editor and Android player walkthrough (2 min 51 s, silent)</strong><span>Six Windows editor pages show how to edit the title, place notes, bind materials and preview a theme. At 1:39 the same title opens on a Galaxy S21. The player tour includes song selection, settings, all four modes in autoplay, pause and results. A Windows Test Game clip shows six Scan Line note shapes. English subtitles are on by default.</span></figcaption></figure>
+        <script>
+          for (const track of document.querySelectorAll('#engine-demo track[kind="subtitles"]')) {
+            track.track.mode = track.default ? 'showing' : 'disabled';
+          }
+        </script>
       </div>
     </section>
     <section id="architecture" class="chapter" aria-labelledby="systems-title">
