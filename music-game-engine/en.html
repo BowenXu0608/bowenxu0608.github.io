@@ -675,26 +675,6 @@ vec3 mgEnvironmentIrradiance(vec3 normal) {
     for (int i = 0; i &lt; 9; ++i) irradiance += mgEnvironment.irradianceSH[i].rgb * basis[i];
     return max(irradiance, vec3(0.0));
 }</code></pre></figure></article></div>
-      <div class="scan-art" id="scan-art"><h3>Per-note styling in Scan Line</h3>
-        <p>The fixed-camera renderer draws each note as a flat contour. An author can change the texture on a single star while inheriting its song colour or difficulty material. Drawing and hit testing have independent inputs.</p><div class="scan-art-frames"><figure><a class="full-frame" href="assets/scan-six-s21.webp" aria-label="View full image · Galaxy S21 · six contours on the same scan line"><img src="assets/scan-six-s21.webp" loading="lazy" width="2400" height="1080" decoding="async" alt=""></a><figcaption>Galaxy S21 · six contours on the same scan line</figcaption></figure><figure><a class="full-frame" href="assets/scan-uv-study.webp" aria-label="View full image · Windows matched crops · 30°, 0°, texture removed, from left to right"><img src="assets/scan-uv-study.webp" loading="lazy" width="696" height="228" decoding="async" alt=""></a><figcaption>Windows matched crops · 30°, 0°, texture removed, from left to right</figcaption></figure></div><dl class="tech-points"><div><dt>Per-field overrides</dt> <dd>Squares, circles, triangles, diamonds, stars and hexagons share the same inspector. Shape, RGBA, material, texture and UV transform each resolve from note, then difficulty, song and default. Rotating the texture changes the pattern’s orientation.</dd></div><div><dt>Matched frames for texture changes</dt> <dd>Windows was held at 8.875 s. Against a 30° star texture, resetting rotation to 0° changed 271 pixels and removing the image changed 463. In both comparisons, zero pixels changed outside the selected note.</dd></div></dl><figure class="source-sample" id="source-scan-art"><figcaption><strong>Resolving shape, material and texture properties across song, difficulty and note</strong><span class="source-location" dir="ltr">engine/src/game/chart/ScanNoteStyle.cpp · L51–69</span></figcaption><pre dir="ltr"><code>Style resolve(const Levels&amp; levels, int difficulty, std::string_view key, const Parts* note) {
-    Style out;
-    const auto apply = [&amp;](const Parts&amp; parts) {
-        const auto it = parts.find(key);
-        if (it == parts.end()) return;
-        const Style&amp; s = it-&gt;second;
-        if (s.shape) out.shape = s.shape;
-        if (s.material) out.material = s.material;
-        if (s.texture) out.texture = s.texture;
-        if (s.color) out.color = s.color;
-        if (s.uvScale) out.uvScale = s.uvScale;
-        if (s.uvOffset) out.uvOffset = s.uvOffset;
-        if (s.uvRotation) out.uvRotation = s.uvRotation;
-    };
-    apply(levels[0]);
-    if (difficulty &gt;= 0 &amp;&amp; difficulty &lt; 3) apply(levels[difficulty + 1]);
-    if (note) apply(*note);
-    return out;
-}</code></pre></figure></div>
       <div class="profiles" id="quality-tiers"><div><h3>Device quality tiers</h3><p>Standard keeps the key light and tile-local path. High lets a song request extra lights, shadows and bloom. Bloom extracts bright HDR samples, downsamples, then upsamples. Normalising by the total filter weight controls the energy added before tone mapping. A frame that blooms needs an offscreen texture.</p></div>
         <table><caption class="sr-only">Device quality tiers</caption><thead><tr><th scope="col">Spatial rendering</th><th scope="col">Desktop</th><th scope="col">S21 Standard</th><th scope="col">S21 High</th></tr></thead><tbody><tr><th scope="row">Stage lights</th><td>Directional and up to 16 local</td><td>Key light only</td><td>Directional and up to 8 local</td></tr><tr><th scope="row">Directional shadows</th><td>2048² shadow map</td><td>Planar projection</td><td>1024² shadow map</td></tr><tr><th scope="row">Bloom</th><td>Per song</td><td>Off</td><td>Per song</td></tr><tr><th scope="row">Glass refraction</th><td>Full resolution, 24 + 4 steps</td><td>Translucency</td><td>Half resolution, 12 + 2 steps</td></tr><tr><th scope="row">Subsurface scattering</th><td>RGB diffusion and backlight</td><td>Backlight</td><td>Backlight</td></tr><tr><th scope="row">Emissive proxies</th><td>Up to 8</td><td>Off</td><td>Up to 4</td></tr></tbody></table><figure class="source-sample" id="source-quality-tiers"><figcaption><strong>Selecting the local-light budget for desktop and phone quality tiers</strong><span class="source-location" dir="ltr">engine/src/renderer/StageLights.cpp · L153–164</span></figcaption><pre dir="ltr"><code>int phoneLocalLights(const Stage&amp; s, gfx::Quality quality) {
     if (quality == gfx::Quality::High) return kAndroidLocalLights;
