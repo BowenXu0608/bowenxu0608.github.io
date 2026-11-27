@@ -8,7 +8,7 @@
   <link rel="icon" href="assets/mge.svg" type="image/svg+xml">
   <link rel="alternate" hreflang="zh-CN" href="index.html">
   <link rel="alternate" hreflang="en" href="en.html">
-  <link rel="stylesheet" href="showcase.css?v=5f6c8914c33b">
+  <link rel="stylesheet" href="showcase.css?v=6c50154befb9">
   <script defer src="showcase-language.js"></script>
   <script defer src="showcase-gallery.js"></script>
 </head>
@@ -488,7 +488,7 @@ for (const auto&amp; [path, e] : s_package) {
     </section>
     <section id="graphics-lab" class="chapter" aria-labelledby="graphics-title">
       <div class="section-heading"><h2 id="graphics-title">图形学实现</h2></div>
-      <figure id="materials" class="render-pipeline"><figcaption><h3>Drop 2D 渲染管线</h3></figcaption><ol class="pipeline-flow" role="list"><li class="pipeline-node"><strong>更新画面状态</strong><span>按歌曲时间计算音符位置</span></li><li class="pipeline-node"><strong>准备绘制数据</strong><span>轨道与音符网格 · 材质绑定</span></li><li class="pipeline-node"><strong>绘制场景</strong><span>不透明与镂空 → 透明与粒子</span></li><li class="pipeline-node"><strong>显示转换</strong><span>曝光与色调映射</span></li><li class="pipeline-node"><strong>叠加 HUD</strong><span>分数 · 连击 · 进度</span></li><li class="pipeline-node"><strong>提交并上屏</strong><span>Vulkan 交换链</span></li></ol></figure>
+      <figure id="materials" class="render-pipeline"><figcaption><h3>Drop 2D 渲染管线</h3></figcaption><ol class="pipeline-stages" role="list"><li class="pipeline-node pipeline-input"><strong>CPU 准备绘制数据</strong><span>按歌曲时间更新音符 · 顶点与索引 · 材质与帧参数</span></li><li class="pipeline-group"><h4>GPU 场景绘制（每次绘制调用）</h4><ol class="pipeline-flow" role="list"><li class="pipeline-node"><strong>输入装配</strong><span>读取顶点与索引，组成三角形</span></li><li class="pipeline-node"><strong>顶点着色</strong><span>变换到裁剪空间 · 输出 UV 与法线</span></li><li class="pipeline-node"><strong>图元处理</strong><span>裁剪 · 透视除法 · 视口变换</span></li><li class="pipeline-node"><strong>光栅化</strong><span>生成片元 · 插值 UV 与法线</span></li><li class="pipeline-node"><strong>片元着色</strong><span>纹理采样 · 光照与材质效果</span></li><li class="pipeline-node"><strong>深度测试与混合</strong><span>写入线性 HDR 场景颜色</span></li></ol></li><li class="pipeline-group"><h4>帧输出</h4><ol class="pipeline-flow" role="list"><li class="pipeline-node"><strong>显示转换</strong><span>曝光与色调映射</span></li><li class="pipeline-node"><strong>叠加 HUD</strong><span>分数 · 连击 · 进度</span></li><li class="pipeline-node"><strong>交换链呈现</strong><span>显示完成的画面</span></li></ol></li></ol></figure>
       <div class="profiles gpu-study" id="gpu-summary">
         <div><h3>S21 GPU 外部内存带宽（external memory bandwidth）</h3><p>2400 × 1080 的 RGBA16F 图像每帧约 20.7 MB。旧路径把它写回内存，随后为显示转换再读一次。新路径在同一个 Vulkan 子通道（subpass）内读取分块颜色，直接写入 sRGB 交换链。HUD 仍单独绘制。</p></div>
         <figure class="bandwidth"><figcaption>外部 GPU 读写带宽（GB/s）</figcaption><div class="bar-row"><span>写回后读入</span><i aria-hidden="true" style="--bar:100.00000%"></i><b>5.13</b></div><div class="bar-row"><span>分块内转换</span><i aria-hidden="true" style="--bar:6.41181%"></i><b>0.33</b></div><p>Galaxy S21（Mali-G78）· Drop 3D / Hard · 固定在歌曲第 1.3 秒 · 120 Hz · GPU 频率未锁定</p></figure>
