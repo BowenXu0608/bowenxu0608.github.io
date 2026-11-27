@@ -191,11 +191,6 @@ h3 { font-size: clamp(19px, 1.55vw, 23px); line-height: 1.34; letter-spacing: -.
   font-size: clamp(.875rem, 1.05vw, 1rem);
   line-height: 1.45;
 }
-.pipeline-node.pipeline-input {
-  justify-self: center;
-  width: min(100%, 40rem);
-  background: #e9f3ee;
-}
 .pipeline-group {
   position: relative;
   padding: clamp(10px, 1.3vw, 16px);
@@ -203,9 +198,8 @@ h3 { font-size: clamp(19px, 1.55vw, 23px); line-height: 1.34; letter-spacing: -.
   border-radius: 8px;
   background: #eef5f0;
 }
-.pipeline-group h4 { margin: 0; color: var(--teal); font-size: inherit; }
-.pipeline-group:last-child { justify-self: center; width: min(100%, 52rem); }
-.pipeline-flow {
+.pipeline-group h4, .pipeline-draw h5 { margin: 0; color: var(--teal); font-size: inherit; }
+.pipeline-flow, .pipeline-paths {
   display: grid;
   grid-auto-flow: column;
   grid-auto-columns: minmax(0, 1fr);
@@ -214,6 +208,14 @@ h3 { font-size: clamp(19px, 1.55vw, 23px); line-height: 1.34; letter-spacing: -.
   padding: 0;
   list-style: none;
 }
+.pipeline-paths { column-gap: 12px; }
+.pipeline-paths > li { border-top: 2px solid var(--pipeline-wire); }
+.pipeline-draw {
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid var(--line);
+}
+.pipeline-draw .pipeline-node { background: #f8faf8; }
 .pipeline-node {
   display: grid;
   align-content: center;
@@ -227,24 +229,24 @@ h3 { font-size: clamp(19px, 1.55vw, 23px); line-height: 1.34; letter-spacing: -.
   overflow-wrap: anywhere;
 }
 .pipeline-node span { color: var(--body); }
-.pipeline-node + .pipeline-node::before, .pipeline-node + .pipeline-node::after,
+.pipeline-flow > li + li::before, .pipeline-flow > li + li::after,
 .pipeline-stages > li + li::before, .pipeline-stages > li + li::after {
   content: "";
   position: absolute;
 }
-.pipeline-node + .pipeline-node::before {
+.pipeline-flow > li + li::before {
   top: 50%;
   left: calc(-1 * var(--pipeline-gap));
   width: var(--pipeline-gap);
   border-top: 1px solid var(--pipeline-wire);
 }
-.pipeline-node + .pipeline-node::after, .pipeline-stages > li + li::after {
+.pipeline-flow > li + li::after, .pipeline-stages > li + li::after {
   width: 6px;
   height: 6px;
   border: solid var(--pipeline-wire);
   border-width: 1px 1px 0 0;
 }
-.pipeline-node + .pipeline-node::after {
+.pipeline-flow > li + li::after {
   top: calc(50% - 3px);
   left: -8px;
   transform: rotate(45deg);
@@ -262,8 +264,8 @@ h3 { font-size: clamp(19px, 1.55vw, 23px); line-height: 1.34; letter-spacing: -.
 }
 @media (max-width: 960px) {
   .pipeline-stages { max-width: 34rem; margin-inline: auto; }
-  .pipeline-flow { grid-auto-flow: row; }
-  .pipeline-node + .pipeline-node::before {
+  .pipeline-flow, .pipeline-paths { grid-auto-flow: row; }
+  .pipeline-flow > li + li::before {
     top: calc(-1 * var(--pipeline-gap));
     left: 50%;
     width: 0;
@@ -271,7 +273,7 @@ h3 { font-size: clamp(19px, 1.55vw, 23px); line-height: 1.34; letter-spacing: -.
     border-top: 0;
     border-left: 1px solid var(--pipeline-wire);
   }
-  .pipeline-node + .pipeline-node::after {
+  .pipeline-flow > li + li::after {
     top: -8px;
     left: calc(50% - 3px);
     transform: rotate(135deg);
