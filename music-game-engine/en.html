@@ -588,23 +588,6 @@ for (const auto&amp; [path, e] : s_package) {
     }
     return max(mgMaterial.thickness.x, 0.0) / max(-cosine, 0.05);
 }</code></pre></figure></article>
-<article class="render-study" id="emissive-lights"><h3>Emissive proxy lights</h3><div class="render-study-layout"><div class="render-study-media"><figure><a class="full-frame" href="assets/mobile-proxy-study.webp" aria-label="View full image · Drop 2D · Track lighting near an emissive hold"><img src="assets/preview/mobile-proxy-study-448.webp" srcset="assets/preview/mobile-proxy-study-448.webp 448w, assets/preview/mobile-proxy-study-768.webp 768w, assets/preview/mobile-proxy-study-1152.webp 1152w" sizes="auto, (max-width: 850px) 100vw, 580px" loading="lazy" width="1152" height="648" decoding="async" alt=""></a><figcaption>Drop 2D · Track lighting near an emissive hold</figcaption></figure></div><div class="render-study-copy"><p>Songs with proxy lighting enabled can use glowing holds and judgment lines to illuminate their surroundings. The engine places candidate point lights along visible emissive parts. Their colour comes from the material’s emission, and their strength scales with the emitting area.</p><dl class="tech-points"><div><dt>Choose the lights for each frame</dt> <dd>Brighter candidates closer to the judgment area rank higher. Lights selected in the previous frame get a 25% ranking boost. That keeps similarly ranked lights from switching slots back and forth and making the nearby track flicker.</dd></div><div><dt>Light budget and affected surfaces</dt> <dd>Android High allows up to four proxy lights within the budget shared with stage point and spot lights. Proxies illuminate the track, judgment line, and decorations. Stage lights handle shadows.</dd></div></dl></div></div><figure class="source-sample" id="source-emissive-lights"><figcaption><strong>Ranking proxy lights by power and distance with hysteresis across frames</strong><span class="source-location" dir="ltr">engine/src/renderer/EmissionLights.cpp · L64–80</span></figcaption><pre dir="ltr"><code>for (size_t i = 0; i &lt; sources.size(); ++i) {
-    const Source&amp; s = sources[i];
-    const float power = sourcePower(s);
-    if (!(power &gt; 0.f) || s.affects == 0u) continue;
-    const glm::vec3 d = s.center - focus;
-    float score = power / std::max(glm::dot(d, d), std::max(focusRadius * focusRadius, 1e-6f));
-    if (std::binary_search(m_chosen.begin(), m_chosen.end(), s.id)) score *= kHysteresis;
-    scored.push_back({i, score});
-}
-// Strongest first; ties by id, so the choice never depends on the order
-// the mode met them in.
-std::sort(scored.begin(), scored.end(), [&amp;](const Scored&amp; a, const Scored&amp; b) {
-    if (a.score != b.score) return a.score &gt; b.score;
-    return sources[a.index].id &lt; sources[b.index].id;
-});
-if (budget &lt; 0) budget = 0;
-if (scored.size() &gt; static_cast&lt;size_t&gt;(budget)) scored.resize(static_cast&lt;size_t&gt;(budget));</code></pre></figure></article>
 <article class="render-study" id="environment-light"><h3>Image-based environment lighting (IBL)</h3><div class="render-study-layout render-study-layout--text"><div class="render-study-copy"><p>A stage can use a pre-baked environment map to light nearby materials and supply reflections of the surroundings. Authors can rotate the environment and adjust its intensity. Shaders combine its contribution with direct stage lighting.</p><dl class="tech-points"><div><dt>Diffuse light follows the surface normal</dt> <dd>Nine RGB spherical-harmonic coefficients store the environment’s diffuse lighting. The shader evaluates their weights from the surface direction to recover the colour and strength of incoming environment light. Surfaces facing different directions receive different lighting.</dd></div><div><dt>Roughness controls reflection sharpness</dt> <dd>The shader computes a reflection direction from the camera and surface normal, then samples a prefiltered cubemap. Smooth surfaces sample a sharp level, while rough surfaces sample blurrier levels of the same environment.</dd></div></dl></div></div><figure class="source-sample" id="source-environment-light"><figcaption><strong>Rotating the sample direction and evaluating nine irradiance coefficients</strong><span class="source-location" dir="ltr">shaders/surface/surface_lighting.glsl · L49–65</span></figcaption><pre dir="ltr"><code>vec3 mgEnvironmentDirection(vec3 worldDirection) {
     float c = mgEnvironment.parameters.y, s = mgEnvironment.parameters.z;
     return vec3(c * worldDirection.x - s * worldDirection.z, worldDirection.y,

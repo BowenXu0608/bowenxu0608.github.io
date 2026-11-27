@@ -588,23 +588,6 @@ for (const auto&amp; [path, e] : s_package) {
     }
     return max(mgMaterial.thickness.x, 0.0) / max(-cosine, 0.05);
 }</code></pre></figure></article>
-<article class="render-study" id="emissive-lights"><h3>发光音符的代理光源（emissive proxy lights）</h3><div class="render-study-layout"><div class="render-study-media"><figure><a class="full-frame" href="assets/mobile-proxy-study.webp" aria-label="查看原图 · Drop 2D · 发光长按附近的轨道照明"><img src="assets/preview/mobile-proxy-study-448.webp" srcset="assets/preview/mobile-proxy-study-448.webp 448w, assets/preview/mobile-proxy-study-768.webp 768w, assets/preview/mobile-proxy-study-1152.webp 1152w" sizes="auto, (max-width: 850px) 100vw, 580px" loading="lazy" width="1152" height="648" decoding="async" alt=""></a><figcaption>Drop 2D · 发光长按附近的轨道照明</figcaption></figure></div><div class="render-study-copy"><p>开启代理灯的歌曲可以让发光长按和判定线照亮周围。引擎沿可见的发光部分放置候选点光源，按材质的发光颜色和表面面积设定光的颜色和强度。</p><dl class="tech-points"><div><dt>每帧选择哪些灯参与照明</dt> <dd>越亮、越靠近判定区的候选灯优先。上一帧选中的灯在这一帧获得 25% 的排序加成，让两盏得分接近的灯保持稳定，减少邻近轨道上的明暗跳动。</dd></div><div><dt>灯光预算与照明范围</dt> <dd>Android 高画质最多使用 4 个代理灯，并与舞台点光源、聚光灯共享局部灯预算。代理灯的照明集中在轨道、判定线和装饰，阴影由舞台灯处理。</dd></div></dl></div></div><figure class="source-sample" id="source-emissive-lights"><figcaption><strong>按功率与距离排序，并给上一帧选中的光源保留权重</strong><span class="source-location" dir="ltr">engine/src/renderer/EmissionLights.cpp · L64–80</span></figcaption><pre dir="ltr"><code>for (size_t i = 0; i &lt; sources.size(); ++i) {
-    const Source&amp; s = sources[i];
-    const float power = sourcePower(s);
-    if (!(power &gt; 0.f) || s.affects == 0u) continue;
-    const glm::vec3 d = s.center - focus;
-    float score = power / std::max(glm::dot(d, d), std::max(focusRadius * focusRadius, 1e-6f));
-    if (std::binary_search(m_chosen.begin(), m_chosen.end(), s.id)) score *= kHysteresis;
-    scored.push_back({i, score});
-}
-// Strongest first; ties by id, so the choice never depends on the order
-// the mode met them in.
-std::sort(scored.begin(), scored.end(), [&amp;](const Scored&amp; a, const Scored&amp; b) {
-    if (a.score != b.score) return a.score &gt; b.score;
-    return sources[a.index].id &lt; sources[b.index].id;
-});
-if (budget &lt; 0) budget = 0;
-if (scored.size() &gt; static_cast&lt;size_t&gt;(budget)) scored.resize(static_cast&lt;size_t&gt;(budget));</code></pre></figure></article>
 <article class="render-study" id="environment-light"><h3>基于图像的环境光照（IBL）</h3><div class="render-study-layout render-study-layout--text"><div class="render-study-copy"><p>舞台可以使用离线烘焙的环境贴图，为材质提供周围环境的光照和反射。作者可以调整环境光强度和方向，引擎在着色时把环境贡献与舞台直接光一起算进材质颜色。</p><dl class="tech-points"><div><dt>漫反射用表面法线查环境光</dt> <dd>环境光的漫反射用 9 组 RGB 球谐系数保存。着色器根据表面的朝向算出各项权重，再重建该方向接收到的环境光颜色和强度。朝向不同的表面会获得不同的底色亮度。</dd></div><div><dt>镜面反射用粗糙度选贴图层级</dt> <dd>着色器根据相机方向和表面法线计算反射方向，再沿这个方向采样预过滤的立方体贴图。光滑表面用清晰的层级，粗糙表面用模糊的层级，让同一环境在两种材质上产生不同的反光。</dd></div></dl></div></div><figure class="source-sample" id="source-environment-light"><figcaption><strong>旋转环境采样方向并重建九项球谐辐照度</strong><span class="source-location" dir="ltr">shaders/surface/surface_lighting.glsl · L49–65</span></figcaption><pre dir="ltr"><code>vec3 mgEnvironmentDirection(vec3 worldDirection) {
     float c = mgEnvironment.parameters.y, s = mgEnvironment.parameters.z;
     return vec3(c * worldDirection.x - s * worldDirection.z, worldDirection.y,
