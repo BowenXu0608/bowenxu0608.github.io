@@ -1,12 +1,11 @@
-(() => {
-  const gallery = document.getElementById('interface-gallery');
-  if (!gallery) return;
-  const track = gallery.querySelector('#gallery-track');
-  const slides = [...track.querySelectorAll('.gallery-slide')];
+document.querySelectorAll('#interface-gallery, #quality-gallery').forEach(gallery => {
   const controls = gallery.querySelector('.gallery-controls');
+  const track = document.getElementById(controls.querySelector('button').getAttribute('aria-controls'));
+  const slides = [...track.querySelectorAll('.gallery-slide')];
   const counter = gallery.querySelector('.gallery-count');
   const status = gallery.querySelector('.gallery-status');
   const alternate = document.querySelector('.languages a:not([aria-current])');
+  const selection = gallery.dataset.gallerySelection || 'screen';
   let current = 0;
 
   function show(index, announce = true) {
@@ -18,8 +17,8 @@
     counter.textContent = (current + 1) + ' / ' + slides.length;
     if (announce) status.textContent = counter.textContent + ' · ' + slide.querySelector('strong').textContent;
     const nextLanguage = new URL(alternate.href);
-    if (current) nextLanguage.searchParams.set('screen', slide.dataset.screen);
-    else nextLanguage.searchParams.delete('screen');
+    if (current) nextLanguage.searchParams.set(selection, slide.dataset.screen);
+    else nextLanguage.searchParams.delete(selection);
     alternate.href = nextLanguage.href;
   }
 
@@ -73,7 +72,7 @@
     }
   }, {passive: false});
 
-  const requested = new URL(location.href).searchParams.get('screen');
+  const requested = new URL(location.href).searchParams.get(selection);
   show(Math.max(0, slides.findIndex(slide => slide.dataset.screen === requested)), false);
   controls.hidden = false;
-})();
+});

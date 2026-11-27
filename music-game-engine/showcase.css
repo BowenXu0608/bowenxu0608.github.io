@@ -317,6 +317,15 @@ h3 { font-size: clamp(19px, 1.55vw, 23px); line-height: 1.34; letter-spacing: -.
 .scan-art-frames img { display: block; width: 100%; height: auto; border-radius: 4px; }
 .scan-art .tech-points { grid-template-columns: repeat(2,minmax(0,1fr)); }
 .profiles { margin-top: 32px; padding-top: 24px; border-top: 1px solid var(--line); }
+#quality-tiers { align-items: start; row-gap: clamp(18px, 3vw, 32px); }
+.profiles #quality-gallery {
+  grid-column: 1 / -1;
+  justify-self: center;
+  width: min(100%, 960px);
+}
+#quality-gallery h4 { margin: 0; }
+#quality-gallery .gallery-image { aspect-ratio: 20 / 9; }
+#quality-gallery figcaption { margin-top: 8px; }
 .profiles .bandwidth { max-width: none; margin: 0; }
 .gpu-study { row-gap: 13px; }
 .gpu-check p { max-width: 83ch; margin: 0; }
