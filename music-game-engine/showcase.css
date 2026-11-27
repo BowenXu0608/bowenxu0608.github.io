@@ -235,7 +235,7 @@ tbody th { color: var(--body); }
 .ai .section-heading p { margin-top: 12px; max-width: 66ch; color: var(--body); }
 .ai-entries {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: minmax(0, 1fr);
   gap: clamp(16px, 2.5vw, 28px);
 }
 .ai-entries article {
@@ -247,10 +247,24 @@ tbody th { color: var(--body); }
 }
 .ai-entries h3 { font-size: clamp(21px, 2.1vw, 28px); }
 .ai-entries article > p { margin-top: 8px; max-width: 68ch; color: var(--body); }
-.ai-entries .tech-points { margin-top: 20px; padding-top: 16px; border-top: 1px solid var(--line); }
-.ai-entries .ai-feature { grid-column: 1 / -1; background: #edf3ee; }
-.ai-feature .tech-points { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px 28px; }
-.ai-feature .tech-points > div + div { margin-top: 0; }
+.ai-entries .tech-points {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 18px clamp(24px, 3.5vw, 48px);
+  margin-top: 20px;
+  padding-top: 16px;
+  border-top: 1px solid var(--line);
+}
+.ai-entries .tech-points > div + div { margin-top: 0; }
+.ai-entries .ai-feature { background: #edf3ee; }
+#ai-copilot .tech-points > div:last-child {
+  grid-column: 1 / -1;
+  padding: 12px 16px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #edf3ee;
+}
+#ai-copilot .tech-points > div:last-child dd { max-width: 88ch; }
 .ai-figures {
   display: grid;
   grid-template-columns: minmax(0, 2.12fr) minmax(0, 1fr);
@@ -282,7 +296,7 @@ tbody th { color: var(--body); }
   body { font-size: 16px; line-height: 1.65; }
   .shell { width: calc(100% - 36px); }
   .topbar-inner { height: 48px; }
-  .material-study, .ai-entries, .ai-figures, .ai-feature .tech-points { grid-template-columns: minmax(0,1fr); }
+  .material-study, .ai-figures, .ai-entries .tech-points { grid-template-columns: minmax(0,1fr); }
   .hero-media { gap: 24px; }
   .lead { margin-top: 12px; }
   .section-heading { margin-bottom: 22px; }
