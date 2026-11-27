@@ -191,18 +191,15 @@ const double target = songclock::chartTime(dspPos - m_audioOutputLatency, m_game
 double t = m_clock.songTime() + dt;
 const double err = target - t;
 t = std::abs(err) &gt; 0.05 ? target : t + err * 0.1;
-m_clock.setSongTime(std::max(t, m_clock.songTime()));</code></pre></figure></section><section class="system-topic" id="topic-update-order" aria-labelledby="heading-update-order"><h4 id="heading-update-order">主循环与场景更新（main loop and scene updates）</h4><div class="topic-body"><div><p>窗口事件进入主循环后，引擎先更新歌曲时钟，再处理手势超时、长按采样点和逾期音符。玩法模式随后推进状态，最后提交绘制。</p><p>命中检测（检查玩家输入的时机和位置是否符合音符要求）和音符位置的计算都以同一歌曲时钟为基准。这样音符到达判定位置时，就到了谱面要求的击打时刻。</p><p>暂停时，音乐和歌曲时钟停在当前位置，引擎清除玩法记录的触点。恢复时，音乐和时钟从暂停位置继续。</p><p>重试时，引擎停止当前音频，重置分数和判定，并清除上一局的长按和触点状态。歌曲时钟回到开场预备时刻，音乐按歌曲偏移从头播放。</p></div><div class="system-evidence"><p class="system-proof">实体组件池（component pool）连续存储同类组件，场景图（scene graph）按父子层级计算变换。父节点变动会让子树重新求值。举例说，父节点沿 X 平移 2 个单位，子节点在本地再平移 3 个单位，单位旋转与缩放下，绘制用的世界位置为 5。</p><pre><code>worldChild = worldParent × localChild</code></pre><p class="system-source"><span>实现与回归</span> <code>Engine.cpp</code> · <code>ECS.h</code> · <code>SceneNode.h</code></p></div></div><figure class="source-sample" id="source-update-order"><figcaption><strong>父节点变换与脏状态向子节点传播</strong><span class="source-location" dir="ltr">engine/src/core/SceneNode.h · L102–113</span></figcaption><pre dir="ltr"><code>void updateNode(NodeID id, const glm::mat4&amp; parentWorld, bool parentDirty) {
-    auto it = m_nodes.find(id);
-    if (it == m_nodes.end()) return;
-    SceneNode&amp; node = it-&gt;second;
-    bool needsUpdate = node.m_dirty || parentDirty;
-    if (needsUpdate) {
-        node.m_worldMatrix = parentWorld * node.localTransform.toMatrix();
-        node.m_dirty = false;
-    }
-    for (NodeID child : node.m_children)
-        updateNode(child, node.m_worldMatrix, needsUpdate);
-}</code></pre></figure></section></article>
+m_clock.setSongTime(std::max(t, m_clock.songTime()));</code></pre></figure></section><section class="system-topic" id="topic-update-order" aria-labelledby="heading-update-order"><h4 id="heading-update-order">主循环与场景更新（main loop and scene updates）</h4><div class="topic-body"><div><p>窗口事件进入主循环后，引擎先更新歌曲时钟，再处理手势超时、长按采样点和逾期音符。玩法模式随后推进状态，最后提交绘制。</p><p>命中检测（检查玩家输入的时机和位置是否符合音符要求）和音符位置的计算都以同一歌曲时钟为基准。这样音符到达判定位置时，就到了谱面要求的击打时刻。</p><p>暂停时，音乐和歌曲时钟停在当前位置，引擎清除玩法记录的触点。恢复时，音乐和时钟从暂停位置继续。</p><p>重试时，引擎停止当前音频，重置分数和判定，并清除上一局的长按和触点状态。歌曲时钟回到开场预备时刻，音乐按歌曲偏移从头播放。</p></div><div class="system-evidence"><p class="system-proof">圆盘模式每帧根据歌曲时间从旋转关键帧算出圆盘转角，再让各环共用这个转角。比如一条轨道原本在 30° 的方向，圆盘转动 20° 后，这条轨道上的音符就画在 50° 的方向。玩家点到这个位置时，引擎从触点相对于圆盘中心的角度减掉同一个 20°，换回 30°，就能找到对应的轨道。</p><pre><code>drawAngle = baseAngle + diskRotation
+localTouchAngle = touchAngle − diskRotation</code></pre><p class="system-source"><span>实现</span> <code>CircleRenderer.cpp</code> · <code>CircleSurface.cpp</code></p></div></div><figure class="source-sample" id="source-update-order"><figcaption><strong>按歌曲时间更新圆盘各环的转角</strong><span class="source-location" dir="ltr">engine/src/game/modes/CircleRenderer.cpp · L381–388</span></figcaption><pre dir="ltr"><code>m_songTime = songTime;
+
+// Whole-disk rotation drives every ring uniformly so downstream code
+// (onRender, picking) keeps its `ring.currentAngle` reads and doesn't
+// need any per-ring branching.
+m_diskRotation = getCurrentRotation(m_songTime, m_rotationEvents);
+for (auto&amp; ring : m_rings)
+    ring.currentAngle = m_diskRotation;</code></pre></figure></section></article>
 <article class="system" id="system-input" aria-labelledby="title-input"><h3 id="title-input">输入与手势 <span class="term" lang="en">（Input &amp; Gestures）</span></h3><section class="system-topic" id="topic-event-time" aria-labelledby="heading-event-time"><h4 id="heading-event-time">触摸时间戳与谱面同步（touch timestamps）</h4><div class="topic-body"><div><p>Android 一次移动回调可能携带多个历史触点。引擎按各自的单调时钟时间戳展开这些采样，记录最近一次系统时钟与谱面时钟的对应关系。事件与同步点相减后限制在 −250 到 +100 ms，再加回同步点的谱面时间，同一渲染帧内的触点因此仍有先后。</p></div><div class="system-evidence"><p class="system-proof">例如同步点对应谱面 10.000 s，早 12 ms 和早 4 ms 的两个采样分别映射到 9.988 s 与 9.996 s。这是换算示例。S21 的独立多指回放让六指同刻落下，两种音符外观各跑两次，每轮记录六个不同音符 ID 和六个 Perfect。</p><pre><code>Δ = clamp(touchMono − syncMono, −0.250, +0.100)
 eventChartTime = syncedChartTime + Δ</code></pre><p class="system-source"><span>实现与回归</span> <code>AndroidEngine.cpp</code> · <code>GestureRecognizer.cpp</code> · <code>TouchTypes.h</code></p></div></div><figure class="source-sample" id="source-event-time"><figcaption><strong>将触摸事件时刻换算为各玩法的判定时间</strong><span class="source-location" dir="ltr">engine/src/android/AndroidEngine.cpp · L99–123</span></figcaption><pre dir="ltr"><code>m_input.setGestureCallback([this](const GestureEvent&amp; evt) {
     if (m_screen != GameScreen::Gameplay || !m_activeMode) return;
