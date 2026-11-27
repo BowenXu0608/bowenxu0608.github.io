@@ -8,7 +8,7 @@
   <link rel="icon" href="assets/mge.svg" type="image/svg+xml">
   <link rel="alternate" hreflang="zh-CN" href="index.html">
   <link rel="alternate" hreflang="en" href="en.html">
-  <link rel="stylesheet" href="showcase.css?v=d8a1d791dd7d">
+  <link rel="stylesheet" href="showcase.css?v=7d39229130bd">
   <script defer src="showcase-language.js"></script>
   <script defer src="showcase-gallery.js"></script>
 </head>
@@ -696,8 +696,7 @@ int localLightLimit(const Stage&amp; s) {
     </section>
     <section id="ai" class="chapter ai" aria-labelledby="ai-title">
       <div class="section-heading"><h2 id="ai-title">引擎内的 AI 功能</h2><p>编辑器用音频模型从音乐中提取节拍和起音，帮助作者放置音符。作者可以用文字指令修改谱面，再检查、试玩或撤销改动。编辑器也能为材质生成着色器。</p></div>
-      <div class="ai-entries"><article id="ai-beat-tracking"><h3>音乐分析与自动放置（beat tracking）</h3><p>作者从波形上挑选建议，再生成可以逐个修改的音符。模型输出的时间点与后续的编谱规则分别处理。</p><dl class="tech-points"><div><dt>模型输出</dt> <dd>madmom 的循环神经网络（RNN）提取节拍、每小节首拍和起音。分析程序把 50 ms 内的首拍与公共拍点对齐，再按强度与间距生成三种难度的标记。</dd></div><div><dt>音符放置规则</dt> <dd>在下落轨道里，强起音偏向滑击，较长而柔和的声音可形成长按。频谱质心参与选择起始轨道。作者在波形上试听和重排，复杂的跨轨路径仍可手工绘制。</dd></div></dl></article>
-<div class="author-figures"><figure><a class="full-frame" href="assets/markers.webp" aria-label="查看原图 · Easy 难度有 32 个标记和 32 个音符。竖向虚线是建议拍点，蓝色菱形是可以移动的音符。"><img src="assets/markers.webp" loading="lazy" width="810" height="344" decoding="async" alt=""></a><figcaption>Easy 难度有 32 个标记和 32 个音符。竖向虚线是建议拍点，蓝色菱形是可以移动的音符。</figcaption></figure><figure><a class="full-frame" href="assets/manual.webp" aria-label="查看原图 · 所选点击音符的检视器显示时间 4.500 秒、轨道 L3，作者可逐项修改。"><img src="assets/manual.webp" loading="lazy" width="498" height="450" decoding="async" alt=""></a><figcaption>所选点击音符的检视器显示时间 4.500 秒、轨道 L3，作者可逐项修改。</figcaption></figure></div>
+      <div class="ai-entries"><article id="ai-beat-tracking" class="ai-feature"><h3>音乐分析与自动放置（beat tracking）</h3><p>作者从波形上挑选建议，再生成可以逐个修改的音符。模型输出的时间点与后续的编谱规则分别处理。</p><div class="ai-figures"><figure><a class="full-frame" href="assets/markers.webp" aria-label="查看原图 · Easy 难度有 32 个标记和 32 个音符。竖向虚线是建议拍点，蓝色菱形是可以移动的音符。"><img src="assets/markers.webp" loading="lazy" width="810" height="344" decoding="async" alt=""></a><figcaption>Easy 难度有 32 个标记和 32 个音符。竖向虚线是建议拍点，蓝色菱形是可以移动的音符。</figcaption></figure><figure><a class="full-frame" href="assets/manual.webp" aria-label="查看原图 · 所选点击音符的检视器显示时间 4.500 秒、轨道 L3，作者可逐项修改。"><img src="assets/manual.webp" loading="lazy" width="498" height="450" decoding="async" alt=""></a><figcaption>所选点击音符的检视器显示时间 4.500 秒、轨道 L3，作者可逐项修改。</figcaption></figure></div><dl class="tech-points"><div><dt>模型输出</dt> <dd>madmom 的循环神经网络（RNN）提取节拍、每小节首拍和起音。分析程序把 50 ms 内的首拍与公共拍点对齐，再按强度与间距生成三种难度的标记。</dd></div><div><dt>音符放置规则</dt> <dd>在下落轨道里，强起音偏向滑击，较长而柔和的声音可形成长按。频谱质心参与选择起始轨道。作者在波形上试听和重排，复杂的跨轨路径仍可手工绘制。</dd></div></dl></article>
 <article id="ai-copilot"><h3>谱面编辑助手（Editor Copilot）</h3><p>助手读取当前谱面，调用具名编辑工具，再运行谱面检查。一轮修改留下可撤销记录。</p><dl class="tech-points"><div><dt>模型编辑任务测试</dt> <dd>一次中文测试要求镜像第 30–35 秒的音符，再把第 10 秒附近的同轨连打改成左右交替。三轮真模型测试均通过谱面约束检查，撤销后恢复了各自的起始状态。</dd></div><div><dt>共享撤销历史（undo history）</dt> <dd>作者的手调、Copilot 修改与通过模型上下文协议（MCP）连接的外部工具共用历史。另用四种模式各 500 组随机编辑序列验证撤销和重做。作者后来手调的音符先撤销。</dd></div></dl></article>
 <article id="ai-shader-tools"><h3>着色器生成与风格迁移（shader generation &amp; style transfer）</h3><p>生成视觉效果和改编谱面使用两套实现。一个把编译器的结果反馈给模型，另一个从参考谱统计特征。</p><dl class="tech-points"><div><dt>编译反馈（compiler feedback）</dt> <dd>模型起草效果材质的片元着色器（fragment shader）。编译失败时，生成器把源码与诊断送回重试。成功后成对安装 GLSL 源文件和 SPIR-V 产物。</dd></div><div><dt>谱面风格迁移</dt> <dd>算法统计参考谱的音符类型、各轨出现频率与换轨分布，保留目标音符的时间，调整可处理音符的类型或轨道。语言模型可以另写一份改动摘要。</dd></div></dl></article></div>
     </section>
