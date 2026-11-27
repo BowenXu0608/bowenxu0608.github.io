@@ -279,12 +279,32 @@ h3 { font-size: clamp(19px, 1.55vw, 23px); line-height: 1.34; letter-spacing: -.
     transform: rotate(135deg);
   }
 }
-.render-studies { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 36px clamp(26px,4vw,60px); margin-top: 38px; }
-.render-study { border-top: 1px solid var(--line); padding-top: 21px; }
-.render-study img { aspect-ratio: 16/9; object-fit: contain; background: #111619; }
+.render-studies { display: grid; gap: clamp(20px, 3vw, 32px); margin-top: 38px; }
+.render-study {
+  min-width: 0;
+  padding: clamp(16px, 2.8vw, 32px);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: #fff;
+}
+.render-study h3 { font-size: clamp(21px, 2.1vw, 28px); }
+.render-study-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: clamp(18px, 3vw, 40px);
+  align-items: start;
+  margin-top: 16px;
+}
+.render-study-media > figure img { aspect-ratio: 16 / 9; object-fit: contain; background: #111619; }
+.render-study > .source-sample { padding-top: 16px; border-top: 1px solid var(--line); }
+.render-study > .source-sample pre {
+  padding-block: 10px;
+  overflow-x: auto;
+  white-space: pre;
+  background: #f4f7f3;
+}
 .render-studies figcaption, .scan-art-frames figcaption { margin-top: 7px; }
-.render-studies h3 { margin-top: 16px; }
-.render-studies p, .scan-art > p { margin-top: 7px; }
+.scan-art > p { margin-top: 7px; }
 .references { font-size: 14px; }
 .references a, .gpu-check a { text-underline-offset: 3px; }
 .render-study .references { margin-top: 10px; }
@@ -384,7 +404,6 @@ tbody th { color: var(--body); }
   .section-heading, .profiles { grid-template-columns: 1fr; gap: 14px; }
   .section-heading p { max-width: 72ch; }
 
-  .render-studies { column-gap: 22px; }
   .topic-body { grid-template-columns: minmax(0,1fr); }
 }
 @media (max-width: 640px) {
@@ -404,9 +423,8 @@ tbody th { color: var(--body); }
   .section-heading { margin-bottom: 22px; }
   .modes { grid-auto-flow: row; grid-template-columns: minmax(0,1fr); gap: 16px; margin-top: 14px; }
   .term { margin-left: 2px; }
-  .scan-art .tech-points, .render-studies,
+  .scan-art .tech-points, .render-study-layout,
   .scan-art-frames { grid-template-columns: minmax(0,1fr); }
-  .render-studies { gap: 26px; }
   .scan-art-frames, .scan-art .tech-points { gap: 14px; }
   .system-lead { margin-block: 8px 16px; }
   .system-evidence th, .system-evidence td { padding: 6px 4px; }
