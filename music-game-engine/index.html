@@ -489,27 +489,6 @@ for (const auto&amp; [path, e] : s_package) {
     <section id="graphics-lab" class="chapter" aria-labelledby="graphics-title">
       <div class="section-heading"><h2 id="graphics-title">图形学实现</h2></div>
       <figure id="materials" class="render-pipeline"><figcaption><h3>Drop 2D 渲染管线</h3></figcaption><ol class="pipeline-stages" role="list"><li class="pipeline-node pipeline-input"><strong>CPU 准备绘制数据</strong><span>按歌曲时间更新音符 · 顶点与索引 · 材质与帧参数</span></li><li class="pipeline-group"><h4>GPU 场景绘制（每次绘制调用）</h4><ol class="pipeline-flow" role="list"><li class="pipeline-node"><strong>输入装配</strong><span>读取顶点与索引，组成三角形</span></li><li class="pipeline-node"><strong>顶点着色</strong><span>变换到裁剪空间 · 输出 UV 与法线</span></li><li class="pipeline-node"><strong>图元处理</strong><span>裁剪 · 透视除法 · 视口变换</span></li><li class="pipeline-node"><strong>光栅化</strong><span>生成片元 · 插值 UV 与法线</span></li><li class="pipeline-node"><strong>片元着色</strong><span>纹理采样 · 光照与材质效果</span></li><li class="pipeline-node"><strong>深度测试与混合</strong><span>写入线性 HDR 场景颜色</span></li></ol></li><li class="pipeline-group"><h4>帧输出</h4><ol class="pipeline-flow" role="list"><li class="pipeline-node"><strong>显示转换</strong><span>曝光与色调映射</span></li><li class="pipeline-node"><strong>叠加 HUD</strong><span>分数 · 连击 · 进度</span></li><li class="pipeline-node"><strong>交换链呈现</strong><span>显示完成的画面</span></li></ol></li></ol></figure>
-      <div class="profiles gpu-study" id="gpu-summary">
-        <div><h3>S21 GPU 外部内存带宽（external memory bandwidth）</h3><p>2400 × 1080 的 RGBA16F 图像每帧约 20.7 MB。旧路径把它写回内存，随后为显示转换再读一次。新路径在同一个 Vulkan 子通道（subpass）内读取分块颜色，直接写入 sRGB 交换链。HUD 仍单独绘制。</p></div>
-        <figure class="bandwidth"><figcaption>外部 GPU 读写带宽（GB/s）</figcaption><div class="bar-row"><span>写回后读入</span><i aria-hidden="true" style="--bar:100.00000%"></i><b>5.13</b></div><div class="bar-row"><span>分块内转换</span><i aria-hidden="true" style="--bar:6.41181%"></i><b>0.33</b></div><p>Galaxy S21（Mali-G78）· Drop 3D / Hard · 固定在歌曲第 1.3 秒 · 120 Hz · GPU 频率未锁定</p></figure>
-        <div class="gpu-check"><p>四轮按原路径、分块、分块、原路径运行，均为 119.4–119.5 FPS。硬件计数器记录的外部读写带宽减少约 93.6%。在 90° 横屏的原始抓图中，2,592,000 个像素里只有 3 个的颜色差超过两个 8 位色阶。</p><a href="#gpu">查看四轮测量与同帧画面</a></div>
-        <figure class="source-sample" id="source-gpu-summary"><figcaption><strong>在子通道读取 HDR 颜色并完成显示转换</strong><span class="source-location" dir="ltr">shaders/tile_display.frag · L1–16</span></figcaption><pre dir="ltr"><code>#version 450
-layout(input_attachment_index=0,set=0,binding=0) uniform subpassInput scene;
-layout(push_constant) uniform Display { float exposureEV; uint toneMap; } pc;
-layout(location=1) out vec4 outColor;
-void main() {
-    vec4 sampleColor = subpassLoad(scene);
-    vec3 color = sampleColor.rgb;
-    if (pc.toneMap != 0u) {
-        // Same fitted curve and RGBA16F input as the sampled display path.
-        vec3 x = max(color, vec3(0.0)) * exp2(pc.exposureEV);
-        color = clamp((x * (2.51*x + 0.03)) / (x * (2.43*x + 0.59) + 0.14), 0.0, 1.0);
-    } else {
-        color = clamp(color, 0.0, 1.0);
-    }
-    outColor = vec4(color, pc.toneMap != 0u ? 1.0 : clamp(sampleColor.a, 0.0, 1.0));
-}</code></pre></figure>
-      </div>
       <div class="render-studies"><article class="render-study" id="brdf"><figure><a class="full-frame" href="assets/lab-disney.webp" aria-label="查看原图 · Drop 3D · Disney 材质的游戏画面"><img src="assets/preview/lab-disney-448.webp" srcset="assets/preview/lab-disney-448.webp 448w, assets/preview/lab-disney-768.webp 768w, assets/preview/lab-disney-1152.webp 1152w" sizes="auto, (max-width: 850px) 100vw, 580px" loading="lazy" width="1280" height="720" decoding="async" alt=""></a><figcaption>Drop 3D · Disney 材质的游戏画面</figcaption></figure><h3>Disney 2012 反射模型（BRDF）</h3><p>把 Brent Burley 的 Disney 2012 模型移植到音符材质。作者可调整粗糙度、拉丝方向、织物光泽和清漆高光。</p><dl class="tech-points"><div><dt>着色实现</dt> <dd>漫反射、各向异性 GTR2 高光与 GTR1 清漆分别求值。环境反射用弯曲法线近似各向异性，以控制实时采样成本。</dd></div><div><dt>CPU 与 GPU 数值对照</dt> <dd>1,296 组输入的 GPU 结果与双精度 CPU 参考值最大绝对误差不超过 4 × 10⁻⁶。点光源下的织物、拉丝、清漆和蜡材质测试平面逐像素误差不超过 1/255。</dd></div></dl><p class="references"><a href="https://www.disneyanimation.com/publications/physically-based-shading-at-disney/">原始方法 · Brent Burley（2012）</a></p><figure class="source-sample" id="source-brdf"><figcaption><strong>迪士尼反射模型中的各向异性镜面项（anisotropic specular）</strong><span class="source-location" dir="ltr">shaders/surface/disney2012_rt_v1.glsl · L115–131</span></figcaption><pre dir="ltr"><code>vec3 mgDisneyBrdf(MgDisneyParams p, vec3 l, vec3 v, vec3 n, vec3 x, vec3 y) {
     p = mgDisneyClamp(p);
     float nl = dot(n, l), nv = dot(n, v);
