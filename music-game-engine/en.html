@@ -8,7 +8,7 @@
   <link rel="icon" href="assets/mge.svg" type="image/svg+xml">
   <link rel="alternate" hreflang="zh-CN" href="index.html">
   <link rel="alternate" hreflang="en" href="en.html">
-  <link rel="stylesheet" href="showcase.css?v=8f12b2657a6b">
+  <link rel="stylesheet" href="showcase.css?v=5fad034dd112">
   <script defer src="showcase-language.js"></script>
   <script defer src="showcase-gallery.js"></script>
 </head>
@@ -488,35 +488,7 @@ for (const auto&amp; [path, e] : s_package) {
     </section>
     <section id="graphics-lab" class="chapter" aria-labelledby="graphics-title">
       <div class="section-heading"><h2 id="graphics-title">Graphics engineering</h2></div>
-      <div id="materials" class="material-study">
-        <div><h3>Hold-note material pipeline</h3><p>In Drop 2D Studio / Hard, the author overrides the hold body’s material. The sphere preview shows its response to lighting. The note and scene previews show stripe continuity through a lane change.</p></div>
-        <div class="previews"><figure><img src="assets/preview/sphere-detail-348.webp" loading="lazy" width="348" height="348" decoding="async" alt=""><figcaption>Material sphere</figcaption></figure>
-<figure><img src="assets/object-detail.webp" loading="lazy" width="348" height="348" decoding="async" alt=""><figcaption>Actual hold</figcaption></figure>
-<figure><img src="assets/preview/stage-detail-448.webp" srcset="assets/preview/stage-detail-448.webp 448w, assets/preview/stage-detail-504.webp 504w" sizes="auto, (max-width: 850px) 100vw, 580px" loading="lazy" width="504" height="283" decoding="async" alt=""><figcaption>Game scene</figcaption></figure></div>
-        <div class="material-notes"><dl class="tech-points"><div><dt>Path UV sampling</dt> <dd>Stripe phase is distance along the path times density, minus song time times speed. Using cumulative distance across segments keeps the pattern continuous through a bend and reproducible when seeking to the same time.</dd></div><div><dt>Binding and compilation</dt> <dd>The renderer checks difficulty, song and engine defaults, including separate normal and active hold states. Desktop wrappers compile author GLSL, then validate SPIR-V and its resource layout. A failed edit leaves the last working version installed. The APK ships the compiled program.</dd></div><div><dt>Hit-anchor regression test</dt> <dd>Across 36 paired captures of updated and original looks, the recorded hit-anchor displacement was 0 px in every pair.</dd></div></dl></div>
-        <figure class="source-sample" id="source-materials"><figcaption><strong>Building the material lookup order across part states, difficulty, song and project</strong><span class="source-location" dir="ltr">engine/src/renderer/MaterialBindingResolver.cpp · L67–88</span></figcaption><pre dir="ltr"><code>// The four steps within a level, most specific first.
-std::vector&lt;std::pair&lt;MaterialTarget, bool&gt;&gt; steps;   // target, exact
-steps.push_back({target, true});
-if (target.active &amp;&amp; !target.region.empty()) steps.push_back({{target.key, true, ""}, false});
-if (!target.region.empty()) steps.push_back({{target.key, false, target.region}, false});
-if (target.active || !target.region.empty()) steps.push_back({{target.key, false, ""}, false});
-
-struct Level { const MaterialBindingMap* map; std::string name; bool difficulty; };
-std::vector&lt;Level&gt; levels;
-std::string passedOver;   // bindings that could not be used, for the diagnostic
-auto note = [&amp;passedOver](const std::string&amp; why) {
-    if (!passedOver.empty()) passedOver += "; ";
-    passedOver += why;
-};
-if (c.song) {
-    if (c.difficulty &gt;= 0 &amp;&amp; c.difficulty &lt; 3)
-        levels.push_back({&amp;c.song-&gt;difficulty[c.difficulty], kDifficultyNames[c.difficulty], true});
-    else
-        note("difficulty " + std::to_string(c.difficulty) + " is not easy, medium or hard; its bindings are not read");
-    levels.push_back({&amp;c.song-&gt;song, "song", false});
-}
-if (c.project) levels.push_back({c.project, "project", false});</code></pre></figure>
-      </div>
+      <figure id="materials" class="render-pipeline"><figcaption><h3>Engine rendering pipeline</h3></figcaption><ol class="pipeline-flow" role="list"><li class="pipeline-node"><strong>Frame inputs</strong><span>Chart and gameplay state · Song clock · Camera · Lights</span></li><li class="pipeline-node"><strong>Geometry and material preparation</strong><span>Build stage, note, and effect geometry · Resolve materials and shaders · Prepare GPU parameters and buffers</span></li><li class="pipeline-split"><ul class="pipeline-lanes" role="list"><li class="pipeline-lane"><h4>Spatial modes · Drop 2D / Drop 3D / Circle</h4><ol role="list"><li>Render shadow depth as needed</li><li>Draw opaque and cutout surfaces with depth testing and lighting</li><li>Apply screen-space scattering and capture color and depth as needed</li><li>Draw glass refraction, translucent surfaces, and scene particles</li></ol></li><li class="pipeline-lane"><h4>Scan Line</h4><ol role="list"><li>Project 2D note shapes with the fixed camera</li><li>Draw by layer and submission order within each layer</li><li>Blend translucent parts and scene particles</li></ol></li></ul></li><li class="pipeline-node"><strong>Linear scene color</strong></li><li class="pipeline-split"><ul class="pipeline-lanes" role="list"><li class="pipeline-lane"><h4>Standard offscreen path</h4><ol role="list"><li>Offscreen color attachment · Bloom as needed</li></ol></li><li class="pipeline-lane"><h4>Android tile-local path · When eligible</h4><ol role="list"><li>Read tile-local color through an input attachment</li></ol></li></ul></li><li class="pipeline-node"><strong>Display transform</strong><span>Exposure and tone mapping for spatial modes</span></li><li class="pipeline-node"><strong>Composite gameplay HUD and ImGui</strong><span>UI-only menus enter here</span></li><li class="pipeline-node"><strong>Vulkan submission and swapchain presentation</strong></li></ol></figure>
       <div class="profiles gpu-study" id="gpu-summary">
         <div><h3>External GPU memory bandwidth on the S21</h3><p>A 2400 × 1080 RGBA16F image takes 20.7 MB per frame. The original path stored it to memory and read it back for display conversion. The new path reads the tile colour within the same Vulkan subpass and writes the sRGB swapchain. The HUD still draws in its own pass.</p></div>
         <figure class="bandwidth"><figcaption>External GPU reads and writes (GB/s)</figcaption><div class="bar-row"><span>Store and reload</span><i aria-hidden="true" style="--bar:100.00000%"></i><b>5.13</b></div><div class="bar-row"><span>Tile-local conversion</span><i aria-hidden="true" style="--bar:6.41181%"></i><b>0.33</b></div><p>Galaxy S21 (Mali-G78) · Drop 3D / Hard · song fixed at 1.3 s · 120 Hz · GPU frequency unlocked</p></figure>

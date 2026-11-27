@@ -102,7 +102,7 @@ figcaption strong { color: var(--ink); font-size: 16px; }
 .source-sample {
   min-width: 0; max-width: 100%; margin-top: 20px;
 }
-.profiles > .source-sample, .material-study > .source-sample {
+.profiles > .source-sample {
   grid-column: 1 / -1; margin-top: 0;
 }
 .source-location {
@@ -164,19 +164,106 @@ h3 { font-size: clamp(19px, 1.55vw, 23px); line-height: 1.34; letter-spacing: -.
 .modes img { aspect-ratio: 16 / 9; object-fit: contain; background: #13191c; }
 .modes figcaption, .scan-pair figcaption { margin-top: 8px; }
 .modes figcaption span { margin-top: 3px; }
-.material-study, .profiles { display: grid; grid-template-columns: minmax(0,.95fr) minmax(0,1.3fr); gap: clamp(25px, 4vw, 65px); align-items: center; }
-.material-study { padding: clamp(18px, 2.8vw, 36px); }
-.material-study p, .profiles p { margin-top: 9px; }
-.material-study { row-gap: 22px; }
-.material-notes, .gpu-check { grid-column: 1 / -1; }
-.material-notes .tech-points, .scan-art .tech-points {
+.profiles { display: grid; grid-template-columns: minmax(0,.95fr) minmax(0,1.3fr); gap: clamp(25px, 4vw, 65px); align-items: center; }
+.profiles p { margin-top: 9px; }
+.gpu-check { grid-column: 1 / -1; }
+.scan-art .tech-points {
   display: grid; grid-template-columns: repeat(3, minmax(0,1fr)); gap: 20px 28px;
   margin: 0; padding-top: 16px; border-top: 1px solid var(--line);
 }
-.material-notes .tech-points > div, .scan-art .tech-points > div { margin-top: 0; }
-.previews { display: grid; grid-template-columns: 1fr 1fr 1.65fr; gap: 9px; align-items: start; }
-.previews img { width: 100%; height: clamp(84px, 10vw, 140px); object-fit: contain; background: #1c1c21; border-radius: 3px; }
-.previews figcaption { margin-top: 6px; text-align: center; }
+.scan-art .tech-points > div { margin-top: 0; }
+.render-pipeline {
+  --pipeline-wire: #72988a;
+  --pipeline-gap: 24px;
+  --pipeline-branch-gap: 16px;
+  padding: clamp(16px, 3vw, 34px);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: #fff;
+}
+.render-pipeline figcaption { color: var(--ink); }
+.render-pipeline :where(ol, ul) { margin: 0; padding: 0; list-style: none; }
+.pipeline-flow {
+  display: grid;
+  justify-items: center;
+  gap: var(--pipeline-gap);
+  width: min(100%, 62rem);
+  margin: 16px auto 0;
+  text-align: center;
+  font-size: clamp(.875rem, 1.05vw, 1rem);
+  line-height: 1.45;
+}
+.pipeline-flow > li, .pipeline-lanes, .pipeline-lane { position: relative; }
+.pipeline-flow > li + li::before, .pipeline-lane::before, .pipeline-lane::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  width: 1px;
+  background: var(--pipeline-wire);
+}
+.pipeline-flow > li + li::before { top: calc(-1 * var(--pipeline-gap)); height: var(--pipeline-gap); }
+.pipeline-flow > .pipeline-node + .pipeline-node::after,
+.pipeline-split + .pipeline-node::after,
+.pipeline-lane ol li + li::before {
+  content: "";
+  position: absolute;
+  left: calc(50% - 4px);
+  top: -8px;
+  width: 7px;
+  height: 7px;
+  border: solid var(--pipeline-wire);
+  border-width: 0 1px 1px 0;
+  transform: rotate(45deg);
+}
+.pipeline-node {
+  display: grid;
+  gap: 2px;
+  width: min(100%, 46rem);
+  padding: 9px 12px;
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  background: #f5f8f5;
+}
+.pipeline-node span { color: var(--body); }
+.pipeline-node:first-child, .pipeline-node:last-child { background: #e9f3ee; }
+.pipeline-split { width: 100%; }
+.pipeline-flow .pipeline-lanes {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  padding-block: var(--pipeline-branch-gap);
+}
+.pipeline-lanes::before, .pipeline-lanes::after {
+  content: "";
+  position: absolute;
+  inset-inline: 25%;
+  border-top: 1px solid var(--pipeline-wire);
+}
+.pipeline-lanes::before { top: 0; }
+.pipeline-lanes::after { bottom: 0; }
+.pipeline-lane {
+  display: grid;
+  grid-template-rows: auto 1fr;
+  margin-inline: clamp(4px, 1vw, 14px);
+  padding: clamp(7px, 1.2vw, 14px);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #f1f6f3;
+  overflow-wrap: anywhere;
+}
+.pipeline-lane::before, .pipeline-lane::after { height: var(--pipeline-branch-gap); }
+.pipeline-lane::before { top: calc(-1 * var(--pipeline-branch-gap)); }
+.pipeline-lane::after { bottom: calc(-1 * var(--pipeline-branch-gap)); }
+.pipeline-lane h4 { margin: 0 0 9px; color: var(--teal); font-size: inherit; }
+.pipeline-lane ol { display: grid; grid-auto-rows: 1fr; gap: 12px; }
+.pipeline-lane ol li {
+  display: grid;
+  place-content: center;
+  position: relative;
+  padding: 7px 5px;
+  border: 1px solid var(--line);
+  border-radius: 5px;
+  background: #fff;
+}
 .render-studies { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 36px clamp(26px,4vw,60px); margin-top: 38px; }
 .render-study { border-top: 1px solid var(--line); padding-top: 21px; }
 .render-study img { aspect-ratio: 16/9; object-fit: contain; background: #111619; }
@@ -281,7 +368,7 @@ tbody th { color: var(--body); }
   .project-date { padding: 0; }
   .section-heading, .profiles { grid-template-columns: 1fr; gap: 14px; }
   .section-heading p { max-width: 72ch; }
-  .material-study { grid-template-columns: 1fr 1.05fr; gap: 16px; }
+
   .render-studies { column-gap: 22px; }
   .topic-body { grid-template-columns: minmax(0,1fr); }
 }
@@ -296,17 +383,16 @@ tbody th { color: var(--body); }
   body { font-size: 16px; line-height: 1.65; }
   .shell { width: calc(100% - 36px); }
   .topbar-inner { height: 48px; }
-  .material-study, .ai-figures, .ai-entries .tech-points { grid-template-columns: minmax(0,1fr); }
+  .ai-figures, .ai-entries .tech-points { grid-template-columns: minmax(0,1fr); }
   .hero-media { gap: 24px; }
   .lead { margin-top: 12px; }
   .section-heading { margin-bottom: 22px; }
   .modes { grid-auto-flow: row; grid-template-columns: minmax(0,1fr); gap: 16px; margin-top: 14px; }
   .term { margin-left: 2px; }
-  .previews { margin-top: 3px; }
-  .material-notes .tech-points, .scan-art .tech-points, .render-studies,
+  .scan-art .tech-points, .render-studies,
   .scan-art-frames { grid-template-columns: minmax(0,1fr); }
   .render-studies { gap: 26px; }
-  .scan-art-frames, .material-notes .tech-points, .scan-art .tech-points { gap: 14px; }
+  .scan-art-frames, .scan-art .tech-points { gap: 14px; }
   .system-lead { margin-block: 8px 16px; }
   .system-evidence th, .system-evidence td { padding: 6px 4px; }
   table { font-size: 14px; }
