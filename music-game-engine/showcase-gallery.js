@@ -1,4 +1,4 @@
-document.querySelectorAll('#interface-gallery, #quality-gallery').forEach(gallery => {
+document.querySelectorAll('#interface-gallery, [data-gallery-selection]').forEach(gallery => {
   const controls = gallery.querySelector('.gallery-controls');
   const track = document.getElementById(controls.querySelector('button').getAttribute('aria-controls'));
   const slides = [...track.querySelectorAll('.gallery-slide')];
